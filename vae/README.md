@@ -35,7 +35,7 @@ Epoch=41,Elapsed Time=65.6005599499[s],Iter=24599,Obj(Test)=-112.517486572
 
 Tensorflow  I used is the version 0.9. When you run the main script, you can get the output like the following on the stdout.
 
-Learning is very unstable, it gets nan very easily based on my reproduction, depending on the initial value of weights. If the initial value of weights is small enouph, e.g., 0.5 x random gaussina.
+Learning is very unstable, it gets nan very easily based on my reproduction, depending on the initial value of weights. If the initial value of weights is small enough, e.g., 0.5 x random gaussina.
 
 # TODO
 - Visualize the reconstruction.
