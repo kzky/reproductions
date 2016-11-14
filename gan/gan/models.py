@@ -41,7 +41,7 @@ class CNNGenrator(Chain):
     def __call__(self, z):
         """Generate samples fooling the discriminator
         """
-        # Conv, one reduce
+        # Project, one reduce
         h = F.reshape(self.linear(z), (self.batch_size, 4, 4, 1000))
         h = self.batch_norm0(h, self.test)
         h = F.elu(h)
