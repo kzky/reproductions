@@ -30,7 +30,8 @@ def main():
 
     # Model
     model = DCGAN()
-    model.to_gpu() if device else None
+    model.generator.to_gpu() if device else None
+    model.discriminator.to_gpu() if device else None
 
     # Optimizers
     optimizer_gen = optimizers.Adam(learning_rate)
