@@ -76,7 +76,7 @@ class LFWDataReader(object):
         batch_data = self.data[beg:end, :]
         bs = batch_data.shape[0]
         batch_data = batch_data.astype(np.float32).reshape(bs, 128, 128)
-        batch_data = (batch_data - 128) / 255.
+        batch_data = (batch_data - 127.5) / 127.5. # Scale (-1, 1) for tanh.
 
         # Reset pointer
         self._next_position += self._batch_size
