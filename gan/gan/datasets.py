@@ -2,6 +2,7 @@ import numpy as np
 import os
 from chainer import cuda
 import glob
+import cv2
 
 class MNISTDataReader(object):
     """DataReader
@@ -16,7 +17,7 @@ class MNISTDataReader(object):
         # Concate data    
         train_data = dict(np.load(train_path))
         test_data = dict(np.load(test_path))
-        self.data = np.vstack([train_data["x"], test_data["x"]]
+        self.data = np.vstack([train_data["x"], test_data["x"]])
 
         self._batch_size = batch_size
         self._next_position = 0
@@ -59,10 +60,9 @@ class LFWDataReader(object):
             img = cv2.imread(fpath)
 
             # Center cropping
-            img = img[128-64:128+64, 128-64:128+64, :].transpose(2, 0, 1)
+            img = img[128-64:128+64, 128-64:128+64, :]
             data.append(img)
-        data = np.array(data, dtype=np.uint8)
-
+        self.data = np.array(data, dtype=np.uint8)
         self._batch_size = batch_size
         self._next_position = 0
         self._n_data = len(self.data)
@@ -74,9 +74,13 @@ class LFWDataReader(object):
         beg = self._next_position
         end = self._next_position + self._batch_size
         batch_data = self.data[beg:end, :]
-        bs = batch_data.shape[0]
-        batch_data = batch_data.astype(np.float32).reshape(bs, 128, 128)
-        batch_data = (batch_data - 127.5) / 127.5. # Scale (-1, 1) for tanh.
+        batch_data = (batch_data.astype(np.float32) - 127.5) / 127.5 # Scale (-1, 1) for tanh.
+        batch_data_ = []
+
+        for data in batch_data:
+            data_ = cv2.resize(data, (64, 64)).transpose(2, 0, 1)  # 128x128 to 64x64
+            batch_data_.append(data_)
+        batch_data = np.array(batch_data_)
 
         # Reset pointer
         self._next_position += self._batch_size
