@@ -20,7 +20,7 @@ class CNNGenrator(Chain):
     def __init__(self, batch_size=64, dims=100, test=False, device=None):
         #TODO: now it hard-coded
         super(CNNGenrator, self).__init__(
-            linear=L.Linear(dims, 4 * 4 * 1024),
+            linear=L.Linear(dims, 1024 * 4 * 4),
             deconv0=L.Deconvolution2D(1024, 512, ksize=(2, 2), stride=(2, 2)),
             deconv1=L.Deconvolution2D(512, 256, ksize=(2, 2), stride=(2, 2)),
             deconv2=L.Deconvolution2D(256, 128, ksize=(2, 2), stride=(2, 2)),
@@ -40,7 +40,8 @@ class CNNGenrator(Chain):
         """Generate samples fooling the discriminator
         """
         # Project, one reduce
-        h = self.batch_norm0(self.linear(z))
+        h = self.linear(z)
+        h = self.batch_norm0(h)
         bs = h.data.shape[0]
         h = F.reshape(h, (bs, 1024, 4, 4))
         h = F.relu(h)
@@ -99,7 +100,7 @@ class CNNDiscriminator(Chain):
 
 class DCGAN(Chain):
 
-    def __init__(self, batch_size=64, dims=100, test=False, device=None):
+    def __init__(self, batch_size=64, dims=1000, test=False, device=None):
         self.test = test
 
         super(DCGAN, self).__init__(

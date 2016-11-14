@@ -2,7 +2,7 @@ from gan.datasets import LFWDataReader
 from gan.models import DCGAN
 import numpy as np
 import os
-from chainer.cuda import cupy
+from chainer.cuda import cupy as cp
 import sys
 import time
 import chainer.functions as F
@@ -15,7 +15,7 @@ import scipy.io
 def main():
     # Settings
     device = int(sys.argv[1]) if len(sys.argv) > 1 else None
-    xp = numpy if device else cupy
+    xp = np if device else cp
     batch_size = 64
     test = False
     n_train_data = 13233
@@ -33,8 +33,7 @@ def main():
 
     # Model
     model = DCGAN(batch_size=64, dims=100, test=test, device=device)
-    model.generator.to_gpu() if device else None
-    model.discriminator.to_gpu() if device else None
+    model.to_gpu(device) if device else None
 
     # Optimizers
     optimizer_gen = optimizers.Adam(learning_rate)
@@ -53,22 +52,22 @@ def main():
             x_data = data_reader.get_train_batch()
             x = Variable(to_device(x_data, device))
             bs = x_data.shape[0]
-            z = Variable(to_device(xp.random.rand(bs, 100).astype(xp.float32), device))
+            z = Variable(to_device(np.random.rand(bs, 100).astype(np.float32), device))
             l = -1.0 * model(z, x)
             optimizer_dis.update()
 
         # Minimize Generator-related objective
-        z = Variable(to_device(xp.random.rand(batch_size, 100).astype(xp.float32), device))
+        z = Variable(to_device(np.random.rand(batch_size, 100).astype(np.float32), device))
         l = model(z)
         optimizer_gen.update()
 
         # Eval
-        if (i) % iter_epoch == 0:
+        if (i+1) % iter_epoch == 0:
             model.set_test()
             utime = int(time.time())
             
             # Generate image and save
-            z = Variable(to_device(xp.random.rand(batch_size, 100).astype(xp.float32), device))
+            z = Variable(to_device(np.random.rand(batch_size, 100).astype(np.float32), device))
             l = model(z)
             msg = "Epoch:{},GenLoss:{}".format(epoch, l.data)
             print(msg)
