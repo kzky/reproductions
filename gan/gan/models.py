@@ -116,7 +116,7 @@ class DCGAN(Chain):
 
         else: # min log( 1- D(G(z)) )
             x_ = self.generator(z)
-            bs = x.shape[0]
+            bs = x_.shape[0]
             y = F.log(1 - self.discriminator(x_)) / bs
 
         return y
