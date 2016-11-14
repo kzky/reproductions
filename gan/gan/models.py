@@ -41,8 +41,8 @@ class CNNGenrator(Chain):
         """
         # Project, one reduce
         h = self.linear(z)
+        h = self.batch_norm0(h, self.test)
         bs = h.data.shape[0]
-        h = self.batch_norm0(h)
         h = F.reshape(h, (bs, 1024, 4, 4))
         h = F.relu(h)
 
