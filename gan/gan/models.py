@@ -107,21 +107,21 @@ class DCGAN(Chain):
         self.generator = CNNGenrator(test, device)
         self.discriminator = CNNDiscriminator(test, device)
 
-    def __call__(self, x=None, z=None):
+    def __call__(self, z, x=None):
 
         if x:  # max log(D(x)) + log(1 - D(G(z)))
             x_ = self.generator(z)
             bs_x = x.shape[0]
             bs_x_ = x_.shape[0]
-            y = F.log(self.discriminator(x)) / bs_x \
+            loss = F.log(self.discriminator(x)) / bs_x \
               + F.log(1 - self.discriminator(x_)) / bs_x_
 
         else: # min log( 1- D(G(z)) )
             x_ = self.generator(z)
             bs = x_.shape[0]
-            y = F.log(1 - self.discriminator(x_)) / bs
+            loss = F.log(1 - self.discriminator(x_)) / bs
 
-        return y
+        return loss
 
     def set_test():
         self.generator.test = True
