@@ -69,17 +69,11 @@ class CNNDiscriminator(Chain):
             conv1=L.Convolution2D(128, 256, ksize=(2, 2), stride=(2, 2)),
             conv2=L.Convolution2D(256, 512, ksize=(2, 2), stride=(2, 2)),
             conv3=L.Convolution2D(512, 1024, ksize=(2, 2), stride=(2, 2)),
-            linear0 = L.Linear(None, 512),
-            linear1 = L.Linear(None, 256),
-            linear2 = L.Linear(None, 128),
-            linear3 = L.Linear(None, 1),
+            linear0 = L.Linear(None, 1),
             batch_norm0=L.BatchNormalization(0.9),
             batch_norm1=L.BatchNormalization(0.9),
             batch_norm2=L.BatchNormalization(0.9),
             batch_norm3=L.BatchNormalization(0.9),
-            batch_norm4=L.BatchNormalization(0.9),
-            batch_norm5=L.BatchNormalization(0.9),
-            batch_norm6=L.BatchNormalization(0.9),
             )
         
     def __call__(self, x):
@@ -100,15 +94,6 @@ class CNNDiscriminator(Chain):
         h = self.batch_norm3(h)
         h = F.leaky_relu(h)
         h = self.linaer0(h)
-        h = self.batch_norm4(h)
-        h = F.leaky_relu(h)
-        h = self.linaer1(h)
-        h = self.batch_norm5(h)
-        h = F.leaky_relu(h)
-        h = self.linaer2(h)
-        h = self.batch_norm6(h)
-        h = F.leaky_relu(h)
-        h = self.linaer3(h)
 
         return h
 
