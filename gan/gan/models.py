@@ -94,6 +94,7 @@ class CNNDiscriminator(Chain):
         h = self.batch_norm3(h)
         h = F.leaky_relu(h)
         h = self.linaer0(h)
+        h = F.sigmoid(h)
 
         return h
 
@@ -108,12 +109,11 @@ class DCGAN(Chain):
 
         if x:  # max log(D(x)) + log(1 - D(G(z)))
             x_ = self.generator(z)
-            y = F.log(F.sigmoid(self.discriminator(x_))) \
-              + F.log(1 - F.sigmoid(self.discriminator(x_)))
+            y = F.log(self.discriminator(x_)) + F.log(1 - self.discriminator(x_))
 
         else: # min log( 1- D(G(z)) )
             x_ = self.generator(z)
-            y = F.log(1 - F.sigmoid(self.discriminator(x_)))
+            y = F.log(1 - self.discriminator(x_))
 
         return y
         
