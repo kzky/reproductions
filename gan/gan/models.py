@@ -20,11 +20,11 @@ class CNNGenrator(Chain):
     def __init__(self, batch_size=64, dims=100, test=False, device=None):
         #TODO: now it hard-coded
         super(CNNGenrator, self).__init__(
-            linear=L.Linear(dims, 1024 * 4 * 4, wscale=0.02),
-            deconv0=L.Deconvolution2D(1024, 512, ksize=(2, 2), stride=(2, 2), wscale=0.02),
-            deconv1=L.Deconvolution2D(512, 256, ksize=(2, 2), stride=(2, 2), wscale=0.02),
-            deconv2=L.Deconvolution2D(256, 128, ksize=(2, 2), stride=(2, 2), wscale=0.02),
-            deconv3=L.Deconvolution2D(128, 3, ksize=(2, 2), stride=(2, 2), wscale=0.02),
+            linear=L.Linear(dims, 1024 * 4 * 4),
+            deconv0=L.Deconvolution2D(1024, 512, ksize=(2, 2), stride=(2, 2)),
+            deconv1=L.Deconvolution2D(512, 256, ksize=(2, 2), stride=(2, 2)),
+            deconv2=L.Deconvolution2D(256, 128, ksize=(2, 2), stride=(2, 2)),
+            deconv3=L.Deconvolution2D(128, 3, ksize=(2, 2), stride=(2, 2)),
             batch_norm0=L.BatchNormalization(1024*4*4, 0.9),
             batch_norm1=L.BatchNormalization(512, 0.9),
             batch_norm2=L.BatchNormalization(256, 0.9),

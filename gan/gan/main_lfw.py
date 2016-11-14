@@ -16,19 +16,20 @@ def main():
     # Settings
     device = int(sys.argv[1]) if len(sys.argv) > 1 else None
     xp = np if device else cp
-    batch_size = 64
+    batch_size = 100
     test = False
     n_train_data = 13233
     k_steps = 1
 
-    learning_rate = 1. * 1e-3
+    learning_rate = 2. * 1e-4
+    beta = 0.5
     n_epoch = 100
     decay = 0.9
     iter_epoch = n_train_data / batch_size
     n_iter = n_epoch * iter_epoch
     
     home = os.environ.get("HOME")
-    fpath = os.path.join(home, "datasets/lfw_small")
+    fpath = os.path.join(home, "datasets/lfw")
     data_reader = LFWDataReader(fpath, batch_size)
 
     # Model
@@ -36,10 +37,10 @@ def main():
     model.to_gpu(device) if device else None
 
     # Optimizers
-    optimizer_gen = optimizers.Adam(learning_rate)
+    optimizer_gen = optimizers.Adam(learning_rate, beta)
     optimizer_gen.setup(model.generator)
     optimizer_gen.use_cleargrads()
-    optimizer_dis = optimizers.Adam(learning_rate)
+    optimizer_dis = optimizers.Adam(learning_rate, beta)
     optimizer_dis.setup(model.discriminator)
     optimizer_dis.use_cleargrads()
     
@@ -52,15 +53,17 @@ def main():
             x_data = data_reader.get_train_batch()
             x = Variable(to_device(x_data, device))
             bs = x_data.shape[0]
-            z = Variable(to_device(np.random.rand(bs, 100).astype(np.float32), device))
-            l = -1.0 * model(z, x)
-            print("DisLoss", l.data)
+            z = Variable(to_device(np.random.uniform(-1, 1, (batch_size, 100)).astype(np.float32), device))
+            l = -model(z, x)
+            model.cleargrads()
+            l.backward()
             optimizer_dis.update()
 
         # Minimize Generator-related objective
-        z = Variable(to_device(np.random.rand(batch_size, 100).astype(np.float32), device))
+        z = Variable(to_device(np.random.uniform(-1, 1, (batch_size, 100)).astype(np.float32), device))
         l = model(z)
-        print("GenLoss", l.data)
+        model.cleargrads()
+        l.backward()
         optimizer_gen.update()
 
         # Eval
@@ -69,7 +72,7 @@ def main():
             utime = int(time.time())
             
             # Generate image and save
-            z = Variable(to_device(np.random.rand(batch_size, 100).astype(np.float32), device))
+            z = Variable(to_device(np.random.uniform(-1, 1, (batch_size, 100)).astype(np.float32), device))
             l = model(z)
             msg = "Epoch:{},GenLoss:{}".format(epoch, l.data)
             print(msg)
