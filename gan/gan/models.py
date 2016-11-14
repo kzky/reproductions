@@ -25,7 +25,7 @@ class CNNGenrator(Chain):
             deconv1=L.Deconvolution2D(512, 256, ksize=(2, 2), stride=(2, 2)),
             deconv2=L.Deconvolution2D(256, 128, ksize=(2, 2), stride=(2, 2)),
             deconv3=L.Deconvolution2D(128, 3, ksize=(2, 2), stride=(2, 2)),
-            batch_norm0=L.BatchNormalization(4*4*1024, 0.9),
+            batch_norm0=L.BatchNormalization(1024, 0.9),
             batch_norm1=L.BatchNormalization(512, 0.9),
             batch_norm2=L.BatchNormalization(256, 0.9),
             batch_norm3=L.BatchNormalization(128, 0.9),
@@ -41,9 +41,10 @@ class CNNGenrator(Chain):
         """
         # Project, one reduce
         h = self.linear(z)
-        h = self.batch_norm0(h)
+        #h = self.batch_norm0(h)
         bs = h.data.shape[0]
         h = F.reshape(h, (bs, 1024, 4, 4))
+        h = self.batch_norm0(h)
         h = F.relu(h)
 
         # Deconv, then expand

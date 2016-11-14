@@ -54,11 +54,13 @@ def main():
             bs = x_data.shape[0]
             z = Variable(to_device(np.random.rand(bs, 100).astype(np.float32), device))
             l = -1.0 * model(z, x)
+            print("DisLoss", l.data)
             optimizer_dis.update()
 
         # Minimize Generator-related objective
         z = Variable(to_device(np.random.rand(batch_size, 100).astype(np.float32), device))
         l = model(z)
+        print("GenLoss", l.data)
         optimizer_gen.update()
 
         # Eval
@@ -71,7 +73,7 @@ def main():
             l = model(z)
             msg = "Epoch:{},GenLoss:{}".format(epoch, l.data)
             print(msg)
-            scipy.io.savemat("lfwgen_{}.mat".format(utime), {"x":model.data_model.data})
+            scipy.io.savemat("lfwgen_{}.mat".format(utime), {"x": model.data_model.data})
 
             # Save model
             model_name = "LFWGAN_{}.model".format(utime)
