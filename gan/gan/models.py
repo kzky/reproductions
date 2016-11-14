@@ -17,10 +17,10 @@ from utils import to_device
 
 class CNNGenrator(Chain):
     
-    def __init__(self, test=False, device=None):
+    def __init__(self, batch_size=64, dims=100, test=False, device=None):
         #TODO: now it hard-coded
         super(CNNGenrator, self).__init__(
-            conv0=L.Convolution2D(1, 1024, ksize=(7, 7), stride=(1, 1)),
+            linear=L.Linear(dims, 4 * 4 * 1000)
             deconv0=L.Deconvolution2D(1024, 512, ksize=(2, 2), stride=(2, 2)),
             deconv1=L.Deconvolution2D(512, 256, ksize=(2, 2), stride=(2, 2)),
             deconv2=L.Deconvolution2D(256, 128, ksize=(2, 2), stride=(2, 2)),
@@ -33,24 +33,16 @@ class CNNGenrator(Chain):
             )
 
         # Attribute
+        self.batch_size = batch_size
+        self.dims = dims
         self.test = test
         self.device = device
-        self.dims = 100
 
-    def __call__(self, ):
+    def __call__(self, z):
         """Generate samples fooling the discriminator
         """
-        dims = self.dims
-        s = int(np.sqrt(dims))
-        if self.device:
-            z = cupy.random.rand(dims)
-            z = F.reshape(z, (s, s))
-        else:
-            z = np.random.rand(dims)
-            z = F.reshape(z, (s, s))
-
         # Conv, one reduce
-        h = self.conv0(z)
+        h = F.reshape(self.linear(z), (4, 4, 1000))
         h = self.batch_norm0(h, self.test)
         h = F.elu(h)
 
@@ -127,14 +119,16 @@ class DCGAN(Chain):
         self.generator = CNNGenrator(test, device)
         self.discriminator = CNNDiscriminator(test, device)
 
-    def __call__(self, x=None):
+    def __call__(self, x=None, z=None):
 
-        if x:  # log(D(x))
-            y = F.log(F.sigmoid(self.discriminator(x)))
+        if x:  # max log(D(x)) + log(1 - D(G(z)))
+            x_ = self.generator(z)
+            y = F.log(F.sigmoid(self.discriminator(x_))) \
+              + F.log(1 - F.sigmoid(self.discriminator(x_)))
 
-        else: # log( 1- D(G(z)) )
-            x = self.generator()
-            y = 1 - F.log(F.sigmoid(self.discriminator(x)))
+        else: # min log( 1- D(G(z)) )
+            x_ = self.generator(z)
+            y = F.log(1 - F.sigmoid(self.discriminator(x_)))
 
         return y
         
