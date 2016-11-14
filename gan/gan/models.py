@@ -109,11 +109,15 @@ class DCGAN(Chain):
 
         if x:  # max log(D(x)) + log(1 - D(G(z)))
             x_ = self.generator(z)
-            y = F.log(self.discriminator(x_)) + F.log(1 - self.discriminator(x_))
+            bs_x = x.shape[0]
+            bs_x_ = x_.shape[0]
+            y = F.log(self.discriminator(x)) / bs_x \
+              + F.log(1 - self.discriminator(x_)) / bs_x_
 
         else: # min log( 1- D(G(z)) )
             x_ = self.generator(z)
-            y = F.log(1 - self.discriminator(x_))
+            bs = x.shape[0]
+            y = F.log(1 - self.discriminator(x_)) / bs
 
         return y
         
