@@ -102,8 +102,10 @@ class DCGAN(Chain):
     def __init__(self, batch_size=64, dims=100, test=False, device=None):
         self.test = test
 
-        self.generator = CNNGenrator(batch_size, dims, test, device)
-        self.discriminator = CNNDiscriminator(test, device)
+        super(DCGAN, self).__init__(
+            generator = CNNGenrator(batch_size, dims, test, device),
+            discriminator = CNNDiscriminator(test, device)
+        )
 
         self.data_model = None
 

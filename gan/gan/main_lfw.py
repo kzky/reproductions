@@ -10,6 +10,7 @@ from chainer import Variable
 from chainer import optimizers, Variable
 from utils import to_device
 from chainer import serializers
+import scipy.io
 
 def main():
     # Settings
@@ -62,18 +63,19 @@ def main():
         optimizer_gen.update()
 
         # Eval
-        if (i + 1) % iter_epoch == 0:
+        if (i) % iter_epoch == 0:
             model.set_test()
+            utime = int(time.time())
+            
             # Generate image and save
             z = Variable(to_device(xp.random.rand(batch_size, 100).astype(xp.float32), device))
             l = model(z)
-            msg = "Epoch:{},GenLoss:{}".format(epoch, l)
+            msg = "Epoch:{},GenLoss:{}".format(epoch, l.data)
             print(msg)
-            scipy.io.savemat({"x":model.data_model.data})
+            scipy.io.savemat("lfwgen_{}.mat".format(utime), {"x":model.data_model.data})
 
             # Save model
-            utime = int(time.time())
-            model_name = "LFWGAN_{}.model".fromat(utime)
+            model_name = "LFWGAN_{}.model".format(utime)
             serializers.save_hdf5(model_name, model)
 
             model.unset_test()
