@@ -42,7 +42,7 @@ class CNNGenrator(Chain):
         """Generate samples fooling the discriminator
         """
         # Conv, one reduce
-        h = F.reshape(self.linear(z), (4, 4, 1000))
+        h = F.reshape(self.linear(z), (self.batch_size, 4, 4, 1000))
         h = self.batch_norm0(h, self.test)
         h = F.elu(h)
 
@@ -75,6 +75,7 @@ class CNNDiscriminator(Chain):
             batch_norm2=L.BatchNormalization(0.9),
             batch_norm3=L.BatchNormalization(0.9),
             )
+        self.test = test
         
     def __call__(self, x):
         """
@@ -82,16 +83,16 @@ class CNNDiscriminator(Chain):
             Note x is scaled over -1 and 1 to comply with tanh
         """
         h = self.conv0(x)
-        h = self.batch_norm0(h)
+        h = self.batch_norm0(h, self.test)
         h = F.leaky_relu(h)
         h = self.conv1(h)
-        h = self.batch_norm1(h)
+        h = self.batch_norm1(h, self.test)
         h = F.leaky_relu(h)
         h = self.conv2(h)
-        h = self.batch_norm2(h)
+        h = self.batch_norm2(h, self.test)
         h = F.leaky_relu(h)
         h = self.conv3(h)
-        h = self.batch_norm3(h)
+        h = self.batch_norm3(h, self.test)
         h = F.leaky_relu(h)
         h = self.linaer0(h)
         h = F.sigmoid(h)
@@ -102,6 +103,7 @@ class DCGAN(Chain):
 
     def __init__(self, test=False, device=None):
         self.test = test
+
         self.generator = CNNGenrator(test, device)
         self.discriminator = CNNDiscriminator(test, device)
 
@@ -120,6 +122,13 @@ class DCGAN(Chain):
             y = F.log(1 - self.discriminator(x_)) / bs
 
         return y
-        
 
+    def set_test():
+        self.generator.test = True
+        self.discriminator.test = True
+
+    def unset_test():
+        self.generator.test = False
+        self.discriminator.test = False
+        
 
