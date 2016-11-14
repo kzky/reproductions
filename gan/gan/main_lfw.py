@@ -43,7 +43,7 @@ def main():
     # Train
     for i in range(n_iter):
         
-        # Discriminator
+        # Maximize Discriminator-related objective
         for k in range(k_steps):
             x_data = data_reader.get_train_batch()
             x = Variable(to_device(x_data, device))
@@ -51,7 +51,7 @@ def main():
             l = -1.0 *  model(z, x)
             optimizer_dis.update()
 
-        # Generator
+        # Minimize Generator-related objective
         z = Variable(to_device(xp.random.rand(batch_size, 100), device))
         l = model(z)
         optimizer_gen.update()
