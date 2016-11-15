@@ -11,6 +11,7 @@ from chainer import optimizers, Variable
 from utils import to_device
 from chainer import serializers
 import scipy.io
+import cv2
 
 def main():
     # Settings
@@ -46,6 +47,7 @@ def main():
     
     # Train
     epoch = 0
+    utime = int(time.time())
     dpath = "./LFWGAN_{}".format(utime)
     os.mkdir(dpath)
     for i in range(n_iter):
@@ -77,15 +79,15 @@ def main():
             z = Variable(to_device(
                 np.random.uniform(-1, 1, (batch_size, 100)).astype(np.float32), device))
             l = model(z, x)
-            msg = "Epoch:{},Loss:{},D_z:{}".format(epoch, l.data, model.D_z.data)
+            msg = "Epoch:{},Loss:{},D_z:{}".format(epoch, l.data, model.D_z.data[0:5])
             print(msg)
 
             # Save images
             data = (to_device(model.data_model.data) * 127.5) + 127.5
             imgs = data.transpose(0, 2, 3, 1)
-            fpath = os.path.join(dpath, utime)
+            fpath = os.path.join(dpath, "{}.png".format(str(utime)))
             for i, img in enumerate(imgs):
-                cv.imwrite(fpath, img)
+                cv2.imwrite(fpath, img)
 
             # Save model
             model_name = "LFWGAN_{}.model".format(utime)
