@@ -87,15 +87,15 @@ def main():
             # Save images
             data = (to_device(model.data_model.data) * 127.5) + 127.5
             imgs = data.transpose(0, 2, 3, 1)
-            dpath1 = os.path.join(dpath0, str(int(time.time())))
+            dpath1 = os.path.join(dpath0, str(et))
             os.mkdir(dpath1)
             for i, img in enumerate(imgs):
                 fpath = os.path.join(dpath1, "{:05}.png".format(i))
                 cv2.imwrite(fpath, img)
 
             # Save model
-            model_name = "LFWGAN_{}.model".format(int(et))
-            serializers.save_hdf5(model_name, model)
+            fpath = os.path.join(dpath0, "LFWGAN_{}.model".format(int(et)))
+            serializers.save_hdf5(fpath, model)
 
             model.unset_test()
             epoch += 1
