@@ -21,10 +21,10 @@ class CNNGenrator(Chain):
         #TODO: now it hard-coded
         super(CNNGenrator, self).__init__(
             linear=L.Linear(dims, 1024 * 4 * 4),
-            deconv0=L.Deconvolution2D(1024, 512, ksize=(2, 2), stride=(2, 2)),
-            deconv1=L.Deconvolution2D(512, 256, ksize=(2, 2), stride=(2, 2)),
-            deconv2=L.Deconvolution2D(256, 128, ksize=(2, 2), stride=(2, 2)),
-            deconv3=L.Deconvolution2D(128, 3, ksize=(2, 2), stride=(2, 2)),
+            deconv0=L.Deconvolution2D(1024, 512, ksize=(4, 4), stride=(2, 2), pad=1),
+            deconv1=L.Deconvolution2D(512, 256, ksize=(4, 4), stride=(2, 2), pad=1),
+            deconv2=L.Deconvolution2D(256, 128, ksize=(4, 4), stride=(2, 2), pad=1),
+            deconv3=L.Deconvolution2D(128, 3, ksize=(4, 4), stride=(2, 2), pad=1),
             batch_norm0=L.BatchNormalization(1024*4*4, 0.9),
             batch_norm1=L.BatchNormalization(512, 0.9),
             batch_norm2=L.BatchNormalization(256, 0.9),
@@ -64,10 +64,10 @@ class CNNDiscriminator(Chain):
     
     def __init__(self, test=False, device=None):
         super(CNNDiscriminator, self).__init__(
-            conv0=L.Convolution2D(3, 128, ksize=(2, 2), stride=(2, 2)),
-            conv1=L.Convolution2D(128, 256, ksize=(2, 2), stride=(2, 2)),
-            conv2=L.Convolution2D(256, 512, ksize=(2, 2), stride=(2, 2)),
-            conv3=L.Convolution2D(512, 1024, ksize=(2, 2), stride=(2, 2)),
+            conv0=L.Convolution2D(3, 128, ksize=(4, 4), stride=(2, 2), pad=1),
+            conv1=L.Convolution2D(128, 256, ksize=(4, 4), stride=(2, 2), pad=1),
+            conv2=L.Convolution2D(256, 512, ksize=(4, 4), stride=(2, 2), pad=1),
+            conv3=L.Convolution2D(512, 1024, ksize=(4, 4), stride=(2, 2), pad=1),
             linear0 = L.Linear(1024 * 4 * 4, 1),
             batch_norm0=L.BatchNormalization(128, 0.9),
             batch_norm1=L.BatchNormalization(256, 0.9),
