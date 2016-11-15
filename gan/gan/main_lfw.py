@@ -30,7 +30,7 @@ def main():
     n_iter = n_epoch * iter_epoch
     
     home = os.environ.get("HOME")
-    fpath = os.path.join(home, "datasets/lfw")
+    fpath = os.path.join(home, "datasets/lfw_small")
     data_reader = LFWDataReader(fpath, batch_size)
 
     # Model
@@ -47,7 +47,8 @@ def main():
     
     # Train
     epoch = 0
-    utime = int(time.time())
+    st = time.time()
+    utime = int(st)
     dpath = "./LFWGAN_{}".format(utime)
     os.mkdir(dpath)
     for i in range(n_iter):
@@ -73,28 +74,30 @@ def main():
         # Eval
         if (i+1) % iter_epoch == 0:
             model.set_test()
-            utime = int(time.time())
+            et = int(time.time())
             
             # Generate image
             z = Variable(to_device(
                 np.random.uniform(-1, 1, (batch_size, 100)).astype(np.float32), device))
             l = model(z, x)
-            msg = "Epoch:{},Loss:{},D_z:{}".format(epoch, l.data, model.D_z.data[0:5])
+            msg = "ElapsedTime:{},Epoch:{},Loss:{},D_z:{}".format(
+                et - st, epoch, l.data, model.D_z.data[0:5])
             print(msg)
 
             # Save images
             data = (to_device(model.data_model.data) * 127.5) + 127.5
             imgs = data.transpose(0, 2, 3, 1)
-            fpath = os.path.join(dpath, "{}.png".format(str(utime)))
             for i, img in enumerate(imgs):
+                fpath = os.path.join(dpath, "{}.png".format(str(time.time())))
                 cv2.imwrite(fpath, img)
 
             # Save model
-            model_name = "LFWGAN_{}.model".format(utime)
+            model_name = "LFWGAN_{}.model".format(int(et))
             serializers.save_hdf5(model_name, model)
 
             model.unset_test()
             epoch += 1
+            st = time.time()
 
 if __name__ == '__main__':
     main()
