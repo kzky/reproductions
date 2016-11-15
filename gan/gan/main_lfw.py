@@ -46,6 +46,8 @@ def main():
     
     # Train
     epoch = 0
+    dpath = "./LFWGAN_{}".format(utime)
+    os.mkdir(dpath)
     for i in range(n_iter):
         
         # Maximize Discriminator-related objective
@@ -71,12 +73,19 @@ def main():
             model.set_test()
             utime = int(time.time())
             
-            # Generate image and save
-            z = Variable(to_device(np.random.uniform(-1, 1, (batch_size, 100)).astype(np.float32), device))
-            l = model(z)
-            msg = "Epoch:{},GenLoss:{}".format(epoch, l.data)
+            # Generate image
+            z = Variable(to_device(
+                np.random.uniform(-1, 1, (batch_size, 100)).astype(np.float32), device))
+            l = model(z, x)
+            msg = "Epoch:{},Loss:{},D_z:{}".format(epoch, l.data, model.D_z.data)
             print(msg)
-            scipy.io.savemat("lfwgen_{}.mat".format(utime), {"x": model.data_model.data})
+
+            # Save images
+            data = (to_device(model.data_model.data) * 127.5) + 127.5
+            imgs = data.transpose(0, 2, 3, 1)
+            fpath = os.path.join(dpath, utime)
+            for i, img in enumerate(imgs):
+                cv.imwrite(fpath, img)
 
             # Save model
             model_name = "LFWGAN_{}.model".format(utime)
