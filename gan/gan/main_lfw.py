@@ -30,7 +30,7 @@ def main():
     n_iter = n_epoch * iter_epoch
     
     home = os.environ.get("HOME")
-    fpath = os.path.join(home, "datasets/lfw_small")
+    fpath = os.path.join(home, "datasets/lfw")
     data_reader = LFWDataReader(fpath, batch_size)
 
     # Model
@@ -49,8 +49,8 @@ def main():
     epoch = 0
     st = time.time()
     utime = int(st)
-    dpath = "./LFWGAN_{}".format(utime)
-    os.mkdir(dpath)
+    dpath0 = "./LFWGAN_{}".format(utime)
+    os.mkdir(dpath0)
     for i in range(n_iter):
         
         # Maximize Discriminator-related objective
@@ -87,8 +87,10 @@ def main():
             # Save images
             data = (to_device(model.data_model.data) * 127.5) + 127.5
             imgs = data.transpose(0, 2, 3, 1)
+            dpath1 = os.path.join(dpath0, str(int(time.time())))
+            os.mkdir(dpath1)
             for i, img in enumerate(imgs):
-                fpath = os.path.join(dpath, "{}.png".format(str(time.time())))
+                fpath = os.path.join(dpath1, "{:05}.png".format(i))
                 cv2.imwrite(fpath, img)
 
             # Save model
