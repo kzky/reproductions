@@ -24,7 +24,7 @@ def main():
 
     learning_rate = 2. * 1e-4
     beta = 0.5
-    n_epoch = 100
+    n_epoch = 1000
     decay = 0.9
     iter_epoch = n_train_data / batch_size
     n_iter = n_epoch * iter_epoch
