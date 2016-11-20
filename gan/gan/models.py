@@ -119,24 +119,28 @@ class DCGAN(Chain):
         )
 
         self.data_model = None
+        self.D_x = None
         self.D_z = None
 
     def __call__(self, z, x=None):
 
-        if x is not None:  # max log(D(x)) + log(1 - D(G(z)))
+        if x is not None:  # Train D by maximizing log(D(x)) + log(1 - D(G(z)))
             x_ = self.generator(z)
             bs_x = x.shape[0]
             bs_x_ = x_.shape[0]
+            D_x = self.discriminator(x)
             D_z = self.discriminator(x_)
-            loss = F.sum(F.log(self.discriminator(x))) / bs_x \
+            loss = F.sum(F.log(D_x)) / bs_x \
               + F.sum(F.log(1 - D_z)) / bs_x_
             self.data_model = x_
+            self.D_x = D_x
             self.D_z = D_z
               
-        else: # min log( 1- D(G(z)) )
+        else: # Train G by minimizing log( 1- D(G(z)) )
             x_ = self.generator(z)
             bs = x_.shape[0]
             loss = F.sum(F.log(1 - self.discriminator(x_))) / bs
+            #loss = F.sum(F.log(self.discriminator(x_))) / bs
             self.data_model = x_
         return loss
 
