@@ -22,7 +22,7 @@ def main():
     n_train_data = 13233
     k_steps = 1
 
-    learning_rate = 2. * 1e-4
+    learning_rate = 1. * 1e-5
     beta = 0.5
     n_epoch = 1000
     decay = 0.9
@@ -64,7 +64,7 @@ def main():
             l.backward()
             optimizer_dis.update()
 
-        # Minimize Generator-related objective
+        # Minimize Generator-related objective (reverse trick)
         z = Variable(to_device(np.random.uniform(-1, 1, (batch_size, 100)).astype(np.float32), device))
         l = model(z)
         model.cleargrads()
@@ -75,19 +75,24 @@ def main():
         if (i+1) % iter_epoch == 0:
             model.set_test()
             et = int(time.time())
+            epoch += 1
             
             # Generate image
             z = Variable(to_device(
                 np.random.uniform(-1, 1, (batch_size, 100)).astype(np.float32), device))
+
+            #TODO: check why to get the decreasing value over time,
+            # but the value D_z reaches to 1/2
             l = model(z, x)
-            msg = "ElapsedTime:{},Epoch:{},Loss:{},D_z:{}".format(
-                et - st, epoch, l.data, model.D_z.data[0:5])
+            msg = "ElapsedTime:{},Epoch:{},Loss:{},D_x:{},D_z:{}".format(
+                et - st, epoch, l.data, 
+                model.D_x.data[0:5], model.D_z.data[0:5])
             print(msg)
 
             # Save images
             data = (to_device(model.data_model.data) * 127.5) + 127.5
             imgs = data.transpose(0, 2, 3, 1)
-            dpath1 = os.path.join(dpath0, str(et))
+            dpath1 = os.path.join(dpath0, "{:05d}".format(epoch))
             os.mkdir(dpath1)
             for i, img in enumerate(imgs):
                 fpath = os.path.join(dpath1, "{:05}.png".format(i))
@@ -98,7 +103,6 @@ def main():
             serializers.save_hdf5(fpath, model)
 
             model.unset_test()
-            epoch += 1
             st = time.time()
 
 if __name__ == '__main__':
