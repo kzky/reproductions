@@ -22,7 +22,7 @@ def main():
     n_train_data = 13233
     k_steps = 1
 
-    learning_rate = 1. * 1e-5
+    learning_rate = 1. * 1e-3
     beta = 0.5
     n_epoch = 1000
     decay = 0.9
