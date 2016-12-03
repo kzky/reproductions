@@ -66,7 +66,7 @@ def main():
 
         # Minimize Generator-related objective (reverse trick)
         z = Variable(to_device(np.random.uniform(-1, 1, (batch_size, 100)).astype(np.float32), device))
-        l = model(z)
+        l = -model(z)
         model.cleargrads()
         l.backward()
         optimizer_gen.update()
