@@ -13,6 +13,7 @@ See [the model](gan/models)
 - Human face is very fine-grained, such that difficult to capture and to generate only uinsg random seed?
 
 ## Generated Image Examples
+Epochs are, 1, 50, 100, 200, 300, 400, and 500, respectively.
 
 ![Epoch=001](./images/001/00000.png "Epoch=001")
 ![Epoch=050](./images/050/00000.png "Epoch=050")
