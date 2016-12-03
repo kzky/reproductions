@@ -14,12 +14,12 @@ See [the model](gan/models)
 
 ## Generated Image Examples
 
-![Epoch=1](./images/001/00000.png)
-![Epoch=50](./images/050/00000.png)
-![Epoch=100](./images/100/00000.png)
-![Epoch=200](./images/200/00000.png)
-![Epoch=300](./images/300/00000.png)
-![Epoch=400](./images/400/00000.png)
-![Epoch=500](./images/500/00000.png)
+![Epoch=001](./images/001/00000.png "Epoch=001")
+![Epoch=050](./images/050/00000.png "Epoch=050")
+![Epoch=100](./images/100/00000.png "Epoch=100")
+![Epoch=200](./images/200/00000.png "Epoch=200")
+![Epoch=300](./images/300/00000.png "Epoch=300")
+![Epoch=400](./images/400/00000.png "Epoch=400")
+![Epoch=500](./images/500/00000.png "Epoch=500")
 
 
