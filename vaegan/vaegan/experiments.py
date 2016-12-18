@@ -95,13 +95,16 @@ class MLPExperiment():
     def test(self, x, bs=10):
         """Generate images from data and random seeds
         """
+        z = self.encoder(x, test=True)
+        x_rec = self.decoder(z, test=True)
+        
         z_p = self._generate(bs)
         x_gen = self.generator(z_p, test=True)
 
-        z = self.encoder(x, test=True)
-        x_rec = self.decoder(z, test=True)
+        d_x_rec = self.discriminator(x_rec)
+        d_x_gen = self.discriminator(x_gen)
 
-        return x_rec, x_gen
+        return x_rec, x_gen, d_x_rec, d_x_gen
 
     def cleargrads(self, ):
         self.encoder.cleargrads()
