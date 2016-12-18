@@ -59,13 +59,13 @@ class MLPExperiment():
 
         # Dis for x and x_rec
         d_x = self.discriminator(x)
-        hiddens_x = self.discriminator.hiddens
+        hiddens_d_x = self.discriminator.hiddens
         d_x_rec = self.discriminator(x_rec)
-        hiddens_x_rec = self.discriminator.hiddens
+        hiddens_d_x_rec = self.discriminator.hiddens
 
         # Reconstruction for Dis
         l_dis = 0
-        for h_d_x, h_d_x_rec in zip(hiddens_x, hiddens_x_rec):
+        for h_d_x, h_d_x_rec in zip(hiddens_d_x, hiddens_d_x_rec):
             l_dis += self.reconstruction_loss(h_d_x, h_d_x_rec)
         
         # Generate
