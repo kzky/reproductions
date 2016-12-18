@@ -78,6 +78,8 @@ class MLPExperiment():
         l_gan = self.gan_loss(d_x, d_x_rec, d_x_gen)
 
         # Backward for enc, dec(=gen), and dis
+        ## With these update rule,
+        ## gradients of GAN Loss do not influence to Enc's parameters update
         self.cleargrads()
         l_dis.backward()
         self.optimizer_enc.update()
