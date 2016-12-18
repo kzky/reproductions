@@ -11,7 +11,13 @@ import chainer.links as L
 from collections import OrderedDict
 import logging
 import time
-from mlp_models import Encoder, Decoder, Discriminator, ReconstructionLoss, GANLoss
+from vaegan.mlp_models import Encoder, Decoder, Discriminator, ReconstructionLoss, GANLoss
+
+"""
+Reference
+---------------
+[1] Anders Boesen Lindbo Larsen, Soren Kaae Sonderby, Hugo Larochelle, Ole Winther: Autoencoding beyond pixels using a learned similarity metric. ICML 2016: 1558-1566
+"""
 
 class MLPExperiment():
     def __init__(self, act, device=None, learning_rate=0.9, gamma=1.):
@@ -35,9 +41,16 @@ class MLPExperiment():
         self.optimizer_dec = optimizers.Adam(learning_rate)
         self.optimizer_gen = self.optimizer_dec
         self.optimizer_dis = optimizers.Adam(learning_rate)
+        self.optimizer_enc.setup(self.encoder)
+        self.optimizer_dec.setup(self.decoder)
+        self.optimizer_dis.setup(self.discriminator)
         self.optimizer_enc.use_cleargrads()
         self.optimizer_dec.use_cleargrads()
         self.optimizer_dis.use_cleargrads()
+
+        # Loss
+        self.reconstruction_loss = ReconstructionLoss()
+        self.gan_loss = GANLoss()
             
     def train(self, x, z_p):
         # Enc/Dec
@@ -46,24 +59,25 @@ class MLPExperiment():
 
         # Dis for x and x_rec
         d_x = self.discriminator(x)
-        hiddens_x = d_x.hiddens
+        hiddens_x = self.discriminator.hiddens
         d_x_rec = self.discriminator(x_rec)
-        hiddens_x_rec = d_x_rec.hiddens
+        hiddens_x_rec = self.discriminator.hiddens
 
         # Reconstruction for Dis
         l_dis = 0
         for h_d_x, h_d_x_rec in zip(hiddens_x, hiddens_x_rec):
-            l_dis += ReconstructionLoss(h_d_x, h_d_x_rec)
+            l_dis += self.reconstruction_loss(h_d_x, h_d_x_rec)
         
         # Generate
         bs = z.shape[0]
         z_p = self._generate(bs)
         x_gen = self.generator(z_p)
+        d_x_gen = self.discriminator(x_gen)
 
         # GAN loss
-        l_gan = GANLoss(d_x, d_x_rec, d_x_gen)
+        l_gan = self.gan_loss(d_x, d_x_rec, d_x_gen)
 
-        # Backward for enc, dec, and dis
+        # Backward for enc, dec(=gen), and dis
         self.cleargrads()
         l_dis.backward()
         self.optimizer_enc.update()
@@ -78,7 +92,9 @@ class MLPExperiment():
         l_dis.backward()
         self.optimizer_dis.update()
         
-    def test(self, bs=10, x):
+    def test(self, x, bs=10):
+        """Generate images from data and random seeds
+        """
         z_p = self._generate(bs)
         x_gen = self.generator(z_p, test=False)
 
@@ -96,7 +112,9 @@ class MLPExperiment():
         if self.device:
             z = cp.random.uniform(-1, 1, (bs, 100)).astype(np.float32)
             z = cp.to_gpu(z)
-            z = Variable(z, device))
+            z = Variable(z, device)
         else:
             z = Variable(np.random.uniform(-1, 1, (bs, 100)).astype(np.float32))
         return z
+
+        

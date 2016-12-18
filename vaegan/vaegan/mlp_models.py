@@ -27,28 +27,28 @@ class EncNet(Chain):
         self.device = device
 
     def _init_top(self, d_inp, d_out):
-        super(EncNet, self)._init_top(
-            linear=L.linear(d_inp, d_out),
+        super(EncNet, self).__init__(
+            linear=L.Linear(d_inp, d_out),
             bn=L.BatchNormalization(d_out, decay=0.9,
                                     use_gamma=False, use_beta=False),
         )
         
     def _init_non_top(self, d_inp, d_out):
-        super(EncNet, self)._init_top(
-            linear=L.linear(d_inp, d_out),
+        super(EncNet, self).__init__(
+            linear=L.Linear(d_inp, d_out),
             bn=L.BatchNormalization(d_out, decay=0.9,
                                     use_gamma=False, use_beta=False),
             sb=L.Scale(W_shape=d_out, bias_term=True)
         )
 
-    def __call__(h, test=False):
+    def __call__(self, h, test=False):
         if self.top:
             h = self.linear(h)
             h = self.bn(h, test)
         else:
             h = self.linear(h)
             h = self.bn(h, test)
-            h = self.sb(h, test)
+            h = self.sb(h)
             h = self.act(h)
         return h
 
@@ -61,9 +61,9 @@ class Encoder(Chain):
         )
     
     def __call__(self, x, test=False):
-        h = en0(x, test)
-        h = en1(h, test)
-        h = en2(h, test)
+        h = self.en0(x, test)
+        h = self.en1(h, test)
+        h = self.en2(h, test)
         return h
 
 class DecNet(Chain):
@@ -79,24 +79,25 @@ class DecNet(Chain):
 
     def _init_bottom(self, d_inp, d_out):
         super(DecNet, self).__init__(
-            linear=L.linear(d_inp, d_out),
+            linear=L.Linear(d_inp, d_out),
         )
 
     def _init_non_bottom(self, d_inp, d_out):
         super(DecNet, self).__init__(
-            linear=L.linear(d_inp, d_out),
+            linear=L.Linear(d_inp, d_out),
             bn=L.BatchNormalization(d_out, decay=0.9,
                                     use_gamma=False, use_beta=False),
             sb=L.Scale(W_shape=d_out, bias_term=True)
         )
 
     def __call__(self, h, test=False):
-        h = self.linear(h)
-        h = self.bn(h, test)
-        h = self.sb(h)
-        if not bottom:
+        if not self.bottom:
+            h = self.linear(h)
+            h = self.bn(h, test)
+            h = self.sb(h)
             h = self.act(h)
         else:
+            h = self.linear(h)
             h = F.tanh(h)
         return h
 
@@ -108,7 +109,7 @@ class Decoder(Chain):
             dn2=DecNet((500, 784), bottom=True, act=act, device=device),
         )
         self.act = act
-        self.device = devcie
+        self.device = device
 
     def __call__(self, z, test=False):
         h = self.dn0(z, test)
@@ -120,47 +121,47 @@ class Decoder(Chain):
 Generator = Decoder
 
 class DisNet(Chain):
-    def __init__(self, dim, top=False, act=F.relu, device=None):
+    def __init__(self, dim, last=False, act=F.relu, device=None):
         d_inp, d_out = dim
-        if top:
-            self._init_top(d_inp, d_out)
+        if last:
+            self._init_last(d_inp, d_out)
         else:
-            self._init_non_top(d_inp, d_out)
-        self.top = top
+            self._init_non_last(d_inp, d_out)
+        self.last = last
         self.act = act
         self.device = device
 
-    def _init_top(self, d_inp, d_out):
-        super(DisNet, self)._init_top(
-            linear=L.linear(d_inp, d_out),
+    def _init_last(self, d_inp, d_out):
+        super(DisNet, self).__init__(
+            linear=L.Linear(d_inp, d_out),
         )
         
-    def _init_non_top(self, d_inp, d_out):
-        super(DisNet, self)._init_top(
-            linear=L.linear(d_inp, d_out),
+    def _init_non_last(self, d_inp, d_out):
+        super(DisNet, self).__init__(
+            linear=L.Linear(d_inp, d_out),
             bn=L.BatchNormalization(d_out, decay=0.9,
                                     use_gamma=False, use_beta=False),
             sb=L.Scale(W_shape=d_out, bias_term=True)
         )
 
-    def __call__(h, test=False):
-        if self.top:
+    def __call__(self, h, test=False):
+        if self.last:
             h = self.linear(h)
-            h = self.sigmoid(h)
+            h = F.sigmoid(h)
         else:
             h = self.linear(h)
             h = self.bn(h, test)
-            h = self.sb(h, test)
+            h = self.sb(h)
             h = self.act(h)
         return h
 
 class Discriminator(Chain):
     def __init__(self, act=F.relu, device=None):
         super(Discriminator, self).__init__(
-            dn0=DisNet((784, 500), top=False, act=act, device=device),
-            dn1=DisNet((500, 250), top=False, act=act, device=device),
-            dn2=DisNet((250, 100), top=False, act=act, device=device),
-            dn3=DisNet((100, 1), top=True, act=act, device=device), 
+            dn0=DisNet((784, 500), last=False, act=act, device=device),
+            dn1=DisNet((500, 250), last=False, act=act, device=device),
+            dn2=DisNet((250, 100), last=False, act=act, device=device),
+            dn3=DisNet((100, 1), last=True, act=act, device=device), 
         )
         self.hiddens = []
 
@@ -194,6 +195,12 @@ class GANLoss(Chain):
         pass
 
     def __call__(self, d_x, d_x_rec, d_x_gen):
-        l = F.log(d_x) + F.log(1 - x_rec) + F.log(1 - x_gen)
+        bs_d_x = d_x.shape[0]
+        bs_d_x_rec = d_x_rec.shape[0]
+        bs_d_x_gen = d_x_gen.shape[0]
+        
+        l = F.sum(F.log(d_x)) / bs_d_x \
+            + F.sum(F.log(1 - d_x_rec)) / bs_d_x_rec \
+            + F.sum(F.log(1 - d_x_gen)) / bs_d_x_gen
         return l
         
