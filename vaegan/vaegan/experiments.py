@@ -63,7 +63,7 @@ class MLPExperiment():
         d_x_rec = self.discriminator(x_rec)
         hiddens_d_x_rec = self.discriminator.hiddens
 
-        # Reconstruction for Dis
+        # Reconstruction Loss for Dis
         l_dis = 0
         for h_d_x, h_d_x_rec in zip(hiddens_d_x, hiddens_d_x_rec):
             l_dis += self.reconstruction_loss(h_d_x, h_d_x_rec)
