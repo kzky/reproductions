@@ -96,10 +96,10 @@ class MLPExperiment():
         """Generate images from data and random seeds
         """
         z_p = self._generate(bs)
-        x_gen = self.generator(z_p, test=False)
+        x_gen = self.generator(z_p, test=True)
 
-        z = self.encoder(x, test=False)
-        x_rec = self.decoder(x, test=False)
+        z = self.encoder(x, test=True)
+        x_rec = self.decoder(z, test=True)
 
         return x_rec, x_gen
 
