@@ -139,8 +139,9 @@ class DCGAN(Chain):
         else: # Train G by minimizing log( 1- D(G(z)) )
             x_ = self.generator(z)
             bs = x_.shape[0]
-            loss = F.sum(F.log(1 - self.discriminator(x_))) / bs
-            #loss = F.sum(F.log(self.discriminator(x_))) / bs
+            #loss = F.sum(F.log(1 - self.discriminator(x_))) / bs
+            loss = F.sum(F.log(self.discriminator(x_)) / bs
+
             self.data_model = x_
         return loss
 
