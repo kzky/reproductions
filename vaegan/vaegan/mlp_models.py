@@ -45,6 +45,7 @@ class EncNet(Chain):
         if self.top:
             h = self.linear(h)
             h = self.bn(h, test)
+            h = F.normalize(h)  # Normalize such that h/|h|_2
         else:
             h = self.linear(h)
             h = self.bn(h, test)
@@ -147,7 +148,7 @@ class DisNet(Chain):
     def __call__(self, h, test=False):
         if self.last:
             h = self.linear(h)
-            h = F.sigmoid(h)
+            h = F.sigmoid(h) 
         else:
             h = self.linear(h)
             h = self.bn(h, test)
@@ -203,4 +204,3 @@ class GANLoss(Chain):
             + F.sum(F.log(1 - d_x_rec)) / bs_d_x_rec \
             + F.sum(F.log(1 - d_x_gen)) / bs_d_x_gen
         return l
-        
