@@ -55,7 +55,7 @@ def main():
         exp.train(x, z_p)
         
         # Test
-        if i % iter_epoch == 0:
+        if (i+1) % iter_epoch == 0:
             # Generate
             epoch += 1
             bs = x.shape[0]

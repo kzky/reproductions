@@ -63,7 +63,7 @@ class BatchNormalization(link.Link):
 
     def __init__(self, size, decay=0.9, eps=2e-5, dtype=numpy.float32,
                  use_gamma=True, use_beta=True,
-                 initial_gamma=None, initial_beta=None, use_cudnn=True):
+                 initial_gamma=None, initial_beta=None, use_cudnn=True, device=None):
         super(BatchNormalization, self).__init__()
         if use_gamma:
             self.add_param('gamma', size, dtype=dtype)
@@ -81,6 +81,7 @@ class BatchNormalization(link.Link):
         self.decay = decay
         self.eps = eps
         self.use_cudnn = use_cudnn
+        self.device = device
 
     def __call__(self, x, test=False, finetune=False):
         """Invokes the forward propagation of BatchNormalization.
@@ -103,18 +104,16 @@ class BatchNormalization(link.Link):
         during training, and normalizes the input using batch statistics.
 
         """
-        xp = cuda.get_array_module(x)
-        
         if hasattr(self, 'gamma'):
             gamma = self.gamma
         else:
-            gamma = variable.Variable(self.xp.ones(
-                self.avg_mean.shape, dtype=x.dtype), volatile='auto')
+            gamma_ = self.xp.ones(self.avg_mean.shape, dtype=x.dtype)
+            gamma = variable.Variable(cuda.to_gpu(gamma_, self.device), volatile='auto')
         if hasattr(self, 'beta'):
             beta = self.beta
         else:
-            beta = variable.Variable(self.xp.zeros(
-                self.avg_mean.shape, dtype=x.dtype), volatile='auto')
+            beta_ = self.xp.zeros(self.avg_mean.shape, dtype=x.dtype)
+            beta = variable.Variable(cuda.to_gpu(beta_, self.device), volatile='auto')
 
         if not test:
             if finetune:

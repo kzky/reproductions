@@ -18,27 +18,30 @@ from vaegan.chainer_fix import BatchNormalization
 
 class EncNet(Chain):
     def __init__(self, dim, top=False, act=F.relu, device=None):
+        self.top = top
+        self.act = act
+        self.device = device
+        
         d_inp, d_out = dim
         if top:
             self._init_top(d_inp, d_out)
         else:
             self._init_non_top(d_inp, d_out)
-        self.top = top
-        self.act = act
-        self.device = device
 
     def _init_top(self, d_inp, d_out):
         super(EncNet, self).__init__(
             linear=L.Linear(d_inp, d_out),
             bn=BatchNormalization(d_out, decay=0.9,
-                                    use_gamma=False, use_beta=False),
+                                  use_gamma=False, use_beta=False,
+                                  device=self.device),
         )
         
     def _init_non_top(self, d_inp, d_out):
         super(EncNet, self).__init__(
             linear=L.Linear(d_inp, d_out),
             bn=BatchNormalization(d_out, decay=0.9,
-                                    use_gamma=False, use_beta=False),
+                                  use_gamma=False, use_beta=False, 
+                                  device=self.device),
             sb=L.Scale(W_shape=d_out, bias_term=True)
         )
 
@@ -70,15 +73,15 @@ class Encoder(Chain):
 
 class DecNet(Chain):
     def __init__(self, dim, bottom=False, act=F.relu, device=None):
+        self.bottom = bottom
+        self.act = act
+        self.device = device
+
         d_inp, d_out = dim
         if bottom:
             self._init_bottom(d_inp, d_out)
         else:
             self._init_non_bottom(d_inp, d_out)
-        self.bottom = bottom
-        self.act = act
-        self.device = device
-
     def _init_bottom(self, d_inp, d_out):
         super(DecNet, self).__init__(
             linear=L.Linear(d_inp, d_out),
@@ -88,7 +91,8 @@ class DecNet(Chain):
         super(DecNet, self).__init__(
             linear=L.Linear(d_inp, d_out),
             bn=BatchNormalization(d_out, decay=0.9,
-                                    use_gamma=False, use_beta=False),
+                                  use_gamma=False, use_beta=False, 
+                                  device=self.device),
             sb=L.Scale(W_shape=d_out, bias_term=True)
         )
 
@@ -105,13 +109,14 @@ class DecNet(Chain):
 
 class Decoder(Chain):
     def __init__(self, act=F.relu, device=None):
+        self.act = act
+        self.device = device
+        
         super(Decoder, self).__init__(
             dn0=DecNet((100, 250), bottom=False, act=act, device=device),
             dn1=DecNet((250, 500), bottom=False, act=act, device=device),
             dn2=DecNet((500, 784), bottom=True, act=act, device=device),
         )
-        self.act = act
-        self.device = device
 
     def __call__(self, z, test=False):
         h = self.dn0(z, test)
@@ -124,14 +129,15 @@ Generator = Decoder
 
 class DisNet(Chain):
     def __init__(self, dim, last=False, act=F.relu, device=None):
+        self.last = last
+        self.act = act
+        self.device = device
+        
         d_inp, d_out = dim
         if last:
             self._init_last(d_inp, d_out)
         else:
             self._init_non_last(d_inp, d_out)
-        self.last = last
-        self.act = act
-        self.device = device
 
     def _init_last(self, d_inp, d_out):
         super(DisNet, self).__init__(
@@ -142,7 +148,8 @@ class DisNet(Chain):
         super(DisNet, self).__init__(
             linear=L.Linear(d_inp, d_out),
             bn=BatchNormalization(d_out, decay=0.9,
-                                    use_gamma=False, use_beta=False),
+                                  use_gamma=False, use_beta=False, 
+                                  device=self.device),
             sb=L.Scale(W_shape=d_out, bias_term=True)
         )
 
