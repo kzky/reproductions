@@ -59,7 +59,7 @@ def main():
             # Generate
             epoch += 1
             bs = x.shape[0]
-            x_ = x[np.random.choice(bs, bs_picked, replace=False)]
+            x_ = x[np.random.choice(bs, bs_picked, replace=False), ]
             ret_val = exp.test(x_, bs=bs_picked)
             x_rec, x_gen, d_x_rec, d_x_gen = ret_val
 
@@ -73,7 +73,7 @@ def main():
             print(msg)
 
             # Save images
-            x_ori = (x_ * 127.5 + 127.5).reshape(bs_picked, 28, 28)
+            x_ori = (cuda.to_cpu(x_.data) * 127.5 + 127.5).reshape(bs_picked, 28, 28)
             x_rec = (cuda.to_cpu(x_rec.data) * 127.5 + 127.5).reshape(bs_picked, 28, 28)
             x_gen = (cuda.to_cpu(x_gen.data) * 127.5 + 127.5).reshape(bs_picked, 28, 28)
             dpath1 = os.path.join(dpath0, "{:05d}".format(epoch))

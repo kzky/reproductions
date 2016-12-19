@@ -116,10 +116,10 @@ class MLPExperiment():
     def _generate(self, bs=64):
         if self.device:
             z = cp.random.uniform(-1, 1, (bs, 100)).astype(np.float32)
-            z = cp.to_gpu(z)
-            z = Variable(z, device)
+            z = cuda.to_gpu(z, device)
+            z = Variable(z)
         else:
-            z = Variable(np.random.uniform(-1, 1, (bs, 100)).astype(np.float32))
+            z = Variable(cp.random.uniform(-1, 1, (bs, 100)).astype(np.float32))
         return z
 
         
