@@ -14,6 +14,7 @@ import chainer.links as L
 from collections import OrderedDict
 import logging
 import time
+from vaegan.chainer_fix import BatchNormalization
 
 class EncNet(Chain):
     def __init__(self, dim, top=False, act=F.relu, device=None):
@@ -29,14 +30,14 @@ class EncNet(Chain):
     def _init_top(self, d_inp, d_out):
         super(EncNet, self).__init__(
             linear=L.Linear(d_inp, d_out),
-            bn=L.BatchNormalization(d_out, decay=0.9,
+            bn=BatchNormalization(d_out, decay=0.9,
                                     use_gamma=False, use_beta=False),
         )
         
     def _init_non_top(self, d_inp, d_out):
         super(EncNet, self).__init__(
             linear=L.Linear(d_inp, d_out),
-            bn=L.BatchNormalization(d_out, decay=0.9,
+            bn=BatchNormalization(d_out, decay=0.9,
                                     use_gamma=False, use_beta=False),
             sb=L.Scale(W_shape=d_out, bias_term=True)
         )
@@ -86,7 +87,7 @@ class DecNet(Chain):
     def _init_non_bottom(self, d_inp, d_out):
         super(DecNet, self).__init__(
             linear=L.Linear(d_inp, d_out),
-            bn=L.BatchNormalization(d_out, decay=0.9,
+            bn=BatchNormalization(d_out, decay=0.9,
                                     use_gamma=False, use_beta=False),
             sb=L.Scale(W_shape=d_out, bias_term=True)
         )
@@ -140,7 +141,7 @@ class DisNet(Chain):
     def _init_non_last(self, d_inp, d_out):
         super(DisNet, self).__init__(
             linear=L.Linear(d_inp, d_out),
-            bn=L.BatchNormalization(d_out, decay=0.9,
+            bn=BatchNormalization(d_out, decay=0.9,
                                     use_gamma=False, use_beta=False),
             sb=L.Scale(W_shape=d_out, bias_term=True)
         )
