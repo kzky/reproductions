@@ -199,6 +199,10 @@ class GANLoss(Chain):
         bs_d_x = d_x.shape[0]
         bs_d_x_rec = d_x_rec.shape[0]
         bs_d_x_gen = d_x_gen.shape[0]
+
+        print(bs_d_x)
+        print(bs_d_x_rec)
+        print(bs_d_x_gen)
         
         l = F.sum(F.log(d_x)) / bs_d_x \
             + F.sum(F.log(1 - d_x_rec)) / bs_d_x_rec \

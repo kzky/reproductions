@@ -16,8 +16,8 @@ def generate_norm(bs, dim=100, sigma=0.43, device=None):
     """Generate samples following normal distribution, ranging from -1 to +1
     """
     r_ = (np.random.randn(bs, dim) * sigma).astype(np.float32)
-    if self.device:
-        r = Variable(cuda.to_gpu(r_))
+    if device:
+        r = Variable(cuda.to_gpu(r_, device))
     else:
         r = Variable(r_)
     return r
@@ -26,8 +26,8 @@ def generate_unif(bs, dim=100, device=None):
     """Generate samples following uniform distribution, ranging from -1 to +1
     """
     r_ = (np.random.rand(bs, dim) *2. - 1.).astype(np.float32)
-    if self.device:
-        r = Variable(cuda.to_gpu(r_))
+    if device:
+        r = Variable(cuda.to_gpu(r_, device))
     else:
         r = Variable(r_)
     return r
