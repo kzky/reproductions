@@ -49,7 +49,7 @@ class EncNet(Chain):
         if self.top:
             h = self.linear(h)
             h = self.bn(h, test)
-            h = F.normalize(h)  # Normalize such that h/|h|_2
+            h = F.normalize(h)  #TODO: Normalize such that h/|h|_2
         else:
             h = self.linear(h)
             h = self.bn(h, test)
@@ -189,26 +189,3 @@ class Discriminator(Chain):
         h = self.dn3(h, test)
         return h
 
-class ReconstructionLoss(Chain):
-    def __init__(self, ):
-        pass
-
-    def __call__(self, x, y):
-        d = np.prod(x.shape[1:])
-        l = F.mean_squared_error(x, y) / d
-        return l
-
-class GANLoss(Chain):
-
-    def __init__(self, ):
-        pass
-
-    def __call__(self, d_x, d_x_rec, d_x_gen):
-        bs_d_x = d_x.shape[0]
-        bs_d_x_rec = d_x_rec.shape[0]
-        bs_d_x_gen = d_x_gen.shape[0]
-
-        l = F.sum(F.log(d_x)) / bs_d_x \
-            + F.sum(F.log(1 - d_x_rec)) / bs_d_x_rec \
-            + F.sum(F.log(1 - d_x_gen)) / bs_d_x_gen
-        return l

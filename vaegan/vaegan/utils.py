@@ -32,3 +32,8 @@ def generate_unif(bs, dim=100, device=None):
         r = Variable(r_)
     return r
     
+def calc_conv(n, p=1, k=4, s=2):
+    return (n + 2 * p - k) / s + 1
+
+def calc_deconv(n, p=1, k=4, s=2):
+    return s * (n - 1) + k - 2 * p

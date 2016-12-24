@@ -108,12 +108,19 @@ class BatchNormalization(link.Link):
             gamma = self.gamma
         else:
             gamma_ = self.xp.ones(self.avg_mean.shape, dtype=x.dtype)
-            gamma = variable.Variable(cuda.to_gpu(gamma_, self.device), volatile='auto')
+            if self.device is None:
+                gamma = variable.Variable(gamma_, volatile='auto')
+            else:
+                gamma = \
+                        variable.Variable(cuda.to_gpu(gamma_, self.device), volatile='auto')
         if hasattr(self, 'beta'):
             beta = self.beta
         else:
             beta_ = self.xp.zeros(self.avg_mean.shape, dtype=x.dtype)
-            beta = variable.Variable(cuda.to_gpu(beta_, self.device), volatile='auto')
+            if self.device is None:
+                beta = variable.Variable(beta_, volatile='auto')
+            else:
+                beta = variable.Variable(cuda.to_gpu(beta_, self.device), volatile='auto')
 
         if not test:
             if finetune:

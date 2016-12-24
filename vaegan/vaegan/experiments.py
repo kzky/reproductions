@@ -11,7 +11,8 @@ import chainer.links as L
 from collections import OrderedDict
 import logging
 import time
-from vaegan.mlp_models import Encoder, Decoder, Discriminator, ReconstructionLoss, GANLoss
+from vaegan import mlp_models
+from vaegan.losses import ReconstructionLoss, GANLoss
 
 """
 Reference
@@ -25,10 +26,10 @@ class MLPExperiment():
         self.gamma = gamma
 
         # Model
-        self.encoder = Encoder(act=act, device=device)
-        self.decoder = Decoder(act=act, device=device)
+        self.encoder = mlp_models.Encoder(act=act, device=device)
+        self.decoder = mlp_models.Decoder(act=act, device=device)
         self.generator = self.decoder
-        self.discriminator = Discriminator(act=act, device=device)
+        self.discriminator = mlp_models.Discriminator(act=act, device=device)
 
         # To GPU
         if device is not None:
@@ -119,7 +120,7 @@ class MLPExperiment():
             z = cuda.to_gpu(z, self.device)
             z = Variable(z)
         else:
-            z = Variable(cp.random.uniform(-1, 1, (bs, 100)).astype(np.float32))
+            z = Variable(np.random.uniform(-1, 1, (bs, 100)).astype(np.float32))
         return z
 
         
