@@ -1,4 +1,4 @@
-from vaegan.experiments import MLPExperiment
+from vaegan.experiments import MLPExperiment, CNNExperiment
 import unittest
 import numpy as np
 import chainer
@@ -43,3 +43,38 @@ class TestMLPExperiment(unittest.TestCase):
 
         x = np.random.rand(self.batch, self.dim).astype(np.float32)
         exp.test(x)
+
+class TestCNNExperiment(unittest.TestCase):
+    device = None
+    learning_rate = 0.9
+    gamma = 1.
+    dim = 784
+    batch = 16
+    
+    def test_train(self, ):
+        exp = CNNExperiment(
+            act=F.relu,
+            device=self.device,
+            learning_rate=self.learning_rate,
+            gamma=self.gamma,
+        )
+
+        z_p = np.random.rand(self.batch, self.dim).astype(np.float32)
+        x = np.random.rand(self.batch, self.dim)\
+                     .reshape(self.batch, 1, 28, 28)\
+                     .astype(np.float32)
+        exp.train(x, z_p)
+
+    def test_test(self, ):
+        exp = CNNExperiment(
+            act=F.relu,
+            device=self.device,
+            learning_rate=self.learning_rate,
+            gamma=self.gamma,
+        )
+ 
+        x = np.random.rand(self.batch, self.dim)\
+                     .reshape(self.batch, 1, 28, 28)\
+                     .astype(np.float32)
+        exp.test(x)
+        

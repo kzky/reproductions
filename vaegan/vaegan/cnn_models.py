@@ -65,16 +65,17 @@ class Encoder(Chain):
                        top=False, act=act, device=device),
             en1=EncNet((32, 64), ksize=(4, 4), stride=(2, 2), pad=(1, 1),
                        top=False, act=act, device=device),
-            en2=EncNet((64, 128), ksize=(4, 4), stride=(2, 2), pad=(1, 1),
-                       top=False, act=act, device=device),
-            en3=EncNet((3*3*128, 100), top=True, act=act, device=device),
+            en2=EncNet((7*7*64, 100), top=True, act=act, device=device),
         )
     
     def __call__(self, x, test=False):
+        print("Encoder")
         h = self.en0(x, test)
+        print(h.shape)
         h = self.en1(h, test)
+        print(h.shape)
         h = self.en2(h, test)
-        h = self.en3(h, test)
+        print(h.shape)
         return h
 
 class DecNet(Chain):
@@ -88,9 +89,9 @@ class DecNet(Chain):
         if where == "top":
             self._init_top(d_inp, d_out)
         elif where == "middle":
-            self._init_middle(d_inp, d_out)
+            self._init_middle(d_inp, d_out, ksize, stride, pad)
         elif where == "bottom":
-            self._init_bottom(d_inp, d_out)
+            self._init_bottom(d_inp, d_out, ksize, stride, pad)
 
     def _init_top(self, d_inp, d_out):
         super(DecNet, self).__init__(
@@ -121,6 +122,8 @@ class DecNet(Chain):
             h = self.bn(h, test)
             h = self.sb(h)
             h = self.act(h)
+            bs = h.shape[0]
+            h = F.reshape(h, (bs, 64, 7, 7))
         elif self.where == "middle":
             h = self.deconv(h)
             h = self.bn(h, test)
@@ -137,20 +140,21 @@ class Decoder(Chain):
         self.device = device
         
         super(Decoder, self).__init__(
-            dn0=DecNet((100, 3*3*128), where="top", act=act, device=device),
-            dn1=DecNet((128, 64), ksize=(4, 4), stride=(2, 2), pad=(1, 1),
+            dn0=DecNet((100, 7*7*64), where="top", act=act, device=device),
+            dn1=DecNet((64, 32), ksize=(4, 4), stride=(2, 2), pad=(1, 1),
                        where="middle", act=act, device=device),
-            dn2=DecNet((64, 32), ksize=(4, 4), stride=(2, 2), pad=(1, 1),
-                       where="middle", act=act, device=device),
-            dn3=DecNet((32, 1), ksize=(4, 4), stride=(2, 2), pad=(1, 1),
+            dn2=DecNet((32, 1), ksize=(4, 4), stride=(2, 2), pad=(1, 1),
                        where="bottom", act=act, device=device),
         )
 
     def __call__(self, z, test=False):
+        print("Decoder")
         h = self.dn0(z, test)
+        print(h.shape)
         h = self.dn1(h, test)
+        print(h.shape)
         h = self.dn2(h, test)
-        h = self.dn3(h, test)
+        print(h.shape)
         return h
 
 # Alias
@@ -197,27 +201,28 @@ class DisNet(Chain):
 class Discriminator(Chain):
     def __init__(self, act=F.relu, device=None):
         super(Discriminator, self).__init__(
-            dis0=DisNet((1, 32), ksize=(4, 4), stride=(2, 2), pad=(1, 1),
+            dn0=DisNet((1, 32), ksize=(4, 4), stride=(2, 2), pad=(1, 1),
                        top=False, act=act, device=device),
-            dis1=DisNet((32, 64), ksize=(4, 4), stride=(2, 2), pad=(1, 1),
+            dn1=DisNet((32, 64), ksize=(4, 4), stride=(2, 2), pad=(1, 1),
                        top=False, act=act, device=device),
-            dis2=DisNet((64, 128), ksize=(4, 4), stride=(2, 2), pad=(1, 1),
-                       top=False, act=act, device=device),
-            dis3=DisNet((3*3*128, 1), top=True, act=act, device=device),
+            dn2=DisNet((7*7*64, 1), top=True, act=act, device=device),
         )
         self.hiddens = []
 
     def __call__(self, x, test=False):
+        print("Discriminator")
         self.hiddens = []
         
         h = self.dn0(x, test)
         self.hiddens.append(h)
+        print(h.shape)
         
         h = self.dn1(h, test)
         self.hiddens.append(h)
+        print(h.shape)
 
         h = self.dn2(h, test)
         self.hiddens.append(h)
+        print(h.shape)
         
-        h = self.dn3(h, test)
         return h
