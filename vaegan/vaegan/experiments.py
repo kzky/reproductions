@@ -91,8 +91,8 @@ class MLPExperiment():
         self.optimizer_dec.update()
 
         self.cleargrads()
-        l_dis = -l_dis  # gradient ascend for discriminator
-        l_dis.backward()
+        l_gan = -l_gan  # gradient ascend for gan loss for discriminator
+        l_gan.backward()
         self.optimizer_dis.update()
         
     def test(self, x, bs=10):
