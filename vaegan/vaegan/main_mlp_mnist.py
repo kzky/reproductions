@@ -17,7 +17,7 @@ from utils import generate_norm, generate_unif
 def main():
     # Settings
     device = int(sys.argv[1]) if len(sys.argv) > 1 else None
-    learning_rate = 0.9
+    learning_rate = 0.01
     gamma = 1.
     dim = 784
     batch = 64
