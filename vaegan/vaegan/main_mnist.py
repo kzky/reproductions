@@ -25,7 +25,7 @@ def main():
     n_samples = 70000  # train + test for mnist
     max_epoch = 100
     iter_epoch = int(1.0 * n_samples / batch)
-    max_iter = n_samples * iter_epoch
+    max_iter = max_epoch * iter_epoch
 
     # Experiment for batch
     exp = MLPExperiment(
