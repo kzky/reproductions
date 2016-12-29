@@ -12,7 +12,7 @@ from collections import OrderedDict
 import logging
 import time
 
-def generate_norm(bs, dim=100, sigma=0.43, device=None):
+def generate_norm(bs, dim=100, sigma=1., device=None):
     """Generate samples following normal distribution, ranging from -1 to +1
     """
     r_ = (np.random.randn(bs, dim) * sigma).astype(np.float32)
