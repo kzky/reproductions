@@ -17,7 +17,7 @@ from utils import generate_norm, generate_unif
 def main():
     # Settings
     device = int(sys.argv[1]) if len(sys.argv) > 1 else None
-    learning_rate = 0.01
+    learning_rate = 0.0001
     gamma = 1.
     dim = 784
     batch = 64
@@ -51,7 +51,7 @@ def main():
         # Train
         x_data = data_reader.get_train_batch()  # (-1, 1)
         x = Variable(cuda.to_gpu(x_data, device))
-        z_p = generate_unif(batch, dim=100, device=device)
+        z_p = generate_norm(batch, dim=100, device=device)
         exp.train(x, z_p)
         
         # Test
