@@ -1,0 +1,13 @@
+# Decoupled Neural Interfaces with NNabla
+
+Decoupled Neural Interfaces usnig Synthetic Gradients uses gradient synthesizer which takes the input of the result of the forward pass at a certain depth, then generate gradients, and in the backward pass it uses these synthetic gradients. Thus, it is called Decoupled Neural Interface (DNI).
+
+Here is the reproduction of DNI using MNIST dataset. MLP and CNN are used as network architectures. The experimantal settings, e.g., layers used in a network, batch size, and etc., are a bit different from the ones described in the paper, but it works well and competitive to the original results.
+
+Run as the following, 
+
+```python
+
+$ python mnist_main.py -c "cuda.cudnn" -d 0 -b 32
+
+```
