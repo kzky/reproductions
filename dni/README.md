@@ -6,7 +6,7 @@ Here is the reproduction of DNI using MNIST dataset. MLP and CNN are used as net
 
 Run as the following, 
 
-```python
+```sh
 
 $ python mnist_main.py -c "cuda.cudnn" -d 0 -b 32
 
