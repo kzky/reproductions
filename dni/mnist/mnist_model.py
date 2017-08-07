@@ -43,9 +43,9 @@ def cnn(image,  maps=128, ncls=10, test=False):
     image /= 255.
     with nn.parameter_scope("ref"):
         h = act_bn_conv(image, maps, test, name="conv0")
-        h = F.average_pooling(h, (2, 2))  # 28x28 -> 14x14
+        h = F.max_pooling(h, (2, 2))  # 28x28 -> 14x14
         h = act_bn_conv(h, maps, test, name="conv1")
-        h = F.average_pooling(h, (2, 2))  # 14x14 -> 7x7
+        h = F.max_pooling(h, (2, 2))  # 14x14 -> 7x7
         h = act_bn_conv(h, maps, test, name="conv2")
         h = F.average_pooling(h, (7, 7))  # 7x7 -> 1x1
         pred = PF.affine(h, ncls, name="fc")
@@ -135,7 +135,7 @@ def cnn_dni(image, y=None, maps=128, ncls=10, test=False):
     with nn.parameter_scope("ref"):
         image /= 255.
         h = act_bn_conv(image, maps, test, name="conv0")
-        h = F.average_pooling(h, (2, 2))  # 28x28 -> 14x14
+        h = F.max_pooling(h, (2, 2))  # 28x28 -> 14x14
         h = act_bn_conv(h, maps, act=None, test=test, name="conv1")
 
     # decoupled here
@@ -144,7 +144,7 @@ def cnn_dni(image, y=None, maps=128, ncls=10, test=False):
     h_d.grad = g_pred.data
 
     h = F.relu(h)  # decouple after non-linearity
-    h = F.average_pooling(h, (2, 2))  # 14x14 -> 7x7
+    h = F.max_pooling(h, (2, 2))  # 14x14 -> 7x7
     with nn.parameter_scope("ref"):
         h = act_bn_conv(h, maps, test, name="conv2")
         h = F.average_pooling(h, (7, 7))  # 7x7 -> 1x1
