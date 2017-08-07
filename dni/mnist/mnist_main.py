@@ -30,7 +30,7 @@ def train():
     # Train
     image = nn.Variable([args.batch_size, 1, 28, 28])
     label = nn.Variable([args.batch_size, 1])
-    h_d, h_copy, pred, g_pred, g_label = cnn_dni(image, y=None)
+    h_d, h_copy, pred, g_pred, g_label = cnn_dni(image, y=label)
     loss_ce = ce_loss(pred, label)          # loss of a problem at hand
     loss_se = se_loss(g_pred, g_label)  # gradient synthesizer loss
 

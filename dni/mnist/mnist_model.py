@@ -93,9 +93,14 @@ def mlp_gradient_synthesizer(x, y=None, test=False):
     return g_pred
 
 def cnn_gradient_synthesizer(x, y=None, test=False):
+    bs = x.shape[0]
     maps = x.shape[1]
+    s0, s1 = x.shape[2:]
     if y is not None:
-        raise Exception("Not implemented.")
+        h = F.one_hot(y, (10, ))
+        h = F.reshape(h, (bs, 10, 1, 1))
+        h = F.broadcast(h, (bs, 10, s0, s1))
+        h = F.concatenate(*[x, h], axis=1)
     else:
         h = x
     with nn.parameter_scope("gs"):
