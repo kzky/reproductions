@@ -28,14 +28,9 @@ def get_args(monitor_path='tmp.monitor', max_iter=10000, model_save_path=None, l
                         help='Weight decay factor of SGD update.')
     parser.add_argument("--device-id", "-d", type=int, default=0,
                         help='Device ID the training run on. This is only valid if you specify `-c cuda.cudnn`.')
-    parser.add_argument("--model-save-interval", "-s", type=int, default=1000,
-                        help='The interval of saving model parameters.')
     parser.add_argument("--model-save-path", "-o",
                         type=str, default=model_save_path,
                         help='Path the model parameters saved.')
-    parser.add_argument("--net", "-n", type=str,
-                        default='lenet',
-                        help="Neural network architecure type (used only in classification*.py).\n  classification.py: ('lenet'|'resnet'),  classification_bnn.py: ('bincon'|'binnet'|'bwn'|'bwn'|'bincon_resnet'|'binnet_resnet'|'bwn_resnet')")
     parser.add_argument('--context', '-c', type=str,
                         default=None, help="Extension modules. ex) 'cpu', 'cuda.cudnn'.")
     args = parser.parse_args()
