@@ -59,3 +59,7 @@ def mnist_resnet_prediction(image, net="teacher", maps=64, test=False):
             y = PF.affine(pl, 10)
     return y
 
+def kl_divergence(pred, label):
+    elms = - F.softmax(label, axis=1) * F.log(F.softmax(pred, axis=1))
+    loss = F.mean(F.sum(elms, axis=1))
+    return loss
