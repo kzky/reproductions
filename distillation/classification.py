@@ -30,7 +30,7 @@ def train():
     mnist_cnn_prediction = mnist_resnet_prediction
 
     # TRAIN
-    teacher = "Teacher"
+    teacher = "teacher"
     # Create input variables.
     image = nn.Variable([args.batch_size, 1, 28, 28])
     label = nn.Variable([args.batch_size, 1])

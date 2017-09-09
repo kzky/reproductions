@@ -18,7 +18,7 @@ def categorical_error(pred, label):
     pred_label = pred.argmax(1)
     return (pred_label != label.flat).mean()
 
-def mnist_resnet_prediction(image, net="Teacher", maps=64, test=False):
+def mnist_resnet_prediction(image, net="teacher", maps=64, test=False):
     """
     Construct ResNet for MNIST.
     """

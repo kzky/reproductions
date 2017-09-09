@@ -30,8 +30,8 @@ def distil():
     mnist_cnn_prediction = mnist_resnet_prediction
 
     # TRAIN
-    teacher = "Teacher"
-    student = "Student"
+    teacher = "teacher"
+    student = "student"
     # Create input variables.
     image = nn.Variable([args.batch_size, 1, 28, 28])
     label = nn.Variable([args.batch_size, 1])
