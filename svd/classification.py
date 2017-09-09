@@ -35,7 +35,7 @@ def train():
     image = nn.Variable([args.batch_size, 1, 28, 28])
     label = nn.Variable([args.batch_size, 1])
     # Create `reference` prediction graph.
-    pred = mnist_cnn_prediction(image, net=reference, maps=64, test=False)
+    pred = mnist_cnn_prediction(image, net=reference, test=False)
     pred.persistent = True
     # Create loss function.
     loss = F.mean(F.softmax_cross_entropy(pred, label))
@@ -45,7 +45,7 @@ def train():
     vimage = nn.Variable([args.batch_size, 1, 28, 28])
     vlabel = nn.Variable([args.batch_size, 1])
     # Create reference predition graph.
-    vpred = mnist_cnn_prediction(vimage, net=reference, maps=64, test=True)
+    vpred = mnist_cnn_prediction(vimage, net=reference, test=True)
 
     # Create Solver.
     solver = S.Adam(args.learning_rate)
