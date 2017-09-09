@@ -65,6 +65,7 @@ def train():
     # Initialize DataIterator for MNIST.
     data = data_iterator_mnist(args.batch_size, True)
     vdata = data_iterator_mnist(args.batch_size, False)
+    best_ve = 1.0
     # Training loop.
     for i in range(args.max_iter):
         if i % args.val_interval == 0:
@@ -75,9 +76,10 @@ def train():
                 vpred.forward(clear_buffer=True)
                 ve += categorical_error(vpred.d, vlabel.d)
             monitor_verr.add(i, ve / args.val_iter)
-        if i % args.model_save_interval == 0:
+        if ve < best_ve:
             nn.save_parameters(os.path.join(
                 args.model_save_path, 'params_%06d.h5' % i))
+            best_ve = ve
         # Training forward
         image.d, label.d = data.next()
         solver.zero_grad()
