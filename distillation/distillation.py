@@ -106,4 +106,4 @@ def distil():
 
 
 if __name__ == '__main__':
-    train()
+    distil()
