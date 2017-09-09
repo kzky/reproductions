@@ -18,7 +18,7 @@ def categorical_error(pred, label):
     pred_label = pred.argmax(1)
     return (pred_label != label.flat).mean()
 
-def mnist_resnet_prediction(image, maps=64, test=False):
+def mnist_resnet_prediction(image, net="teacher", maps=64, test=False):
     """
     Construct ResNet for MNIST.
     """
@@ -39,22 +39,23 @@ def mnist_resnet_prediction(image, maps=64, test=False):
                 h = bn(PF.convolution(h, C, (1, 1), with_bias=False))
         return F.elu(F.add2(h, x, inplace=True))
 
-    # Conv1 --> maps x 32 x 32
-    with nn.parameter_scope("conv1"):
-        c1 = F.elu(
-            bn(PF.convolution(image, maps, (3, 3), pad=(3, 3), with_bias=False)))
-    # Conv2 --> maps x 16 x 16
-    c2 = F.max_pooling(res_unit(c1, "conv2"), (2, 2))
-    # Conv3 --> maps x 8 x 8
-    c3 = F.max_pooling(res_unit(c2, "conv3"), (2, 2))
-    # Conv4 --> maps x 8 x 8
-    c4 = res_unit(c3, "conv4")
-    # Conv5 --> maps x 4 x 4
-    c5 = F.max_pooling(res_unit(c4, "conv5"), (2, 2))
-    # Conv5 --> maps x 4 x 4
-    c6 = res_unit(c5, "conv6")
-    pl = F.average_pooling(c6, (4, 4))
-    with nn.parameter_scope("classifier"):
-        y = PF.affine(pl, 10)
+    with nn.parameter_scope(net):
+        # Conv1 --> maps x 32 x 32
+        with nn.parameter_scope("conv1"):
+            c1 = F.elu(
+                bn(PF.convolution(image, maps, (3, 3), pad=(3, 3), with_bias=False)))
+        # Conv2 --> maps x 16 x 16
+        c2 = F.max_pooling(res_unit(c1, "conv2"), (2, 2))
+        # Conv3 --> maps x 8 x 8
+        c3 = F.max_pooling(res_unit(c2, "conv3"), (2, 2))
+        # Conv4 --> maps x 8 x 8
+        c4 = res_unit(c3, "conv4")
+        # Conv5 --> maps x 4 x 4
+        c5 = F.max_pooling(res_unit(c4, "conv5"), (2, 2))
+        # Conv5 --> maps x 4 x 4
+        c6 = res_unit(c5, "conv6")
+        pl = F.average_pooling(c6, (4, 4))
+        with nn.parameter_scope("classifier"):
+            y = PF.affine(pl, 10)
     return y
 
