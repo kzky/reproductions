@@ -4,8 +4,8 @@ In this example, Distillation technique is used for neural network compactizatio
 
 The follows show the workflow when one would like to compactize a network.
 
-1. Train a network 
-2. Distil that knowledge to another network
+1. Train a teacher network.
+2. Distil that knowledge to another network, usually called student.
 
 `classification.py` corresponds to the first one, and `distillation.py` does the second.
 
