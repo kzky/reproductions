@@ -47,7 +47,7 @@ def train():
     vlabel = nn.Variable([args.batch_size, 1])
     # Create teacher predition graph.
     with nn.parameter_scope(teacher):
-        pred = mnist_cnn_prediction(image, maps=64, test=True)
+        vpred = mnist_cnn_prediction(image, maps=64, test=True)
 
     # Create Solver.
     solver = S.Adam(args.learning_rate)
