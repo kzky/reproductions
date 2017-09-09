@@ -31,16 +31,16 @@ def distil():
 
     # TRAIN
     teacher = "Teacher"
-    studnet = "Student"
+    student = "Student"
     # Create input variables.
     image = nn.Variable([args.batch_size, 1, 28, 28])
     label = nn.Variable([args.batch_size, 1])
-    # Create `teacher` and "studnet" prediction graph.
+    # Create `teacher` and "student" prediction graph.
     teacher_model_path = args.teacher_model_path
     nn.load_parameters(teacher_model_path)
     pred_label = mnist_cnn_prediction(image, net=teacher, maps=64, test=False)
     pred_label.need_grad = False  # no need backward through teacher graph
-    pred = mnist_cnn_prediction(image, net=studnet, maps=32, test=False)
+    pred = mnist_cnn_prediction(image, net=student, maps=32, test=False)
     loss = kl_divergence(pred, pred_label)
 
     # TEST
@@ -48,7 +48,7 @@ def distil():
     vimage = nn.Variable([args.batch_size, 1, 28, 28])
     vlabel = nn.Variable([args.batch_size, 1])
     # Create teacher predition graph.
-    vpred = mnist_cnn_prediction(vimage, net=studnet, maps=32, test=True)
+    vpred = mnist_cnn_prediction(vimage, net=student, maps=32, test=True)
 
     # Create Solver.
     solver = S.Adam(args.learning_rate)
