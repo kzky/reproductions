@@ -45,12 +45,11 @@ def train():
     vimage = nn.Variable([args.batch_size, 1, 28, 28])
     vlabel = nn.Variable([args.batch_size, 1])
     # Create teacher predition graph.
-    vpred = mnist_cnn_prediction(image, net=teacher, maps=64, test=True)
+    vpred = mnist_cnn_prediction(vimage, net=teacher, maps=64, test=True)
 
     # Create Solver.
     solver = S.Adam(args.learning_rate)
-    with nn.parameter_scope(teacher):
-        solver.set_parameters(nn.get_parameters())
+    solver.set_parameters(nn.get_parameters())
     
     # Create monitor.
     from nnabla.monitor import Monitor, MonitorSeries, MonitorTimeElapsed
