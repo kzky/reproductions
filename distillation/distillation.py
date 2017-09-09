@@ -41,6 +41,7 @@ def distil():
     pred_label = mnist_cnn_prediction(image, net=teacher, maps=64, test=False)
     pred_label.need_grad = False  # no need backward through teacher graph
     pred = mnist_cnn_prediction(image, net=student, maps=32, test=False)
+    pred.persistent = True
     loss = kl_divergence(pred, pred_label)
 
     # TEST
