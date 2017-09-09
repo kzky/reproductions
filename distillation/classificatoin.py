@@ -30,11 +30,12 @@ def train():
     mnist_cnn_prediction = mnist_lenet_prediction
 
     # TRAIN
+    teacher = "Teacher"
     # Create input variables.
     image = nn.Variable([args.batch_size, 1, 28, 28])
     label = nn.Variable([args.batch_size, 1])
     # Create `teacher` prediction graph.
-    with nn.parameter_scope("Teacher"):
+    with nn.parameter_scope(teacher):
         pred = mnist_cnn_prediction(image, maps=64, test=False)
     pred.persistent = True
     # Create loss function.
@@ -45,12 +46,12 @@ def train():
     vimage = nn.Variable([args.batch_size, 1, 28, 28])
     vlabel = nn.Variable([args.batch_size, 1])
     # Create teacher predition graph.
-    with nn.parameter_scope("Teacher"):
+    with nn.parameter_scope(teacher):
         pred = mnist_cnn_prediction(image, maps=64, test=True)
 
     # Create Solver.
     solver = S.Adam(args.learning_rate)
-    with nn.parameter_scope("Teacher"):
+    with nn.parameter_scope(teacher):
         solver.set_parameters(nn.get_parameters())
     
     # Create monitor.
