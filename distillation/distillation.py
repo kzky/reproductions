@@ -12,6 +12,7 @@ import nnabla.utils.save as save
 
 from args import get_args
 from mnist_data import data_iterator_mnist
+from models import mnist_resnet_prediction, categorical_error
 
 def distil():
     args = get_args()
@@ -29,26 +30,31 @@ def distil():
     mnist_cnn_prediction = mnist_resnet_prediction
 
     # TRAIN
+    teacher = "Teacher"
+    studnet = "Student"
     # Create input variables.
     image = nn.Variable([args.batch_size, 1, 28, 28])
     label = nn.Variable([args.batch_size, 1])
-    # Create prediction graph.
-    pred = mnist_cnn_prediction(image, test=False)
-    pred.persistent = True
-    # Create loss function.
-    loss = F.mean(F.softmax_cross_entropy(pred, label))
+    # Create `teacher` and "studnet" prediction graph.
+    teacher_model_path = args.teacher_model_path
+    nn.load_paramters(teacher_model_path)
+    pred_label = mnist_cnn_prediction(image, net=teacher, maps=64, test=False)
+    pred_label.need_grad = False  # no need backward through teacher graph
+    pred = mnist_cnn_prediction(image, net=studnet, maps=32, test=False)
+    loss = kl_divergence(pred, pred_label)
 
     # TEST
     # Create input variables.
     vimage = nn.Variable([args.batch_size, 1, 28, 28])
     vlabel = nn.Variable([args.batch_size, 1])
-    # Create predition graph.
-    vpred = mnist_cnn_prediction(vimage, test=True)
+    # Create teacher predition graph.
+    vpred = mnist_cnn_prediction(vimage, net=studnet, maps=32, test=True)
 
     # Create Solver.
     solver = S.Adam(args.learning_rate)
-    solver.set_parameters(nn.get_parameters())
-
+    with nn.parameter_scope(student):
+        solver.set_parameters(nn.get_parameters())
+    
     # Create monitor.
     from nnabla.monitor import Monitor, MonitorSeries, MonitorTimeElapsed
     monitor = Monitor(args.monitor_path)
@@ -60,6 +66,7 @@ def distil():
     # Initialize DataIterator for MNIST.
     data = data_iterator_mnist(args.batch_size, True)
     vdata = data_iterator_mnist(args.batch_size, False)
+    best_ve = 1.0
     # Training loop.
     for i in range(args.max_iter):
         if i % args.val_interval == 0:
@@ -70,9 +77,10 @@ def distil():
                 vpred.forward(clear_buffer=True)
                 ve += categorical_error(vpred.d, vlabel.d)
             monitor_verr.add(i, ve / args.val_iter)
-        if i % args.model_save_interval == 0:
+        if ve < best_ve:
             nn.save_parameters(os.path.join(
                 args.model_save_path, 'params_%06d.h5' % i))
+            best_ve = ve
         # Training forward
         image.d, label.d = data.next()
         solver.zero_grad()
