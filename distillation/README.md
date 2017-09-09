@@ -9,7 +9,7 @@ The follows show the workflow when one would like to compactize a network.
 
 `classification.py` corresponds to the first one, and `distillation.py` does the second.
 
-This example uses a relatively fat network called LeNet which contains affine
+
 
 
 
