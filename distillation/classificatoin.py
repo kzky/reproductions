@@ -12,7 +12,7 @@ import nnabla.utils.save as save
 
 from args import get_args
 from mnist_data import data_iterator_mnist
-from models import mnist_resnet_prediction
+from models import mnist_resnet_prediction, categorical_error
 
 def train():
     args = get_args()
