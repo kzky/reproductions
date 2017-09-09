@@ -27,7 +27,7 @@ def train():
     nn.set_default_context(ctx)
 
     # Create CNN network for both training and testing.
-    mnist_cnn_prediction = mnist_lenet_prediction
+    mnist_cnn_prediction = mnist_resnet_prediction
 
     # TRAIN
     teacher = "Teacher"
