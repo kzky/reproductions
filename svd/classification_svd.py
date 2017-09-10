@@ -33,6 +33,7 @@ def classification_svd():
     # TRAIN
     reference = "reference"
     slim = "slim"
+    rrate = 0.5  # reduction rate
     # Create input variables.
     image = nn.Variable([args.batch_size, 1, 28, 28])
     label = nn.Variable([args.batch_size, 1])
@@ -42,7 +43,6 @@ def classification_svd():
     pred.persistent = True
     
     # Decompose and set parameters
-    rrate = 0.5  # reduction rate
     decompose_network_and_set_params(model_load_path, reference, slim, rrate)
     loss = F.mean(F.softmax_cross_entropy(pred, label))
 
