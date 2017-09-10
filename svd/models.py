@@ -86,14 +86,16 @@ def decompose_network_and_set_params(model_load_path,
     with nn.parameter_scope(slim):
         slim_params = nn.get_parameters()
     for n, v in trained_params.items():
+        if not n in slim_params.key():
+            continue
         v_slim = slim_params[n]
         v_slim.d = v.d
     ## set decomposed parameters and original bias
     ## a new bias is introcuded due to decomposition
-    slim_params["{}/{}".format(slim, "fc-d0/affine/W")].d = U_approx
-    slim_params["{}/{}".format(slim, "fc-d1/affine/W")].d = SV_approx
-    b = trained_params["{}/{}".format(reference, "fc3/affine/b")]
-    slim_params["{}/{}".format(slim, "fc-d1/affine/b")].d = b
+    slim_params["fc-d0/affine/W"].d = U_approx
+    slim_params["fc-d1/affine/W"].d = SV_approx
+    b = trained_params["fc3/affine/b"]
+    slim_params["fc-d1/affine/b"].d = b
 
     # Clear the parameters of the reference net 
     with nn.parameter_scope(refernece):
