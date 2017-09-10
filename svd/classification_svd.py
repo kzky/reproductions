@@ -28,7 +28,7 @@ def classification_svd():
     nn.set_default_context(ctx)
 
     # Create CNN network for both training and testing.
-    mnist_cnn_prediction = mnist_lenet_prediction
+    mnist_cnn_prediction = mnist_lenet_prediction_slim
 
     # TRAIN
     reference = "reference"
