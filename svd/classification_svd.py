@@ -38,7 +38,7 @@ def classification_svd():
     label = nn.Variable([args.batch_size, 1])
     # Create `reference` and "slim" prediction graph.
     model_load_path = args.model_load_path
-    pred = mnist_cnn_prediction_slim(image, scope=scope, test=False)
+    pred = mnist_cnn_prediction(image, scope=scope, test=False)
     pred.persistent = True
     
     # Decompose and set parameters
