@@ -30,12 +30,12 @@ def train():
     mnist_cnn_prediction = mnist_lenet_prediction
 
     # TRAIN
-    scope = "reference"
+    reference = "reference"
     # Create input variables.
     image = nn.Variable([args.batch_size, 1, 28, 28])
     label = nn.Variable([args.batch_size, 1])
     # Create `reference` prediction graph.
-    pred = mnist_cnn_prediction(image, scope=scope, test=False)
+    pred = mnist_cnn_prediction(image, scope=reference, test=False)
     pred.persistent = True
     # Create loss function.
     loss = F.mean(F.softmax_cross_entropy(pred, label))
@@ -45,7 +45,7 @@ def train():
     vimage = nn.Variable([args.batch_size, 1, 28, 28])
     vlabel = nn.Variable([args.batch_size, 1])
     # Create reference predition graph.
-    vpred = mnist_cnn_prediction(vimage, scope=scope, test=True)
+    vpred = mnist_cnn_prediction(vimage, scope=reference, test=True)
 
     # Create Solver.
     solver = S.Adam(args.learning_rate)

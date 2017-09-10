@@ -32,13 +32,13 @@ def classification_svd():
 
     # TRAIN
     reference = "reference"
-    scope = "slim"
+    slim = "slim"
     # Create input variables.
     image = nn.Variable([args.batch_size, 1, 28, 28])
     label = nn.Variable([args.batch_size, 1])
     # Create `reference` and "slim" prediction graph.
     model_load_path = args.model_load_path
-    pred = mnist_cnn_prediction(image, scope=scope, test=False)
+    pred = mnist_cnn_prediction(image, scope=slim, test=False)
     pred.persistent = True
     
     # Decompose and set parameters
@@ -51,7 +51,7 @@ def classification_svd():
     vimage = nn.Variable([args.batch_size, 1, 28, 28])
     vlabel = nn.Variable([args.batch_size, 1])
     # Create reference predition graph.
-    vpred = mnist_cnn_prediction_slim(vimage, scope=scope, test=True)
+    vpred = mnist_cnn_prediction_slim(vimage, scope=slim, test=True)
 
     # Create Solver.
     solver = S.Adam(args.learning_rate)
