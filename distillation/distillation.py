@@ -44,7 +44,9 @@ def distil():
     pred_label.need_grad = False  # no need backward through teacher graph
     pred = mnist_cnn_prediction(image, net=student, maps=32, test=False)
     pred.persistent = True  # not clear the intermediate buffer used
-    loss = kl_divergence(pred, pred_label)
+    loss_ce = F.mean(F.softmax_cross_entropy(pred, label))
+    loss_dist = kl_divergence(pred, pred_label)
+    loss = args.weight_ce * loss_ce + weight_kl * loss_kl
 
     # TEST
     # Create input variables.

@@ -36,6 +36,10 @@ def get_args(monitor_path='tmp.monitor', max_iter=10000, model_save_path=None, l
                         help='Path the model parameters loaded.')
     parser.add_argument('--context', '-c', type=str,
                         default=None, help="Extension modules. ex) 'cpu', 'cuda.cudnn'.")
+    parser.add_argument('--weight-ce', type=float,
+                        default=1.0, help="Weight for cross entropy.")
+    parser.add_argument('--weight-kl', type=float,
+                        default=1.0, help="Weight for KL divergence.")
     args = parser.parse_args()
     if not os.path.isdir(args.model_save_path):
         os.makedirs(args.model_save_path)
