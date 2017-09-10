@@ -30,7 +30,7 @@ def train():
     mnist_cnn_prediction = mnist_lenet_prediction
 
     # TRAIN
-    reference = "Reference"
+    reference = "reference"
     # Create input variables.
     image = nn.Variable([args.batch_size, 1, 28, 28])
     label = nn.Variable([args.batch_size, 1])
