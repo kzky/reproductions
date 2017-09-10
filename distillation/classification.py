@@ -98,7 +98,7 @@ def train():
     monitor_verr.add(i, ve / args.val_iter)
 
     parameter_file = os.path.join(
-        args.model_save_path, '{}_params_{:06}.h5'.format(args.net, args.max_iter))
+        args.model_save_path, 'params_{:06}.h5'.format(args.max_iter))
     nn.save_parameters(parameter_file)
 
 
