@@ -20,11 +20,11 @@ def categorical_error(pred, label):
     pred_label = pred.argmax(1)
     return (pred_label != label.flat).mean()
 
-def mnist_lenet_prediction(image, net="reference", test=False):
+def mnist_lenet_prediction(image, scope="reference", test=False):
     """
     Construct LeNet for MNIST.
     """
-    with nn.parameter_scope(net):
+    with nn.parameter_scope(scope):
         image /= 255.0
         c1 = PF.convolution(image, 16, (5, 5), name='conv1')
         c1 = F.relu(F.max_pooling(c1, (2, 2)), inplace=True)
@@ -34,11 +34,11 @@ def mnist_lenet_prediction(image, net="reference", test=False):
         c4 = PF.affine(c3, 10, name='fc4')
     return c4
 
-def mnist_lenet_prediction(image, net="slim", rate=0.75, test=False):
+def mnist_lenet_prediction_slim(image, scope="slim", rate=0.75, test=False):
     """
     Construct LeNet for MNIST.
     """
-    with nn.parameter_scope(net):
+    with nn.parameter_scope(scope):
         image /= 255.0
         c1 = PF.convolution(image, 16, (5, 5), name='conv1')
         c1 = F.relu(F.max_pooling(c1, (2, 2)), inplace=True)
