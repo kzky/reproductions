@@ -98,7 +98,7 @@ def decompose_network_and_set_params(model_load_path,
     slim_params["fc-d1/affine/b"].d = b.d
 
     # Clear the parameters of the reference net 
-    with nn.parameter_scope(refernece):
+    with nn.parameter_scope(reference):
         nn.clear_parameters()
 
 def kl_divergence(pred, label):
