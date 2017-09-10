@@ -34,7 +34,7 @@ def mnist_lenet_prediction(image, scope="reference", test=False):
         c4 = PF.affine(c3, 10, name='fc4')
     return c4
 
-def mnist_lenet_prediction_slim(image, scope="slim", rate=0.75, test=False):
+def mnist_lenet_prediction_slim(image, scope="slim", rrate=0.75, test=False):
     """
     Construct LeNet for MNIST.
     """
@@ -48,7 +48,7 @@ def mnist_lenet_prediction_slim(image, scope="slim", rate=0.75, test=False):
         # SVD applied
         inmaps =  np.prod(c2.shape[1:])  # c * h * w
         outmaps0 = 50  # original outmaps
-        outmaps1 = reduce_maps(inmaps, outmaps0, rate)
+        outmaps1 = reduce_maps(inmaps, outmaps0, rrate)
         d0 = F.relu(PF.affine(c2, outmaps1, name='fc-d0'), inplace=True)
         d1 = F.relu(PF.affine(d0, outmaps0, name='fc-d1'), inplace=True)
 
