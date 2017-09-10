@@ -68,7 +68,7 @@ def decompose_network_and_set_params(model_load_path,
     with nn.parameter_scope(reference):
         trained_params = nn.get_parameters()
     ## original parameter
-    W = trained_params["{}/{}".format(reference, "fc3/affine/W")]  
+    W = trained_params["fc3/affine/W"]
     ## original maps
     inmaps = W.shape[0]
     outmaps0 = W.shape[1]
@@ -86,8 +86,7 @@ def decompose_network_and_set_params(model_load_path,
     with nn.parameter_scope(slim):
         slim_params = nn.get_parameters()
     for n, v in trained_params.items():
-        name = "{}{}".format(slim, n.split(reference)[-1])
-        v_slim = slim_params[name]
+        v_slim = slim_params[n]
         v_slim.d = v.d
     ## set decomposed parameters and original bias
     ## a new bias is introcuded due to decomposition
