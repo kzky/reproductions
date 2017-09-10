@@ -100,3 +100,7 @@ def decompose_network_and_set_params(model_load_path,
     with nn.parameter_scope(refernece):
         nn.clear_parameters()
 
+def kl_divergence(pred, label):
+    elms = - F.softmax(label, axis=1) * F.log(F.softmax(pred, axis=1))
+    loss = F.mean(F.sum(elms, axis=1))
+    return loss
