@@ -56,7 +56,7 @@ def mnist_lenet_prediction_slim(image, scope="slim", rrate=0.75, test=False):
     return c4
 
 def reduce_maps(inmaps, outmaps, rrate):
-    maps = int(rrate * int(1. * inmaps*outmaps / (inmaps+outmaps)))
+    maps = int(rrate * inmaps*outmaps / (inmaps+outmaps))
     logger.info("###################")
     logger.info(
         "Num.Parameters is reduced {}x{} -> {}x{} + {}x{} by {}".format(
