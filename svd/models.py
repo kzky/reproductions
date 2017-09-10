@@ -94,7 +94,7 @@ def decompose_network_and_set_params(model_load_path,
     slim_params["{}/{}".format(slim, "fc-d0/affine/W")].d = U_approx
     slim_params["{}/{}".format(slim, "fc-d1/affine/W")].d = SV_approx
     b = trained_params["{}/{}".format(reference, "fc3/affine/b")]
-    slim_params["{}/{}".format(slim, "fc-d1/affine/b"].d = b
+    slim_params["{}/{}".format(slim, "fc-d1/affine/b")].d = b
 
     # Clear the parameters of the reference net 
     with nn.parameter_scope(refernece):
