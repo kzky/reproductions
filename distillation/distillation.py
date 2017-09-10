@@ -34,7 +34,9 @@ def distil():
     student = "student"
     # Create input variables.
     image = nn.Variable([args.batch_size, 1, 28, 28])
+    image.need_grad = True  # not clear buffer set as need_grad=false
     label = nn.Variable([args.batch_size, 1])
+    lable.need_grad = True  # not clear buffer set as need_grad=false
     # Create `teacher` and "student" prediction graph.
     model_load_path = args.model_load_path
     nn.load_parameters(model_load_path)
