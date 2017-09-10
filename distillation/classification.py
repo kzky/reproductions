@@ -63,6 +63,7 @@ def train():
     data = data_iterator_mnist(args.batch_size, True)
     vdata = data_iterator_mnist(args.batch_size, False)
     best_ve = 1.0
+    ve = 1.0
     # Training loop.
     for i in range(args.max_iter):
         if i % args.val_interval == 0:
