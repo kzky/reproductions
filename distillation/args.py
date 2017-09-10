@@ -33,7 +33,7 @@ def get_args(monitor_path='tmp.monitor', max_iter=10000, model_save_path=None, l
                         help='Path the model parameters saved.')
     parser.add_argument("--model-load-path", "-t", 
                         type=str, default=model_save_path,
-                        help='Path the model parameters saved.')
+                        help='Path the model parameters loaded.')
     parser.add_argument('--context', '-c', type=str,
                         default=None, help="Extension modules. ex) 'cpu', 'cuda.cudnn'.")
     args = parser.parse_args()
