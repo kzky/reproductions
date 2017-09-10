@@ -46,7 +46,7 @@ def distil():
     pred.persistent = True  # not clear the intermediate buffer used
     loss_ce = F.mean(F.softmax_cross_entropy(pred, label))
     loss_dist = kl_divergence(pred, pred_label)
-    loss = args.weight_ce * loss_ce + weight_kl * loss_kl
+    loss = args.weight_ce * loss_ce + args.weight_kl * loss_kl
 
     # TEST
     # Create input variables.
