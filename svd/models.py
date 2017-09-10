@@ -68,7 +68,7 @@ def decompose_network_and_set_params(model_load_path,
     with nn.parameter_scope(reference):
         trained_params = nn.get_parameters()
     ## original parameter
-    W = trained_params["fc3/affine/W"]
+    W = trained_params["fc3/affine/W"].d
     ## original maps
     inmaps = W.shape[0]
     outmaps0 = W.shape[1]
