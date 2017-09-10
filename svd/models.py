@@ -56,7 +56,7 @@ def mnist_lenet_prediction(image, net="slim", rate=0.75, test=False):
     return c4
 
 def reduce_maps(inmaps, outmaps, rrate):
-    maps = int(rrate * int(1. * inmaps*outmaps / (inmaps+outmaps))) * rrate
+    maps = int(rrate * int(1. * inmaps*outmaps / (inmaps+outmaps)))
     return maps
 
 def decompose_network_and_set_params(model_load_path, 
