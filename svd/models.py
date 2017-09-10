@@ -86,7 +86,7 @@ def decompose_network_and_set_params(model_load_path,
     with nn.parameter_scope(slim):
         slim_params = nn.get_parameters()
     for n, v in trained_params.items():
-        if not n in slim_params.key():
+        if not n in slim_params.keys():
             continue
         v_slim = slim_params[n]
         v_slim.d = v.d
