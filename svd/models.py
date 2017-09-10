@@ -55,7 +55,7 @@ def mnist_lenet_prediction(image, net="slim", rate=0.75, test=False):
         c4 = PF.affine(d1, 10, name='fc4')
     return c4
 
-def reduce_maps(inmaps, outmapt, rrate):
+def reduce_maps(inmaps, outmaps, rrate):
     maps = int(rrate * int(1. * inmaps*outmaps / (inmaps+outmaps))) * rrate
     return maps
 
