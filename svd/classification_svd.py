@@ -12,7 +12,7 @@ import nnabla.utils.save as save
 
 from args import get_args
 from mnist_data import data_iterator_mnist
-from models import mnist_lenet_prediction, categorical_error, kl_divergence
+from models import mnist_lenet_prediction, categorical_error, kl_divergence, decompose_network_and_set_params
 
 def classification_svd():
     args = get_args()
@@ -40,9 +40,9 @@ def classification_svd():
     pred = mnist_cnn_prediction(image, net=slim, test=False)
     pred.persistent = True
     
-    # SVD
+    # Decompose and set parameters
     rrate = 0.5  # reduction rate
-    decompose_network(model_load_path, reference, slim, rrate)
+    decompose_network_and_set_params(model_load_path, reference, slim, rrate)
     loss = F.mean(F.softmax_cross_entropy(pred, label))
 
     # TEST
