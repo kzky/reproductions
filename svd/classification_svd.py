@@ -51,7 +51,7 @@ def classification_svd():
     vimage = nn.Variable([args.batch_size, 1, 28, 28])
     vlabel = nn.Variable([args.batch_size, 1])
     # Create reference predition graph.
-    vpred = mnist_cnn_prediction_slim(vimage, scope=slim, rrate=rrate, test=True)
+    vpred = mnist_cnn_prediction(vimage, scope=slim, rrate=rrate, test=True)
 
     # Create Solver.
     solver = S.Adam(args.learning_rate)
