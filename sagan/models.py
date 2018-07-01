@@ -13,6 +13,23 @@ from nnabla.initializer import (
     calc_uniform_lim_glorot,
     ConstantInitializer, NormalInitializer, UniformInitializer)
 
+def spectral_normalization(w, name, itr=1, eps=1e-12):
+    w = F.reshape(w, [w.shape[0], np.prod(w.shape[1:])], inplace=False)
+    with nn.parameter_scope(name):
+        u_0 = get_parameter_or_create("u", [d], NormalInitializer(), False)
+    # Power method
+    for _ in range(itr):
+        #TODO: check shape
+        v = F.affine(u, w, base_axis=0)
+        v = F.div2(v, F.pow_scalar(F.sum(F.pow_scalar(v, 2.)) + eps, 0.5))
+        u_1 = F.affine(v, w, base_axis=0)
+        u_1 = F.div2(u_1, F.pow_scalar(F.sum(F.pow_scalar(u_1, 2.)) + eps, 0.5))
+        u_1.data = u_0.data  # share pointer
+        u_1.persistent = False
+        u_1.need_grad = False
+    Wv = F.affine(w, v)
+    sigma = F.affine(Wv, u)
+    return sigma
 
 def sn_convolution():
     pass
