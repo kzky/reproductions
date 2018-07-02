@@ -258,13 +258,13 @@ if __name__ == '__main__':
     print("Spectral Normalization for Conv")
     o, i, k0, k1 = 8, 8, 16, 16
     w = nn.Variable([o, i, k0, k1])
-    sigma = spectral_normalization_for_conv(w)
+    sigma = spectral_normalization_for_conv(w, itr=2)
     print("sigma.shape = {}".format(sigma))
     nn.clear_parameters()
 
     print("Spectral Normalization for Affine")
     o, i = 16, 8
     w = nn.Variable([o, i])
-    sigma = spectral_normalization_for_affine(w)
+    sigma = spectral_normalization_for_affine(w, itr=2)
     print("sigma.shape = {}".format(sigma))
     nn.clear_parameters()
