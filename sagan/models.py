@@ -8,15 +8,15 @@ import nnabla.solvers as S
 import nnabla.utils.save as save
 from nnabla.parameter import get_parameter_or_create
 from nnabla.ext_utils import get_extension_context
+from nnabla.function_bases import function_api
 
 from nnabla.initializer import (
     calc_uniform_lim_glorot,
     ConstantInitializer, NormalInitializer, UniformInitializer)
 
-def spectral_normalization(w, name, itr=1, eps=1e-12):
+def spectral_normalization(w, itr=1, eps=1e-12):
     w = F.reshape(w, [w.shape[0], np.prod(w.shape[1:])], inplace=False)
-    with nn.parameter_scope(name):
-        u_0 = get_parameter_or_create("u", [d], NormalInitializer(), False)
+    u_0 = get_parameter_or_create("singular-vector", [d], NormalInitializer(), False)
     # Power method
     for _ in range(itr):
         #TODO: check shape
@@ -24,7 +24,7 @@ def spectral_normalization(w, name, itr=1, eps=1e-12):
         v = F.div2(v, F.pow_scalar(F.sum(F.pow_scalar(v, 2.)) + eps, 0.5))
         u_1 = F.affine(v, w, base_axis=0)
         u_1 = F.div2(u_1, F.pow_scalar(F.sum(F.pow_scalar(u_1, 2.)) + eps, 0.5))
-        u_0.data = u_1.data  # share pointer
+        u_0.data = u_1.data  # share buffer
         u_1.persistent = False
         u_1.need_grad = False
     Wv = F.affine(w, v)
@@ -80,7 +80,7 @@ def convblock(h, scopename, maps, kernel, pad=(1, 1), stride=(1, 1), upsample=Tr
         h = PF.batch_normalization(h, batch_stat=not test)
     return h
 
-
+@function_api("attn")
 def attnblock(h, r=8):
     """Attention block"""
     x = h
@@ -228,3 +228,10 @@ if __name__ == '__main__':
     x = nn.Variable([b, c, h//2, w//2])
     h = attnblock(x)
     print("h.shape = {}".format(h.shape))
+
+
+    print("Spectral Normalization")
+    o, i, k0, k1 = 8, 8, 16, 16
+    w = nn.Variable([o, i, k0, k1])
+    sigma = spectral_normalization(w)
+    print("sigma.shape = {}".format(sigma))
