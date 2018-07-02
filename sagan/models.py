@@ -36,6 +36,26 @@ def spectral_normalization_for_conv(w, itr=1, eps=1e-12):
     sigma = F.affine(Wv, u1)
     return sigma
 
+def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1):
+    d0 = np.prod(w.shape[0:input_axis])  # IN
+    d1 = np.prod(w.shape[input_axis:])   # Out
+    u0 = get_parameter_or_create("singular-vector", [d1], NormalInitializer(), False)
+    # Power method
+    for _ in range(itr):
+        u0 = F.reshape(u0, [d1, 1])
+        v = F.affine(w, u0)
+        v = F.div2(v, F.pow_scalar(F.sum(F.pow_scalar(v, 2.), keepdims=True) + eps, 0.5))
+        v = F.reshape(v, [1, d0])
+        u1 = F.affine(v, w)
+        u1 = F.div2(u1, F.pow_scalar(F.sum(F.pow_scalar(u1, 2.), keepdims=True) + eps, 0.5))
+        u1 = F.reshape(u1, [d1, 1])
+        u0.data = u1.data  # share buffer
+        u1.persistent = False
+        u1.need_grad = False
+    Wv = F.affine(v, w)
+    sigma = F.affine(Wv, u1)
+    return sigma
+
 def sn_convolution():
     pass
 
@@ -233,10 +253,18 @@ if __name__ == '__main__':
     x = nn.Variable([b, c, h//2, w//2])
     h = attnblock(x)
     print("h.shape = {}".format(h.shape))
-
-
-    print("Spectral Normalization")
+    nn.clear_parameters()
+    
+    print("Spectral Normalization for Conv")
     o, i, k0, k1 = 8, 8, 16, 16
     w = nn.Variable([o, i, k0, k1])
     sigma = spectral_normalization_for_conv(w)
     print("sigma.shape = {}".format(sigma))
+    nn.clear_parameters()
+
+    print("Spectral Normalization for Affine")
+    o, i = 16, 8
+    w = nn.Variable([o, i])
+    sigma = spectral_normalization_for_affine(w)
+    print("sigma.shape = {}".format(sigma))
+    nn.clear_parameters()
