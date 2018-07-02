@@ -19,21 +19,21 @@ def spectral_normalization_for_conv(w, itr=1, eps=1e-12):
     d0 = w.shape[0]            # Out
     d1 = np.prod(w.shape[1:])  # In
     w = F.reshape(w, [d0, d1], inplace=False)
-    u0 = get_parameter_or_create("singular-vector", [d1], NormalInitializer(), False)
+    u0 = get_parameter_or_create("singular-vector", [d0], NormalInitializer(), False)
     # Power method
     for _ in range(itr):
-        u0 = F.reshape(u0, [d1, 1])
-        v = F.affine(w, u0)
+        u0 = F.reshape(u0, [1, d0])
+        v = F.affine(u0, w)
         v = F.div2(v, F.pow_scalar(F.sum(F.pow_scalar(v, 2.), keepdims=True) + eps, 0.5))
-        v = F.reshape(v, [1, d0])
-        u1 = F.affine(v, w)
+        v = F.reshape(v, [d1, 1])
+        u1 = F.affine(w, v)
         u1 = F.div2(u1, F.pow_scalar(F.sum(F.pow_scalar(u1, 2.), keepdims=True) + eps, 0.5))
-        u1 = F.reshape(u1, [d1, 1])
+        u1 = F.reshape(u1, [1, d0])
         u0.data = u1.data  # share buffer
         u1.persistent = False
         u1.need_grad = False
-    Wv = F.affine(v, w)
-    sigma = F.affine(Wv, u1)
+    Wv = F.affine(w, v)
+    sigma = F.affine(u1, Wv)
     return sigma
 
 def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1):
