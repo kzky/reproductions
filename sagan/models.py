@@ -37,8 +37,9 @@ def spectral_normalization_for_conv(w, itr=1, eps=1e-12):
     sigma = F.affine(u, Wv)
     return sigma
 
+
 def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1):
-    d0 = np.prod(w.shape[0:input_axis])  # IN
+    d0 = np.prod(w.shape[0:input_axis])  # In
     d1 = np.prod(w.shape[input_axis:])   # Out
     u0 = get_parameter_or_create("singular-vector", [d1], NormalInitializer(), False)
     u0 = F.reshape(u0, [d1, 1])
@@ -58,14 +59,131 @@ def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1):
     sigma = F.affine(Wv, u)
     return sigma
 
-def sn_convolution():
-    pass
 
-def sn_affine():
-    pass
+@parametric_function_api("sn_conv")
+def sn_convolution(inp, outmaps, kernel,
+                   pad=None, stride=None, dilation=None, group=1,
+                   itr=1, 
+                   w_init=None, b_init=None,
+                   base_axis=1, fix_parameters=False, rng=None, with_bias=True):
+    """
+    N-D Convolution with a bias term.
 
-def sn_embed():
-    pass
+    For Dilated Convolution (a.k.a. Atrous Convolusion), refer to:
+
+    - Chen et al., DeepLab: Semantic Image Segmentation with Deep Convolutional Nets, Atrous Convolution, and Fully Connected CRFs. https://arxiv.org/abs/1606.00915
+
+    - Yu et al., Multi-Scale Context Aggregation by Dilated Convolutions. https://arxiv.org/abs/1511.07122
+
+    Args:
+        inp (~nnabla.Variable): N-D array.
+        outmaps (int): Number of convolution kernels (which is equal to the number of output channels). For example, to apply convolution on an input with 16 types of filters, specify 16.
+        kernel (:obj:`tuple` of :obj:`int`): Convolution kernel size. For example, to apply convolution on an image with a 3 (height) by 5 (width) two-dimensional kernel, specify (3,5).
+        pad (:obj:`tuple` of :obj:`int`): Padding sizes for dimensions.
+        stride (:obj:`tuple` of :obj:`int`): Stride sizes for dimensions.
+        dilation (:obj:`tuple` of :obj:`int`): Dilation sizes for dimensions.
+        group (int): Number of groups of channels. This makes connections across channels more sparse by grouping connections along map direction.
+        itr (int): Number of iteration of the power method.
+        w_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`): Initializer for weight.
+        b_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`): Initializer for bias.
+        base_axis (int): Dimensions up to `base_axis` are treated as the sample dimensions.
+        fix_parameters (bool): When set to `True`, the weights and biases will not be updated.
+        rng (numpy.random.RandomState): Random generator for Initializer.
+        with_bias (bool): Specify whether to include the bias term.
+
+    Returns:
+        :class:`~nnabla.Variable`: N-D array.
+
+    """
+    if w_init is None:
+        w_init = UniformInitializer(
+            calc_uniform_lim_glorot(inp.shape[base_axis], outmaps, tuple(kernel)), rng=rng)
+    if with_bias and b_init is None:
+        b_init = ConstantInitializer()
+    w = get_parameter_or_create(
+        "W", (outmaps, inp.shape[base_axis] / group) + tuple(kernel),
+        w_init, not fix_parameters)
+    w_sn = spectral_normalization_for_conv(inp, itr=itr)
+    b = None
+    if with_bias:
+        b = get_parameter_or_create(
+            "b", (outmaps,), b_init, not fix_parameters)
+    return F.convolution(inp, w_sn, b, base_axis, pad, stride, dilation, group)
+
+
+@parametric_function_api("sn_affine")
+def sn_affine(inp, n_outmaps,
+              base_axis=1,
+              w_init=None, b_init=None,
+              itr=1, 
+              fix_parameters=False, rng=None, with_bias=True):
+    """
+    The affine layer, also known as the fully connected layer. Computes
+
+    .. math::
+        {\\mathbf y} = {\\mathbf A} {\\mathbf x} + {\\mathbf b}.
+
+    where :math:`{\\mathbf x}, {\\mathbf y}` are the inputs and outputs respectively,
+    and :math:`{\\mathbf A}, {\\mathbf b}` are constants.
+
+    Args:
+        inp (~nnabla.Variable): Input N-D array with shape (:math:`M_0 \\times \ldots \\times M_{B-1} \\times D_B \\times \ldots \\times D_N`). Dimensions before and after base_axis are flattened as if it is a matrix.
+        n_outmaps (:obj:`int` or :obj:`tuple` of :obj:`int`): Number of output neurons per data.
+        base_axis (int): Dimensions up to `base_axis` are treated as the sample dimensions.
+        w_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`): Initializer for weight.
+        b_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`): Initializer for bias.
+        itr (int): Number of iteration of the power method.
+        fix_parameters (bool): When set to `True`, the weights and biases will not be updated.
+        rng (numpy.random.RandomState): Random generator for Initializer.
+        with_bias (bool): Specify whether to include the bias term.
+
+    Returns:
+        :class:`~nnabla.Variable`: :math:`(B + 1)`-D array. (:math:`M_0 \\times \ldots \\times M_{B-1} \\times L`)f
+
+    """
+    if not hasattr(n_outmaps, '__iter__'):
+        n_outmaps = [n_outmaps]
+    n_outmaps = list(n_outmaps)
+    n_outmap = int(np.prod(n_outmaps))
+    if w_init is None:
+        inmaps = np.prod(inp.shape[base_axis:])
+        w_init = UniformInitializer(
+            calc_uniform_lim_glorot(inmaps, n_outmap), rng=rng)
+    if with_bias and b_init is None:
+        b_init = ConstantInitializer()
+    w = get_parameter_or_create(
+        "W", [int(np.prod(inp.shape[base_axis:]))] + n_outmaps,
+        w_init, not fix_parameters)
+    input_axis = len(inp.shape) - base_axis
+    w_sn = spectral_normalization_for_affine(w, itr=itr, input_axis=input_axis)
+    b = None
+    if with_bias:
+        b = get_parameter_or_create(
+            "b", n_outmaps, b_init, not fix_parameters)
+    return F.affine(inp, w, b, base_axis)
+
+
+@parametric_function_api("sn_embed")
+def sn_embed(inp, n_inputs, n_features, fix_parameters=False):
+    """ Embed.
+
+    Embed slices a matrix/tensor with indexing array/tensor
+
+    Args:
+        x(~nnabla.Variable): [Integer] Indices with shape :math:`(I_0, ..., I_N)`
+        n_inputs : number of possible inputs, words or vocabraries
+        n_features : number of embedding features
+        itr (int): Number of iteration of the power method.
+        fix_parameters (bool): When set to `True`, the embedding weight matrix
+            will not be updated.
+
+    Returns:
+        ~nnabla.Variable: Output with shape :math:`(I_0, ..., I_N, W_1, ..., W_M)`
+    """
+    w = get_parameter_or_create("W", [n_inputs, n_features],
+                                UniformInitializer((-np.sqrt(3.), np.sqrt(3))), not fix_parameters)
+    w_sn = spectral_normalization_for_affine(w, itr=itr)
+    return F.embed(inp, w)
 
 
 def BN(h, test=False):
