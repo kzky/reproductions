@@ -207,11 +207,11 @@ def CCBN(h, y, n_classes, test=False):
     # Condition the gamma and beta with the class label
     b, c = h.shape[0:2]
     with nn.parameter_scope("gamma"):
-        gamma = PF.embed(y, n_classes, c)
+        gamma = sn_embed(y, n_classes, c)
         gamma = F.reshape(gamma, [b, c] + [1 for _ in range(len(h.shape[2:]))])
         gamma = F.broadcast(gamma, h.shape)
     with nn.parameter_scope("beta"):
-        beta = PF.embed(y, n_classes, c)
+        beta = sn_embed(y, n_classes, c)
         beta = F.reshape(beta, [b, c] + [1 for _ in range(len(h.shape[2:]))])
         beta = F.broadcast(beta, h.shape)
     return gamma * h + beta
@@ -221,7 +221,7 @@ def convblock(h, scopename, maps, kernel, pad=(1, 1), stride=(1, 1), upsample=Tr
     with nn.parameter_scope(scopename):
         if upsample:
             h = F.unpooling(h, kernel=(2, 2))
-        h = PF.convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
+        h = sn_convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
         h = PF.batch_normalization(h, batch_stat=not test)
     return h
 
@@ -234,9 +234,9 @@ def attnblock(h, r=8, fix_parameters=False):
     b, c, s0, s1 = h.shape
     c_r = c // r
     assert c_r > 0
-    f_x = PF.convolution(h, c_r, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="f", with_bias=False)
-    g_x = PF.convolution(h, c_r, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="g", with_bias=False)
-    h_x = PF.convolution(h, c, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="h", with_bias=False)
+    f_x = sn_convolution(h, c_r, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="f", with_bias=False)
+    g_x = sn_convolution(h, c_r, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="g", with_bias=False)
+    h_x = sn_convolution(h, c, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="h", with_bias=False)
 
     # Attend 
     attn = F.batch_matmul(f_x.reshape([b, c_r, -1]), g_x.reshape([b, c_r, -1]), transpose_a=True)
@@ -263,19 +263,19 @@ def resblock_g(h, y, scopename,
             h = F.relu(h)
             if upsample:
                 h = F.unpooling(h, kernel=(2, 2))
-            h = PF.convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
+            h = sn_convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
         
         # BN -> Relu -> Conv
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test)
             h = F.relu(h)
-            h = PF.convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
+            h = sn_convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
             
         # Shortcut: Upsample -> Conv
         with nn.parameter_scope("shortcut"):
             if upsample:
                 s = F.unpooling(s, kernel=(2, 2))
-            s = PF.convolution(s, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
+            s = sn_convolution(s, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
     return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
 
 def resblock_d(h, y, scopename,
@@ -289,19 +289,19 @@ def resblock_d(h, y, scopename,
         with nn.parameter_scope("conv1"):
             h = CCBN(h, y, n_classes, test=test)
             h = F.relu(h)
-            h = PF.convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
+            h = sn_convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
         
         # BN -> Relu -> Conv -> Downsample
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test)
             h = F.relu(h)
-            h = PF.convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
+            h = sn_convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
             if downsample:
                 h = F.average_pooling(h, kernel=(2, 2))
             
         # Shortcut: Conv -> Downsample
         with nn.parameter_scope("shortcut"):
-            s = PF.convolution(s, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
+            s = sn_convolution(s, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
             if downsample:
                 s = F.average_pooling(s, kernel=(2, 2))
     return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
@@ -311,7 +311,7 @@ def generator(z, y, scopename="generator",
               maps=1024, n_classes=1000, s=4, L=5, test=False):
     with nn.parameter_scope(scopename):
         # Affine
-        h = PF.affine(z, maps * s * s, with_bias=False)
+        h = sn_affine(z, maps * s * s, with_bias=False)
         h = F.reshape(h, [h.shape[0]] + [maps, s, s])
 
         # Resblocks
@@ -324,7 +324,7 @@ def generator(z, y, scopename="generator",
         # Last convoltion
         h = PF.batch_normalization(h, batch_stat=not test)
         h = F.relu(h)
-        h = PF.convolution(h, 3, kernel=(3, 3), pad=(1, 1), stride=(1, 1))
+        h = sn_convolution(h, 3, kernel=(3, 3), pad=(1, 1), stride=(1, 1))
         x = F.tanh(h)
     return x
 
@@ -344,11 +344,11 @@ def discriminator(x, y, scopename="discriminator",
         h = PF.batch_normalization(h, batch_stat=not test)
         h = F.relu(h)
         h = F.average_pooling(h, kernel=h.shape[2:])
-        o0 = PF.affine(h, 1)
+        o0 = sn_affine(h, 1)
 
         # Project discriminator
         h = F.reshape(h, h.shape[0:2], inplace=False)
-        e = PF.embed(y, n_classes, h.shape[1], name="project-discriminator")
+        e = sn_embed(y, n_classes, h.shape[1], name="project-discriminator")
         o1 = F.sum(h * e, axis=1, keepdims=True)
     return o0 + o1
 
