@@ -16,6 +16,7 @@ from nnabla.initializer import (
 
 
 def spectral_normalization_for_conv(w, itr=1, eps=1e-12):
+    _w = w
     d0 = w.shape[0]            # Out
     d1 = np.prod(w.shape[1:])  # In
     w = F.reshape(w, [d0, d1], inplace=False)
@@ -35,10 +36,12 @@ def spectral_normalization_for_conv(w, itr=1, eps=1e-12):
     u.need_grad = False
     Wv = F.affine(w, v)
     sigma = F.affine(u, Wv)
-    return sigma
+    sigma = F.broadcast(F.reshape(sigma, [1 for _ in range(len(_w.shape))]), _w.shape)
+    return _w / sigma
 
 
 def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1):
+    _w = w
     d0 = np.prod(w.shape[0:input_axis])  # In
     d1 = np.prod(w.shape[input_axis:])   # Out
     u0 = get_parameter_or_create("singular-vector", [d1], NormalInitializer(), False)
@@ -57,7 +60,8 @@ def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1):
         u.need_grad = False
     Wv = F.affine(v, w)
     sigma = F.affine(Wv, u)
-    return sigma
+    sigma = F.broadcast(F.reshape(sigma, [1 for _ in range(len(_w.shape))]), _w.shape)
+    return _w / sigma
 
 
 @parametric_function_api("sn_conv")
@@ -103,7 +107,7 @@ def sn_convolution(inp, outmaps, kernel,
     w = get_parameter_or_create(
         "W", (outmaps, inp.shape[base_axis] / group) + tuple(kernel),
         w_init, not fix_parameters)
-    w_sn = spectral_normalization_for_conv(inp, itr=itr)
+    w_sn = spectral_normalization_for_conv(w, itr=itr)
     b = None
     if with_bias:
         b = get_parameter_or_create(
@@ -164,7 +168,7 @@ def sn_affine(inp, n_outmaps,
 
 
 @parametric_function_api("sn_embed")
-def sn_embed(inp, n_inputs, n_features, fix_parameters=False):
+def sn_embed(inp, n_inputs, n_features, itr=1, fix_parameters=False):
     """ Embed.
 
     Embed slices a matrix/tensor with indexing array/tensor
@@ -225,6 +229,7 @@ def convblock(h, scopename, maps, kernel, pad=(1, 1), stride=(1, 1), upsample=Tr
         h = PF.batch_normalization(h, batch_stat=not test)
     return h
 
+
 @parametric_function_api("attn")
 def attnblock(h, r=8, fix_parameters=False):
     """Attention block"""
@@ -249,6 +254,7 @@ def attnblock(h, r=8, fix_parameters=False):
     gamma = get_parameter_or_create("gamma", [1, 1, 1, 1], ConstantInitializer(0), not fix_parameters)
     y = gamma * o + x
     return y
+
 
 def resblock_g(h, y, scopename, 
                n_classes, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
@@ -277,6 +283,7 @@ def resblock_g(h, y, scopename,
                 s = F.unpooling(s, kernel=(2, 2))
             s = sn_convolution(s, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
     return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
+
 
 def resblock_d(h, y, scopename,
                n_classes, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
@@ -318,6 +325,7 @@ def generator(z, y, scopename="generator",
         h = resblock_g(h, y, "block-1", n_classes, maps, test=not test)
         h = resblock_g(h, y, "block-2", n_classes, maps // 2, test=not test)
         h = resblock_g(h, y, "block-3", n_classes, maps // 4, test=not test)
+        h = attnblock(h)
         h = resblock_g(h, y, "block-4", n_classes, maps // 8, test=not test)
         h = resblock_g(h, y, "block-5", n_classes, maps // 16, test=not test)
 
@@ -336,6 +344,7 @@ def discriminator(x, y, scopename="discriminator",
         h = resblock_d(x, y, "block-1", n_classes, maps, test=not test)
         h = resblock_d(h, y, "block-2", n_classes, maps * 2, test=not test)
         h = resblock_d(h, y, "block-3", n_classes, maps * 4, test=not test)
+        h = attnblock(h)
         h = resblock_d(h, y, "block-4", n_classes, maps * 8, test=not test)
         h = resblock_d(h, y, "block-5", n_classes, maps * 16, test=not test)
         h = resblock_d(h, y, "block-6", n_classes, maps * 16, test=not test)
