@@ -362,6 +362,11 @@ def discriminator(x, y, scopename="discriminator",
     return o0 + o1
 
 
+def gan_loss(d_x_fake, d_x_real=None):
+    if d_x_real is None:
+        return F.log(1 - d_x_fake)
+    return - F.log(d_x_real) - F.log(1 - d_x_fake)
+    
 if __name__ == '__main__':
     b, c, h, w = 4, 3, 128, 128
     latent = 128
