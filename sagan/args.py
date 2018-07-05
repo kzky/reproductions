@@ -47,8 +47,6 @@ def get_args(batch_size=16, image_size=128, max_iter=1282167):
                         help="Number of data used in validation.")
     parser.add_argument("--latent", type=int, default=1024,
                         help="Number of latent variables.")
-    parser.add_argument("--critic", type=int, default=1,
-                        help="Number of critics.")
     parser.add_argument("--monitor-path", type=str, default="./result/example_0",
                         help="Monitor path.")
     parser.add_argument("--model-load-path", type=str,
@@ -61,6 +59,10 @@ def get_args(batch_size=16, image_size=128, max_iter=1282167):
                         help="Beta1 of Adam solver.")
     parser.add_argument("--beta2", type=float, default=0.9,
                         help="Beta2 of Adam solver.")
+    parser.add_argument("--train-cachefile-dir", "-T", type=str, default=train_cachefile_dir,
+                        help='Training cache file dir. Create to use create_cache_file.py')
+    parser.add_argument("--val-cachefile-dir", "-V", type=str, default=val_cachefile_dir,
+                        help='Validation cache file dir. Create to use create_cache_file.py')
     parser.add_argument("--hyper-sphere", action='store_true',
                         help="Latent vector lie in the hyper sphere.")
     parser.add_argument("--validation-metric", type=str, default="",
