@@ -30,7 +30,7 @@ def spectral_normalization_for_conv(w, itr=1, eps=1e-12):
         u = F.affine(w, v)
         u = F.div2(u, F.pow_scalar(F.sum(F.pow_scalar(u, 2.), keepdims=True) + eps, 0.5))
         u = F.reshape(u, [1, d0])
-    u0.data = u.data  # share buffer
+    u0.data.copy_from(u.data)  # share buffer
     u0.persistent = True
     u.persistent = True
     u.need_grad = False
@@ -54,7 +54,7 @@ def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1):
         u = F.affine(v, w)
         u = F.div2(u, F.pow_scalar(F.sum(F.pow_scalar(u, 2.), keepdims=True) + eps, 0.5))
         u = F.reshape(u, [d1, 1])
-        u0.data = u.data  # share buffer
+        u0.data.copy_from(u.data)  # share buffer
         u0.persistent = True
         u.persistent = True
         u.need_grad = False
@@ -375,41 +375,49 @@ if __name__ == '__main__':
     b, c, h, w = 4, 3, 128, 128
     latent = 128
 
-    print("Generator shape")
-    z = F.randn(shape=[b, latent])
-    y = nn.Variable([b])
-    y.d = np.random.choice(np.arange(100), b)
-    x = generator(z, y)
-    print("x.shape = {}".format(x.shape))
+    # print("Generator shape")
+    # z = F.randn(shape=[b, latent])
+    # y = nn.Variable([b])
+    # y.d = np.random.choice(np.arange(100), b)
+    # x = generator(z, y)
+    # print("x.shape = {}".format(x.shape))
+
+    # print("Discriminator shape")
+    # d = discriminator(x, y)
+    # print("d.shape = {}".format(d.shape))
+    
+
+    # print("Attention block")
+    # b, c, h, w = 4, 32, 128, 128
+    # x = nn.Variable([b, c, h//2, w//2])
+    # h = attnblock(x)
+    # print("h.shape = {}".format(h.shape))
+    # nn.clear_parameters()
+    
+    # print("Spectral Normalization for Conv")
+    # o, i, k0, k1 = 8, 8, 16, 16
+    # w = nn.Variable([o, i, k0, k1])
+    # sigma = spectral_normalization_for_conv(w, itr=2)
+    # print("sigma.shape = {}".format(sigma))
+    # nn.clear_parameters()
+
+    # print("Spectral Normalization for Affine")
+    # o, i = 16, 8
+    # w = nn.Variable([o, i])
+    # sigma = spectral_normalization_for_affine(w, itr=2)
+    # print("sigma.shape = {}".format(sigma))
+    # nn.clear_parameters()
 
     # from nnabla.ext_utils import get_extension_context
     # import nnabla as nn
     # ctx = get_extension_context("cudnn", device_id="3")
     # nn.set_default_context(ctx)
     # x.forward()
-
-    print("Discriminator shape")
-    d = discriminator(x, y)
-    print("d.shape = {}".format(d.shape))
     
-
-    print("Attention block")
-    b, c, h, w = 4, 32, 128, 128
-    x = nn.Variable([b, c, h//2, w//2])
-    h = attnblock(x)
-    print("h.shape = {}".format(h.shape))
-    nn.clear_parameters()
-    
-    print("Spectral Normalization for Conv")
-    o, i, k0, k1 = 8, 8, 16, 16
-    w = nn.Variable([o, i, k0, k1])
-    sigma = spectral_normalization_for_conv(w, itr=2)
-    print("sigma.shape = {}".format(sigma))
-    nn.clear_parameters()
-
-    print("Spectral Normalization for Affine")
-    o, i = 16, 8
-    w = nn.Variable([o, i])
-    sigma = spectral_normalization_for_affine(w, itr=2)
-    print("sigma.shape = {}".format(sigma))
-    nn.clear_parameters()
+    import nnabla as nn
+    nn.set_auto_forward(True)
+    x = nn.Variable.from_numpy_array(np.random.randn(*[64, 32, 3, 3]))
+    y = spectral_normalization_for_conv(x)
+    y.forward()
+    print(y.d)
+                                     
