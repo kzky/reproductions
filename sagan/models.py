@@ -164,7 +164,7 @@ def sn_affine(inp, n_outmaps,
     if with_bias:
         b = get_parameter_or_create(
             "b", n_outmaps, b_init, not fix_parameters)
-    return F.affine(inp, w, b, base_axis)
+    return F.affine(inp, w_sn, b, base_axis)
 
 
 @parametric_function_api("sn_embed")
@@ -187,7 +187,7 @@ def sn_embed(inp, n_inputs, n_features, itr=1, fix_parameters=False):
     w = get_parameter_or_create("W", [n_inputs, n_features],
                                 UniformInitializer((-np.sqrt(3.), np.sqrt(3))), not fix_parameters)
     w_sn = spectral_normalization_for_affine(w, itr=itr)
-    return F.embed(inp, w)
+    return F.embed(inp, w_sn)
 
 
 def BN(h, test=False):
