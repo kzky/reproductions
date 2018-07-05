@@ -11,8 +11,6 @@ import nnabla.parametric_functions as PF
 import nnabla.solvers as S
 import numpy as np
 
-from networks import Generator, Discriminator
-
 
 class MonitorImageTileWithName(MonitorImageTile):
 

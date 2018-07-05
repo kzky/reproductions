@@ -112,7 +112,8 @@ def sn_convolution(inp, outmaps, kernel,
     if with_bias:
         b = get_parameter_or_create(
             "b", (outmaps,), b_init, not fix_parameters)
-    return F.convolution(inp, w_sn, b, base_axis, pad, stride, dilation, group)
+    #return F.convolution(inp, w_sn, b, base_axis, pad, stride, dilation, group)
+    return F.convolution(inp, w, b, base_axis, pad, stride, dilation, group)
 
 
 @parametric_function_api("sn_affine")
@@ -164,12 +165,13 @@ def sn_affine(inp, n_outmaps,
     if with_bias:
         b = get_parameter_or_create(
             "b", n_outmaps, b_init, not fix_parameters)
-    return F.affine(inp, w_sn, b, base_axis)
+    #return F.affine(inp, w_sn, b, base_axis)
+    return F.affine(inp, w, b, base_axis)
 
 
 @parametric_function_api("sn_embed")
 def sn_embed(inp, n_inputs, n_features, itr=1, fix_parameters=False):
-    """ Embed.
+    """Embed.
 
     Embed slices a matrix/tensor with indexing array/tensor
 
@@ -187,15 +189,16 @@ def sn_embed(inp, n_inputs, n_features, itr=1, fix_parameters=False):
     w = get_parameter_or_create("W", [n_inputs, n_features],
                                 UniformInitializer((-np.sqrt(3.), np.sqrt(3))), not fix_parameters)
     w_sn = spectral_normalization_for_affine(w, itr=itr)
-    return F.embed(inp, w_sn)
+    #return F.embed(inp, w_sn)
+    return F.embed(inp, w)
 
 
 def BN(h, test=False):
     """Batch Normalization"""
     return PF.batch_normalization(h, batch_stat=not test)
 
-
-def CCBN(h, y, n_classes, test=False):
+@parametric_function_api("ccbn")
+def CCBN(h, y, n_classes, test=False, fix_parameters=False):
     """Categorical Conditional Batch Normaliazation"""
     # Call the batch normalization once
     shape_stat = [1 for _ in h.shape]
@@ -322,15 +325,15 @@ def generator(z, y, scopename="generator",
         h = F.reshape(h, [h.shape[0]] + [maps, s, s])
 
         # Resblocks
-        h = resblock_g(h, y, "block-1", n_classes, maps, test=not test)
-        h = resblock_g(h, y, "block-2", n_classes, maps // 2, test=not test)
-        h = resblock_g(h, y, "block-3", n_classes, maps // 4, test=not test)
+        h = resblock_g(h, y, "block-1", n_classes, maps, test=test)
+        h = resblock_g(h, y, "block-2", n_classes, maps // 2, test=test)
+        h = resblock_g(h, y, "block-3", n_classes, maps // 4, test=test)
         h = attnblock(h)
-        h = resblock_g(h, y, "block-4", n_classes, maps // 8, test=not test)
-        h = resblock_g(h, y, "block-5", n_classes, maps // 16, test=not test)
+        h = resblock_g(h, y, "block-4", n_classes, maps // 8, test=test)
+        h = resblock_g(h, y, "block-5", n_classes, maps // 16, test=test)
 
         # Last convoltion
-        h = PF.batch_normalization(h, batch_stat=not test)
+        h = CCBN(h, y, n_classes, test=test)
         h = F.relu(h)
         h = sn_convolution(h, 3, kernel=(3, 3), pad=(1, 1), stride=(1, 1))
         x = F.tanh(h)
@@ -341,16 +344,16 @@ def discriminator(x, y, scopename="discriminator",
                   maps=64, n_classes=1000, s=4, L=5, test=False):
     with nn.parameter_scope(scopename):
         # Resblocks
-        h = resblock_d(x, y, "block-1", n_classes, maps, test=not test)
-        h = resblock_d(h, y, "block-2", n_classes, maps * 2, test=not test)
-        h = resblock_d(h, y, "block-3", n_classes, maps * 4, test=not test)
+        h = resblock_d(x, y, "block-1", n_classes, maps, test=test)
+        h = resblock_d(h, y, "block-2", n_classes, maps * 2, test=test)
+        h = resblock_d(h, y, "block-3", n_classes, maps * 4, test=test)
         h = attnblock(h)
-        h = resblock_d(h, y, "block-4", n_classes, maps * 8, test=not test)
-        h = resblock_d(h, y, "block-5", n_classes, maps * 16, test=not test)
-        h = resblock_d(h, y, "block-6", n_classes, maps * 16, test=not test)
+        h = resblock_d(h, y, "block-4", n_classes, maps * 8, test=test)
+        h = resblock_d(h, y, "block-5", n_classes, maps * 16, test=test)
+        h = resblock_d(h, y, "block-6", n_classes, maps * 16, test=test)
 
         # Last affine
-        h = PF.batch_normalization(h, batch_stat=not test)
+        h = CCBN(h, y, n_classes, test=test)
         h = F.relu(h)
         h = F.average_pooling(h, kernel=h.shape[2:])
         o0 = sn_affine(h, 1)
@@ -363,9 +366,10 @@ def discriminator(x, y, scopename="discriminator",
 
 
 def gan_loss(d_x_fake, d_x_real=None):
+    """Hinge loss"""
     if d_x_real is None:
-        return F.log(1 - d_x_fake)
-    return - F.log(d_x_real) - F.log(1 - d_x_fake)
+        return -d_x_fake
+    return F.maximum_scalar(1 - d_x_real, 0.0) + F.maximum_scalar(1 + d_x_fake, 0.0)
     
 if __name__ == '__main__':
     b, c, h, w = 4, 3, 128, 128
@@ -374,8 +378,15 @@ if __name__ == '__main__':
     print("Generator shape")
     z = F.randn(shape=[b, latent])
     y = nn.Variable([b])
+    y.d = np.random.choice(np.arange(100), b)
     x = generator(z, y)
     print("x.shape = {}".format(x.shape))
+
+    # from nnabla.ext_utils import get_extension_context
+    # import nnabla as nn
+    # ctx = get_extension_context("cudnn", device_id="3")
+    # nn.set_default_context(ctx)
+    # x.forward()
 
     print("Discriminator shape")
     d = discriminator(x, y)

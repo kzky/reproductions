@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def get_args(batch_size=16, image_size=128, max_iter=1282167):
+def get_args(batch_size=16, image_size=128, n_classes=1000, max_iter=1282167):
     """
     Get command line arguments.
 
@@ -25,7 +25,7 @@ def get_args(batch_size=16, image_size=128, max_iter=1282167):
     description = "Example of Self-Attention GAN (SAGAN)."
     parser = argparse.ArgumentParser(description)
 
-    parser.add_argument("-d", "--device-id", type=int, default=0,
+    parser.add_argument("-d", "--device-id", type=str, default="0",
                         help="Device id.")
     parser.add_argument("-c", "--context", type=str, default="cudnn",
                         help="Context.")
@@ -33,18 +33,14 @@ def get_args(batch_size=16, image_size=128, max_iter=1282167):
                         help='Type of computation. e.g. "float", "half".')
     parser.add_argument("--image-size", type=int, default=image_size,
                         help="Image size.")
-    parser.add_argument("--image-size", type=int, default=image_size,
+    parser.add_argument("--n-classes", type=int, default=n_classes,
                         help="Image size.")
     parser.add_argument("--batch-size", "-b", type=int, default=batch_size,
                         help="Batch size.")
     parser.add_argument("--max-iter", "-i", type=int, default=max_iter,
                         help="Max iterations.")
-    parser.add_argument("--save-interval", type=int,
+    parser.add_argument("--save-interval", type=int, required=True,
                         help="Interval for saving models.")
-    parser.add_argument("--train-samples", type=int, default=-1,
-                        help="Number of data to be used. When -1 is set all data is used.")
-    parser.add_argument("--valid-samples", type=int, default=16384,
-                        help="Number of data used in validation.")
     parser.add_argument("--latent", type=int, default=1024,
                         help="Number of latent variables.")
     parser.add_argument("--monitor-path", type=str, default="./result/example_0",
@@ -59,9 +55,9 @@ def get_args(batch_size=16, image_size=128, max_iter=1282167):
                         help="Beta1 of Adam solver.")
     parser.add_argument("--beta2", type=float, default=0.9,
                         help="Beta2 of Adam solver.")
-    parser.add_argument("--train-cachefile-dir", "-T", type=str, default=train_cachefile_dir,
+    parser.add_argument("--train-cachefile-dir", "-T", type=str, default="",
                         help='Training cache file dir. Create to use create_cache_file.py')
-    parser.add_argument("--val-cachefile-dir", "-V", type=str, default=val_cachefile_dir,
+    parser.add_argument("--val-cachefile-dir", "-V", type=str, default="",
                         help='Validation cache file dir. Create to use create_cache_file.py')
     parser.add_argument("--hyper-sphere", action='store_true',
                         help="Latent vector lie in the hyper sphere.")
