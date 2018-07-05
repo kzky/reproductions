@@ -12,7 +12,7 @@ from args import get_args, save_args
 
 from helpers import MonitorImageTileWithName
 from models import generator, discriminator, gan_loss
-
+from imagenet_data import data_iterator_imagenet
 
 def train(args):
     # Context
@@ -31,7 +31,8 @@ def train(args):
     loss_dis = F.mean(gan_loss(d_fake, d_real))
     
     z_test = nn.Variable.from_numpy_array(np.random.randn(args.batch_size, args.latent))
-    y_test = nn.Variable.from_numpy_array(np.random.choice(np.arange()replace=True).reshape([args.batch_size, args.latent]))
+    y_test = nn.Variable.from_numpy_array(
+        np.random.choice(np.arange()replace=True).reshape([args.batch_size, args.latent]))
     x_test = generator(z_test, y_test, maps=args.latent)
     
     # Solver
@@ -52,8 +53,9 @@ def train(args):
                                                   num_images=4,
                                                   normalize_method=lambda x: (x + 1.) / 2.)
     # DataIterator
-    di_train = None
-    di_test = None
+    rng = np.random.RandomState(410)
+    di_train = data_iterator_imagenet(args.batch_size, args.train_cachefile_dir, rng=rng)
+    di_test = data_iterator_imagenet(args.batch_size, args.val_cachefile_dir, rng=False)
     
     # Train loop
     for i in range(args.max_iter):
