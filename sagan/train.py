@@ -46,12 +46,12 @@ def train(args):
 
     # Monitor
     monitor = Monitor(args.monitor_path)
-    monitor_loss_gen = MonitorSeries("Generator Loss", monitor, interval=10)
-    monitor_loss_dis = MonitorSeries("Discriminator Loss", monitor, interval=10)
+    monitor_loss_gen = MonitorSeries("Generator Loss", monitor, interval=1)
+    monitor_loss_dis = MonitorSeries("Discriminator Loss", monitor, interval=1)
     monitor_time = MonitorTimeElapsed(
         "Training Time per Resolution", monitor, interval=1)
     monitor_image_tile = MonitorImageTileWithName("Image Tile", monitor,
-                                                  num_images=16,
+                                                  num_images=args.batch_size,
                                                   normalize_method=lambda x: (x + 1.) / 2.)
     # DataIterator
     rng = np.random.RandomState(410)
@@ -66,16 +66,18 @@ def train(args):
         x_real.d, y.d = normalize_method(x_data), normalize_method(y_data.flatten())
         
         # Train genrator
+        #loss_gen.forward(clear_no_need_grad=True)
         loss_gen.forward(clear_no_need_grad=True)
         solver_gen.zero_grad()
         loss_gen.backward(clear_buffer=True)
         solver_gen.update()
         
         # Train discriminator
+        #loss_dis.forward(clear_no_need_grad=True)
         loss_dis.forward(clear_no_need_grad=True)
         solver_dis.zero_grad()
         loss_dis.backward(clear_buffer=True)
-        solver_gen.update()
+        solver_dis.update()
         
         # Save model and image
         if i % args.save_interval == 0:
@@ -84,8 +86,8 @@ def train(args):
             monitor_image_tile.add("image_{}".format(i), x_test.d)
 
         # Monitor
-        monitor_loss_gen.add(i, loss_gen.d)
-        monitor_loss_dis.add(i, loss_dis.d)
+        monitor_loss_gen.add(i, loss_gen.d.copy())
+        monitor_loss_dis.add(i, loss_dis.d.copy())
         monitor_time.add(i)
 
     x_test.forward(clear_buffer=True)
