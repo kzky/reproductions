@@ -16,52 +16,67 @@ from nnabla.initializer import (
 
 
 def spectral_normalization_for_conv(w, itr=1, eps=1e-12):
-    _w = w
+    w_shape = w.shape
     d0 = w.shape[0]            # Out
     d1 = np.prod(w.shape[1:])  # In
     w = F.reshape(w, [d0, d1], inplace=False)
     u0 = get_parameter_or_create("singular-vector", [d0], NormalInitializer(), False)
     u0 = F.reshape(u0, [1, d0])
+    u = u0
     # Power method
     for _ in range(itr):
-        v = F.affine(u0, w)
+        # v
+        v = F.affine(u, w)
         v = F.div2(v, F.pow_scalar(F.sum(F.pow_scalar(v, 2.), keepdims=True) + eps, 0.5))
         v = F.reshape(v, [d1, 1])
+        # u
         u = F.affine(w, v)
         u = F.div2(u, F.pow_scalar(F.sum(F.pow_scalar(u, 2.), keepdims=True) + eps, 0.5))
         u = F.reshape(u, [1, d0])
-    u0.data.copy_from(u.data)  # share buffer
+    # Iterate
+    u0.data = u.data  # share buffer
     u0.persistent = True
     u.persistent = True
+    # No grad
     u.need_grad = False
-    Wv = F.affine(w, v)
-    sigma = F.affine(u, Wv)
-    sigma = F.broadcast(F.reshape(sigma, [1 for _ in range(len(_w.shape))]), _w.shape)
-    return _w / sigma
+    v.need_grad = False
+    # Spectral normalization
+    wv = F.affine(w, v)
+    sigma = F.affine(u, wv)
+    w_sn = F.div2(w, sigma)
+    w_sn = F.reshape(w_sn, w_shape)
+    return w_sn
 
 
 def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1):
-    _w = w
     d0 = np.prod(w.shape[0:input_axis])  # In
     d1 = np.prod(w.shape[input_axis:])   # Out
     u0 = get_parameter_or_create("singular-vector", [d1], NormalInitializer(), False)
     u0 = F.reshape(u0, [d1, 1])
+    u = u0
     # Power method
     for _ in range(itr):
-        v = F.affine(w, u0)
+        # v
+        v = F.affine(w, u)
         v = F.div2(v, F.pow_scalar(F.sum(F.pow_scalar(v, 2.), keepdims=True) + eps, 0.5))
         v = F.reshape(v, [1, d0])
+        # u
         u = F.affine(v, w)
         u = F.div2(u, F.pow_scalar(F.sum(F.pow_scalar(u, 2.), keepdims=True) + eps, 0.5))
         u = F.reshape(u, [d1, 1])
-        u0.data.copy_from(u.data)  # share buffer
-        u0.persistent = True
-        u.persistent = True
-        u.need_grad = False
-    Wv = F.affine(v, w)
-    sigma = F.affine(Wv, u)
-    sigma = F.broadcast(F.reshape(sigma, [1 for _ in range(len(_w.shape))]), _w.shape)
-    return _w / sigma
+    # Iterate
+    u0.data = u.data  # share buffer
+    u0.persistent = True
+    u.persistent = True
+    # No grad
+    u.need_grad = False
+    v.need_grad = False
+    # Spectral normalization
+    wv = F.affine(v, w)
+    sigma = F.affine(wv, u)
+    sigma = F.broadcast(F.reshape(sigma, [1 for _ in range(len(w.shape))]), w.shape)
+    w_sn = w / sigma
+    return w_sn
 
 
 @parametric_function_api("sn_conv")
@@ -417,4 +432,12 @@ if __name__ == '__main__':
     y = spectral_normalization_for_conv(x)
     y.forward()
     print(y.d)
+    nn.clear_parameters()
                                      
+    import nnabla as nn
+    nn.set_auto_forward(True)
+    x = nn.Variable.from_numpy_array(np.random.randn(*[64, 32]))
+    y = spectral_normalization_for_affine(x)
+    y.forward()
+    print(y.d)
+    nn.clear_parameters()
