@@ -367,11 +367,10 @@ def discriminator(x, y, scopename="discriminator",
         # Last affine
         h = CCBN(h, y, n_classes, test=test)
         h = F.relu(h)
-        #h = F.average_pooling(h, kernel=h.shape[2:])
+        h = F.reshape(h, (h.shape[0], -1), inplace=True)
         o0 = sn_affine(h, 1)
 
         # Project discriminator
-        h = F.reshape(h, h.shape[0:2], inplace=False)
         e = sn_embed(y, n_classes, h.shape[1], name="project-discriminator")
         o1 = F.sum(h * e, axis=1, keepdims=True)
     return o0 + o1
@@ -411,7 +410,7 @@ if __name__ == '__main__':
     o, i, k0, k1 = 8, 8, 16, 16
     w = nn.Variable([o, i, k0, k1])
     w.d = np.random.randn(o, i, k0, k1).astype(np.float32)
-    itr = 1
+    itr = 3
     np.random.seed(412)
     #nn.set_auto_forward(True)
     w_sn = spectral_normalization_for_conv(w, itr=itr)
