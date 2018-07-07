@@ -45,6 +45,8 @@ def get_args(batch_size=16, image_size=128, n_classes=1000, max_iter=1282167):
                         help="Interval for saving models.")
     parser.add_argument("--latent", type=int, default=1024,
                         help="Number of latent variables.")
+    parser.add_argument("--not-sn", action='store_false'
+                        help="Not use the spectral normalization")
     parser.add_argument("--monitor-path", type=str, default="./result/example_0",
                         help="Monitor path.")
     parser.add_argument("--model-load-path", type=str,

@@ -80,11 +80,12 @@ def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1):
 
 
 @parametric_function_api("sn_conv")
-def sn_convolution(inp, outmaps, kernel,
-                   pad=None, stride=None, dilation=None, group=1,
-                   itr=1, 
-                   w_init=None, b_init=None,
-                   base_axis=1, fix_parameters=False, rng=None, with_bias=True):
+def convolution(inp, outmaps, kernel,
+                pad=None, stride=None, dilation=None, group=1,
+                itr=1, 
+                w_init=None, b_init=None,
+                base_axis=1, fix_parameters=False, rng=None, with_bias=True,
+                sn=True):
     """
     N-D Convolution with a bias term.
 
@@ -122,7 +123,7 @@ def sn_convolution(inp, outmaps, kernel,
     w = get_parameter_or_create(
         "W", (outmaps, inp.shape[base_axis] / group) + tuple(kernel),
         w_init, not fix_parameters)
-    w_sn = spectral_normalization_for_conv(w, itr=itr)
+    w_sn = spectral_normalization_for_conv(w, itr=itr) if sn else w
     b = None
     if with_bias:
         b = get_parameter_or_create(
@@ -131,11 +132,12 @@ def sn_convolution(inp, outmaps, kernel,
     
 
 @parametric_function_api("sn_affine")
-def sn_affine(inp, n_outmaps,
-              base_axis=1,
-              w_init=None, b_init=None,
-              itr=1, 
-              fix_parameters=False, rng=None, with_bias=True):
+def affine(inp, n_outmaps,
+           base_axis=1,
+           w_init=None, b_init=None,
+           itr=1, 
+           fix_parameters=False, rng=None, with_bias=True,
+           sn=True):
     """
     The affine layer, also known as the fully connected layer. Computes
 
@@ -174,7 +176,7 @@ def sn_affine(inp, n_outmaps,
         "W", [int(np.prod(inp.shape[base_axis:]))] + n_outmaps,
         w_init, not fix_parameters)
     input_axis = len(inp.shape) - base_axis
-    w_sn = spectral_normalization_for_affine(w, itr=itr, input_axis=input_axis)
+    w_sn = spectral_normalization_for_affine(w, itr=itr, input_axis=input_axis) if sn else w
     b = None
     if with_bias:
         b = get_parameter_or_create(
@@ -182,8 +184,8 @@ def sn_affine(inp, n_outmaps,
     return F.affine(inp, w_sn, b, base_axis)
     
 
-@parametric_function_api("sn_embed")
-def sn_embed(inp, n_inputs, n_features, itr=1, fix_parameters=False):
+@parametric_function_api("embed")
+def embed(inp, n_inputs, n_features, itr=1, fix_parameters=False, sn=True):
     """Embed.
 
     Embed slices a matrix/tensor with indexing array/tensor
@@ -201,7 +203,7 @@ def sn_embed(inp, n_inputs, n_features, itr=1, fix_parameters=False):
     """
     w = get_parameter_or_create("W", [n_inputs, n_features],
                                 UniformInitializer((-np.sqrt(3.), np.sqrt(3))), not fix_parameters)
-    w_sn = spectral_normalization_for_affine(w, itr=itr)
+    w_sn = spectral_normalization_for_affine(w, itr=itr) if sn else w
     return F.embed(inp, w_sn)
     
 
@@ -226,11 +228,11 @@ def CCBN(h, y, n_classes, test=False, fix_parameters=False):
     # Condition the gamma and beta with the class label
     b, c = h.shape[0:2]
     with nn.parameter_scope("gamma"):
-        gamma = sn_embed(y, n_classes, c)
+        gamma = embed(y, n_classes, c, sn=sn)
         gamma = F.reshape(gamma, [b, c] + [1 for _ in range(len(h.shape[2:]))])
         gamma = F.broadcast(gamma, h.shape)
     with nn.parameter_scope("beta"):
-        beta = sn_embed(y, n_classes, c)
+        beta = embed(y, n_classes, c, sn=sn)
         beta = F.reshape(beta, [b, c] + [1 for _ in range(len(h.shape[2:]))])
         beta = F.broadcast(beta, h.shape)
     return gamma * h + beta
@@ -240,13 +242,13 @@ def convblock(h, scopename, maps, kernel, pad=(1, 1), stride=(1, 1), upsample=Tr
     with nn.parameter_scope(scopename):
         if upsample:
             h = F.unpooling(h, kernel=(2, 2))
-        h = sn_convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
+        h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
         h = PF.batch_normalization(h, batch_stat=not test)
     return h
 
 
 @parametric_function_api("attn")
-def attnblock(h, r=8, fix_parameters=False):
+def attnblock(h, r=8, fix_parameters=False sn=True):
     """Attention block"""
     x = h
 
@@ -254,9 +256,9 @@ def attnblock(h, r=8, fix_parameters=False):
     b, c, s0, s1 = h.shape
     c_r = c // r
     assert c_r > 0
-    f_x = sn_convolution(h, c_r, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="f", with_bias=False)
-    g_x = sn_convolution(h, c_r, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="g", with_bias=False)
-    h_x = sn_convolution(h, c, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="h", with_bias=False)
+    f_x = convolution(h, c_r, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="f", with_bias=False, sn=sn)
+    g_x = convolution(h, c_r, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="g", with_bias=False, sn=sn)
+    h_x = convolution(h, c, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="h", with_bias=False, sn=sn)
 
     # Attend 
     attn = F.batch_matmul(f_x.reshape([b, c_r, -1]), g_x.reshape([b, c_r, -1]), transpose_a=True)
@@ -273,7 +275,7 @@ def attnblock(h, r=8, fix_parameters=False):
 
 def resblock_g(h, y, scopename, 
                n_classes, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
-               upsample=True, test=False):
+               upsample=True, test=False, sn=sn):
     """Residual block for generator"""
     s = h
 
@@ -284,25 +286,25 @@ def resblock_g(h, y, scopename,
             h = F.relu(h)
             if upsample:
                 h = F.unpooling(h, kernel=(2, 2))
-            h = sn_convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
+            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn)
         
         # BN -> Relu -> Conv
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test)
             h = F.relu(h)
-            h = sn_convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
+            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn)
             
         # Shortcut: Upsample -> Conv
         with nn.parameter_scope("shortcut"):
             if upsample:
                 s = F.unpooling(s, kernel=(2, 2))
-            s = sn_convolution(s, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
+            s = convolution(s, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn)
     return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
 
 
 def resblock_d(h, y, scopename,
                n_classes, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
-               downsample=True, test=False):
+               downsample=True, test=False, sn=sn):
     """Residual block for discriminator"""
     s = h
 
@@ -311,29 +313,29 @@ def resblock_d(h, y, scopename,
         with nn.parameter_scope("conv1"):
             h = CCBN(h, y, n_classes, test=test)
             h = F.relu(h)
-            h = sn_convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
+            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn)
         
         # BN -> Relu -> Conv -> Downsample
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test)
             h = F.relu(h)
-            h = sn_convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
+            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn)
             if downsample:
                 h = F.average_pooling(h, kernel=(2, 2))
             
         # Shortcut: Conv -> Downsample
         with nn.parameter_scope("shortcut"):
-            s = sn_convolution(s, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
+            s = convolution(s, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn)
             if downsample:
                 s = F.average_pooling(s, kernel=(2, 2))
     return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
 
 
 def generator(z, y, scopename="generator", 
-              maps=1024, n_classes=1000, s=4, L=5, test=False):
+              maps=1024, n_classes=1000, s=4, L=5, test=False, sn=True):
     with nn.parameter_scope(scopename):
         # Affine
-        h = sn_affine(z, maps * s * s, with_bias=False)
+        h = affine(z, maps * s * s, with_bias=False, sn=sn)
         h = F.reshape(h, [h.shape[0]] + [maps, s, s])
 
         # Resblocks
@@ -347,13 +349,13 @@ def generator(z, y, scopename="generator",
         # Last convoltion
         h = CCBN(h, y, n_classes, test=test)
         h = F.relu(h)
-        h = sn_convolution(h, 3, kernel=(3, 3), pad=(1, 1), stride=(1, 1))
+        h = convolution(h, 3, kernel=(3, 3), pad=(1, 1), stride=(1, 1), sn=sn)
         x = F.tanh(h)
     return x
 
 
 def discriminator(x, y, scopename="discriminator", 
-                  maps=64, n_classes=1000, s=4, L=5, test=False):
+                  maps=64, n_classes=1000, s=4, L=5, test=False, sn=True):
     with nn.parameter_scope(scopename):
         # Resblocks
         h = resblock_d(x, y, "block-1", n_classes, maps, test=test)
@@ -368,10 +370,10 @@ def discriminator(x, y, scopename="discriminator",
         h = CCBN(h, y, n_classes, test=test)
         h = F.relu(h)
         h = F.reshape(h, (h.shape[0], -1), inplace=True)
-        o0 = sn_affine(h, 1)
+        o0 = affine(h, 1, sn=sn)
 
         # Project discriminator
-        e = sn_embed(y, n_classes, h.shape[1], name="project-discriminator")
+        e = embed(y, n_classes, h.shape[1], name="project-discriminator", sn=sn)
         o1 = F.sum(h * e, axis=1, keepdims=True)
     return o0 + o1
 

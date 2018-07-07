@@ -23,11 +23,11 @@ def train(args):
     z = F.randn(0, 1.0, [args.batch_size, args.latent])    
     y = nn.Variable([args.batch_size], need_grad=False)
     x_real = nn.Variable([args.batch_size, 3, args.image_size, args.image_size], need_grad=False)
-    x_fake = generator(z, y, maps=args.latent)
+    x_fake = generator(z, y, maps=args.latent, sn=args.not_sn)
     x_fake.persistent = True
-    d_fake = discriminator(x_fake, y)
+    d_fake = discriminator(x_fake, y, sn=args.not_sn)
     d_fake.persistent = True
-    d_real = discriminator(x_real, y)
+    d_real = discriminator(x_real, y, sn=args.not_sn)
     loss_gen = F.mean(gan_loss(d_fake))
     loss_dis = F.mean(gan_loss(d_fake, d_real))
     
@@ -35,7 +35,7 @@ def train(args):
     y_test = nn.Variable.from_numpy_array(np.random.choice(np.arange(args.n_classes),
                                                            args.batch_size,
                                                            replace=False))
-    x_test = generator(z_test, y_test, maps=args.latent, test=True)
+    x_test = generator(z_test, y_test, maps=args.latent, test=True, sn=args.not_sn)
     
     # Solver
     solver_gen = S.Adam(args.learning_rate_for_generator, args.beta1, args.beta2)
