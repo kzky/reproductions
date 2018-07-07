@@ -367,7 +367,7 @@ def discriminator(x, y, scopename="discriminator",
         # Last affine
         h = CCBN(h, y, n_classes, test=test)
         h = F.relu(h)
-        h = F.average_pooling(h, kernel=h.shape[2:])
+        #h = F.average_pooling(h, kernel=h.shape[2:])
         o0 = sn_affine(h, 1)
 
         # Project discriminator
