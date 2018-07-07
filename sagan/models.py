@@ -275,7 +275,7 @@ def attnblock(h, r=8, fix_parameters=False, sn=True):
 
 def resblock_g(h, y, scopename, 
                n_classes, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
-               upsample=True, test=False, sn=sn):
+               upsample=True, test=False, sn=True):
     """Residual block for generator"""
     s = h
 
@@ -304,7 +304,7 @@ def resblock_g(h, y, scopename,
 
 def resblock_d(h, y, scopename,
                n_classes, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
-               downsample=True, test=False, sn=sn):
+               downsample=True, test=False, sn=True):
     """Residual block for discriminator"""
     s = h
 
