@@ -63,7 +63,7 @@ def train(args):
     for i in range(args.max_iter):
         # Feed data
         x_data, y_data = di_train.next()
-        x_real.d, y.d = normalize_method(x_data), normalize_method(y_data.flatten())
+        x_real.d, y.d = normalize_method(x_data), y_data.flatten()
         
         # Train genrator
         loss_gen.forward(clear_no_need_grad=True)
