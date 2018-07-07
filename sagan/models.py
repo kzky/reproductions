@@ -34,7 +34,7 @@ def spectral_normalization_for_conv(w, itr=1, eps=1e-12):
         u = F.div2(u, F.pow_scalar(F.sum(F.pow_scalar(u, 2.), keepdims=True) + eps, 0.5))
         u = F.reshape(u, [1, d0])
     # Iterate
-    u0.data = u.data  # share buffer: success only in auto_forward
+    u0.data = u.data
     u0.persistent = True
     u.persistent = True
     # No grad
@@ -212,7 +212,7 @@ def BN(h, test=False):
     return PF.batch_normalization(h, batch_stat=not test)
 
 @parametric_function_api("ccbn")
-def CCBN(h, y, n_classes, test=False, fix_parameters=False):
+def CCBN(h, y, n_classes, test=False, fix_parameters=False, sn=True):
     """Categorical Conditional Batch Normaliazation"""
     # Call the batch normalization once
     shape_stat = [1 for _ in h.shape]
@@ -282,7 +282,7 @@ def resblock_g(h, y, scopename,
     with nn.parameter_scope(scopename):
         # BN -> Relu -> Upsample -> Conv
         with nn.parameter_scope("conv1"):
-            h = CCBN(h, y, n_classes, test=test)
+            h = CCBN(h, y, n_classes, test=test, sn=sn)
             h = F.relu(h)
             if upsample:
                 h = F.unpooling(h, kernel=(2, 2))
@@ -290,7 +290,7 @@ def resblock_g(h, y, scopename,
         
         # BN -> Relu -> Conv
         with nn.parameter_scope("conv2"):
-            h = CCBN(h, y, n_classes, test=test)
+            h = CCBN(h, y, n_classes, test=test, sn=sn)
             h = F.relu(h)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn)
             
@@ -311,13 +311,13 @@ def resblock_d(h, y, scopename,
     with nn.parameter_scope(scopename):
         # BN -> Relu -> Conv
         with nn.parameter_scope("conv1"):
-            h = CCBN(h, y, n_classes, test=test)
+            h = CCBN(h, y, n_classes, test=test, sn=sn)
             h = F.relu(h)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn)
         
         # BN -> Relu -> Conv -> Downsample
         with nn.parameter_scope("conv2"):
-            h = CCBN(h, y, n_classes, test=test)
+            h = CCBN(h, y, n_classes, test=test, sn=sn)
             h = F.relu(h)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn)
             if downsample:
@@ -347,7 +347,7 @@ def generator(z, y, scopename="generator",
         h = resblock_g(h, y, "block-5", n_classes, maps // 16, test=test, sn=sn)
 
         # Last convoltion
-        h = CCBN(h, y, n_classes, test=test)
+        h = CCBN(h, y, n_classes, test=test, sn=sn)
         h = F.relu(h)
         h = convolution(h, 3, kernel=(3, 3), pad=(1, 1), stride=(1, 1), sn=sn)
         x = F.tanh(h)
@@ -367,7 +367,7 @@ def discriminator(x, y, scopename="discriminator",
         h = resblock_d(h, y, "block-6", n_classes, maps * 16, test=test, sn=sn)
 
         # Last affine
-        h = CCBN(h, y, n_classes, test=test)
+        h = CCBN(h, y, n_classes, test=test, sn=sn)
         h = F.relu(h)
         h = F.reshape(h, (h.shape[0], -1), inplace=True)
         o0 = affine(h, 1, sn=sn)
