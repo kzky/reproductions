@@ -248,7 +248,7 @@ def convblock(h, scopename, maps, kernel, pad=(1, 1), stride=(1, 1), upsample=Tr
 
 
 @parametric_function_api("attn")
-def attnblock(h, r=8, fix_parameters=False sn=True):
+def attnblock(h, r=8, fix_parameters=False, sn=True):
     """Attention block"""
     x = h
 
@@ -339,12 +339,12 @@ def generator(z, y, scopename="generator",
         h = F.reshape(h, [h.shape[0]] + [maps, s, s])
 
         # Resblocks
-        h = resblock_g(h, y, "block-1", n_classes, maps, test=test)
-        h = resblock_g(h, y, "block-2", n_classes, maps // 2, test=test)
-        h = resblock_g(h, y, "block-3", n_classes, maps // 4, test=test)
-        h = attnblock(h)
-        h = resblock_g(h, y, "block-4", n_classes, maps // 8, test=test)
-        h = resblock_g(h, y, "block-5", n_classes, maps // 16, test=test)
+        h = resblock_g(h, y, "block-1", n_classes, maps, test=test, sn=sn)
+        h = resblock_g(h, y, "block-2", n_classes, maps // 2, test=test, sn=sn)
+        h = resblock_g(h, y, "block-3", n_classes, maps // 4, test=test, sn=sn)
+        h = attnblock(h, sn=sn)
+        h = resblock_g(h, y, "block-4", n_classes, maps // 8, test=test, sn=sn)
+        h = resblock_g(h, y, "block-5", n_classes, maps // 16, test=test, sn=sn)
 
         # Last convoltion
         h = CCBN(h, y, n_classes, test=test)
@@ -358,13 +358,13 @@ def discriminator(x, y, scopename="discriminator",
                   maps=64, n_classes=1000, s=4, L=5, test=False, sn=True):
     with nn.parameter_scope(scopename):
         # Resblocks
-        h = resblock_d(x, y, "block-1", n_classes, maps, test=test)
-        h = resblock_d(h, y, "block-2", n_classes, maps * 2, test=test)
-        h = resblock_d(h, y, "block-3", n_classes, maps * 4, test=test)
-        h = attnblock(h)
-        h = resblock_d(h, y, "block-4", n_classes, maps * 8, test=test)
-        h = resblock_d(h, y, "block-5", n_classes, maps * 16, test=test)
-        h = resblock_d(h, y, "block-6", n_classes, maps * 16, test=test)
+        h = resblock_d(x, y, "block-1", n_classes, maps, test=test, sn=sn)
+        h = resblock_d(h, y, "block-2", n_classes, maps * 2, test=test, sn=sn)
+        h = resblock_d(h, y, "block-3", n_classes, maps * 4, test=test, sn=sn)
+        h = attnblock(h, sn=sn)
+        h = resblock_d(h, y, "block-4", n_classes, maps * 8, test=test, sn=sn)
+        h = resblock_d(h, y, "block-5", n_classes, maps * 16, test=test, sn=sn)
+        h = resblock_d(h, y, "block-6", n_classes, maps * 16, test=test, sn=sn)
 
         # Last affine
         h = CCBN(h, y, n_classes, test=test)
