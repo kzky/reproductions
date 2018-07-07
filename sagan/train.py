@@ -47,10 +47,10 @@ def train(args):
 
     # Monitor
     monitor = Monitor(args.monitor_path)
-    monitor_loss_gen = MonitorSeries("Generator Loss", monitor, interval=1)
-    monitor_loss_dis = MonitorSeries("Discriminator Loss", monitor, interval=1)
+    monitor_loss_gen = MonitorSeries("Generator Loss", monitor, interval=10)
+    monitor_loss_dis = MonitorSeries("Discriminator Loss", monitor, interval=10)
     monitor_time = MonitorTimeElapsed(
-        "Training Time per Resolution", monitor, interval=1)
+        "Training Time per Resolution", monitor, interval=10)
     monitor_image_tile = MonitorImageTileWithName("Image Tile", monitor,
                                                   num_images=args.batch_size,
                                                   normalize_method=lambda x: (x + 1.) / 2.)
