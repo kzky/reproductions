@@ -21,7 +21,7 @@ def spectral_normalization_for_conv(w, itr=1, eps=1e-12):
     d1 = np.prod(w.shape[1:])  # In
     w = F.reshape(w, [d0, d1], inplace=False)
     u0 = get_parameter_or_create("singular-vector", [d0], NormalInitializer(), False)
-    u0 = F.reshape(u0, [1, d0])
+    u0 = F.reshape(u0, [1, d0], inplace=False)  # for not overwriting the initial u0
     u = u0
     # Power method
     for _ in range(itr):
@@ -34,7 +34,7 @@ def spectral_normalization_for_conv(w, itr=1, eps=1e-12):
         u = F.div2(u, F.pow_scalar(F.sum(F.pow_scalar(u, 2.), keepdims=True) + eps, 0.5))
         u = F.reshape(u, [1, d0])
     # Iterate
-    u.data = u0.data  # share buffer TODO
+    u0.data = u.data  # share buffer: success only in auto_forward
     u0.persistent = True
     u.persistent = True
     # No grad
@@ -52,7 +52,7 @@ def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1):
     d0 = np.prod(w.shape[0:input_axis])  # In
     d1 = np.prod(w.shape[input_axis:])   # Out
     u0 = get_parameter_or_create("singular-vector", [d1], NormalInitializer(), False)
-    u0 = F.reshape(u0, [d1, 1])
+    u0 = F.reshape(u0, [d1, 1], inplace=True) # for not overwriting the initial u0
     u = u0
     # Power method
     for _ in range(itr):
@@ -65,7 +65,7 @@ def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1):
         u = F.div2(u, F.pow_scalar(F.sum(F.pow_scalar(u, 2.), keepdims=True) + eps, 0.5))
         u = F.reshape(u, [d1, 1])
     # Iterate
-    u.data = u0.data  # share buffer 
+    u0.data = u.data  # share buffer 
     u0.persistent = True
     u.persistent = True
     # No grad
@@ -405,39 +405,55 @@ if __name__ == '__main__':
     # h = attnblock(x)
     # print("h.shape = {}".format(h.shape))
     # nn.clear_parameters()
+
     
-    # print("Spectral Normalization for Conv")
-    # o, i, k0, k1 = 8, 8, 16, 16
-    # w = nn.Variable([o, i, k0, k1])
-    # sigma = spectral_normalization_for_conv(w, itr=2)
-    # print("sigma.shape = {}".format(sigma))
-    # nn.clear_parameters()
+    print("Spectral Normalization for Conv")
+    o, i, k0, k1 = 8, 8, 16, 16
+    w = nn.Variable([o, i, k0, k1])
+    w.d = np.random.randn(o, i, k0, k1).astype(np.float32)
+    itr = 1
+    np.random.seed(412)
+    #nn.set_auto_forward(True)
+    w_sn = spectral_normalization_for_conv(w, itr=itr)
+    print("w_sn.shape = {}".format(w_sn))
+    w_sn.forward()
+    def compute_sigma(w):
+        np.random.seed(412)
+        u = np.random.randn(o)
+        w = np.reshape(w, (o, i*k0*k1))
+        for _ in range(itr):
+            v = np.dot(u, w)
+            v = v / np.sqrt(np.sum(v**2) + 1e-12)
+            u = np.dot(w, v)
+            u = u / np.sqrt(np.sum(u**2) + 1e-12)
+        wv = np.dot(w, v)
+        #print(wv, u)
+        sigma = np.dot(u, wv)
+        return sigma
+    print(np.allclose(w_sn.d, w.d / compute_sigma(w.d)))
+    nn.clear_parameters()
 
     # print("Spectral Normalization for Affine")
     # o, i = 16, 8
     # w = nn.Variable([o, i])
     # sigma = spectral_normalization_for_affine(w, itr=2)
-    # print("sigma.shape = {}".format(sigma))
+    # print("w_sn.shape = {}".format(w_sn))
     # nn.clear_parameters()
 
-    # from nnabla.ext_utils import get_extension_context
-    # import nnabla as nn
-    # ctx = get_extension_context("cudnn", device_id="3")
-    # nn.set_default_context(ctx)
-    # x.forward()
     
-    import nnabla as nn
-    nn.set_auto_forward(True)
-    x = nn.Variable.from_numpy_array(np.random.randn(*[64, 32, 3, 3]))
-    y = spectral_normalization_for_conv(x)
-    y.forward()
-    print(y.d)
-    nn.clear_parameters()
+    # import nnabla as nn
+    # nn.set_auto_forward(True)
+    # x = nn.Variable.from_numpy_array(np.random.randn(*[64, 32, 3, 3]))
+    # y = spectral_normalization_for_conv(x)
+    # y.forward()
+    # print(y.d)
+    # nn.clear_parameters()
                                      
-    import nnabla as nn
-    nn.set_auto_forward(True)
-    x = nn.Variable.from_numpy_array(np.random.randn(*[64, 32]))
-    y = spectral_normalization_for_affine(x)
-    y.forward()
-    print(y.d)
-    nn.clear_parameters()
+    # import nnabla as nn
+    # nn.set_auto_forward(True)
+    # x = nn.Variable.from_numpy_array(np.random.randn(*[64, 32]))
+    # y = spectral_normalization_for_affine(x)
+    # y.forward()
+    # print(y.d)
+    # nn.clear_parameters()
+
