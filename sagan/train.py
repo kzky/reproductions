@@ -67,16 +67,16 @@ def train(args):
         x_real.d, y.d = normalize_method(x_data), normalize_method(y_data.flatten())
         
         # Train genrator
+        solver_gen.zero_grad()
         for _ in range(args.accum_grad):
             loss_gen.forward(clear_no_need_grad=True)
-            solver_gen.zero_grad()
             loss_gen.backward(clear_buffer=True)
         solver_gen.update()
         
         # Train discriminator
+        solver_dis.zero_grad()
         for _ in range(args.accum_grad):
             loss_dis.forward(clear_no_need_grad=True)
-            solver_dis.zero_grad()
             loss_dis.backward(clear_buffer=True)
         solver_dis.update()
         
