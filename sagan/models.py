@@ -34,7 +34,7 @@ def spectral_normalization_for_conv(w, itr=1, eps=1e-12):
         u = F.div2(u, F.pow_scalar(F.sum(F.pow_scalar(u, 2.), keepdims=True) + eps, 0.5))
         u = F.reshape(u, [1, d0])
     # Iterate
-    u0.data = u.data  # share buffer
+    u.data = u0.data  # share buffer TODO
     u0.persistent = True
     u.persistent = True
     # No grad
@@ -65,7 +65,7 @@ def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1):
         u = F.div2(u, F.pow_scalar(F.sum(F.pow_scalar(u, 2.), keepdims=True) + eps, 0.5))
         u = F.reshape(u, [d1, 1])
     # Iterate
-    u0.data = u.data  # share buffer
+    u.data = u0.data  # share buffer 
     u0.persistent = True
     u.persistent = True
     # No grad
