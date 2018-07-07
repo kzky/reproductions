@@ -21,8 +21,7 @@ def spectral_normalization_for_conv(w, itr=1, eps=1e-12):
     d1 = np.prod(w.shape[1:])  # In
     w = F.reshape(w, [d0, d1], inplace=False)
     u0 = get_parameter_or_create("singular-vector", [d0], NormalInitializer(), False)
-    u0 = F.reshape(u0, [1, d0], inplace=True)
-    u = u0
+    u = F.reshape(u0, [1, d0])
     # Power method
     for _ in range(itr):
         # v
@@ -51,8 +50,7 @@ def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1):
     d0 = np.prod(w.shape[0:input_axis])  # In
     d1 = np.prod(w.shape[input_axis:])   # Out
     u0 = get_parameter_or_create("singular-vector", [d1], NormalInitializer(), False)
-    u0 = F.reshape(u0, [d1, 1])
-    u = u0
+    u = F.reshape(u0, [d1, 1])
     # Power method
     for _ in range(itr):
         # v
