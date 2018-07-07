@@ -37,6 +37,8 @@ def get_args(batch_size=16, image_size=128, n_classes=1000, max_iter=1282167):
                         help="Image size.")
     parser.add_argument("--batch-size", "-b", type=int, default=batch_size,
                         help="Batch size.")
+    parser.add_argument("--accum-grad", "-a", type=int, default=1,
+                        help="Batch size.")
     parser.add_argument("--max-iter", "-i", type=int, default=max_iter,
                         help="Max iterations.")
     parser.add_argument("--save-interval", type=int, required=True,

@@ -26,6 +26,7 @@ def train(args):
     x_fake = generator(z, y, maps=args.latent)
     x_fake.persistent = True
     d_fake = discriminator(x_fake, y)
+    d_fake.persistent = True
     d_real = discriminator(x_real, y)
     loss_gen = F.mean(gan_loss(d_fake))
     loss_dis = F.mean(gan_loss(d_fake, d_real))
@@ -66,17 +67,17 @@ def train(args):
         x_real.d, y.d = normalize_method(x_data), normalize_method(y_data.flatten())
         
         # Train genrator
-        #loss_gen.forward(clear_no_need_grad=True)
-        loss_gen.forward(clear_no_need_grad=True)
-        solver_gen.zero_grad()
-        loss_gen.backward(clear_buffer=True)
+        for _ in range(args.accum_grad):
+            loss_gen.forward(clear_no_need_grad=True)
+            solver_gen.zero_grad()
+            loss_gen.backward(clear_buffer=True)
         solver_gen.update()
         
         # Train discriminator
-        #loss_dis.forward(clear_no_need_grad=True)
-        loss_dis.forward(clear_no_need_grad=True)
-        solver_dis.zero_grad()
-        loss_dis.backward(clear_buffer=True)
+        for _ in range(args.accum_grad):
+            loss_dis.forward(clear_no_need_grad=True)
+            solver_dis.zero_grad()
+            loss_dis.backward(clear_buffer=True)
         solver_dis.update()
         
         # Save model and image
