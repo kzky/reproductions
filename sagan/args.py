@@ -51,6 +51,8 @@ def get_args(batch_size=16, image_size=128, n_classes=1000, max_iter=1282167):
                         help="Monitor path.")
     parser.add_argument("--model-load-path", type=str,
                         help="Model load path to a h5 file used in generation and validation.")
+    parser.add_argument("--inception-model-load-path", type=str,
+                        help="Inception model load path to a h5 file used in validation.")
     parser.add_argument("--learning-rate-for-generator", "--lrg", type=float, default=1 * 1e-4,
                         help="Learning rate for generator")
     parser.add_argument("--learning-rate-for-discriminator", "--lrd", type=float, default=4 * 1e-4,
@@ -65,9 +67,9 @@ def get_args(batch_size=16, image_size=128, n_classes=1000, max_iter=1282167):
                         help='Validation cache file dir. Create to use create_cache_file.py')
     parser.add_argument("--hyper-sphere", action='store_true',
                         help="Latent vector lie in the hyper sphere.")
-    parser.add_argument("--validation-metric", type=str, default="",
-                        choices=[""],
-                        help="Validation metric for SAGAN.")
+    parser.add_argument("--validation-metric", type=str, default="FID",
+                        choices=["IS", "FID"],
+                        help="Validation metric for SAGAN; IS or FID, FID is the default.")
 
     args = parser.parse_args()
 
