@@ -31,10 +31,11 @@ def train(args):
     loss_gen = F.mean(gan_loss(d_fake))
     loss_dis = F.mean(gan_loss(d_fake, d_real))
     
-    z_test = nn.Variable.from_numpy_array(np.random.randn(args.batch_size, args.maps))
+    z_test = nn.Variable.from_numpy_array(np.random.randn(args.batch_size, args.latent))
     y_test = nn.Variable.from_numpy_array(np.random.choice(np.arange(args.n_classes),
                                                            args.batch_size,
                                                            replace=False))
+    print("Test")
     x_test = generator(z_test, y_test, maps=args.maps, test=True, sn=args.not_sn)
     
     # Solver
