@@ -294,19 +294,22 @@ def resblock_g(h, y, scopename,
             h = F.relu(h)
             if upsample:
                 h = F.unpooling(h, kernel=(2, 2))
-            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn, test=test)
+            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
+                            with_bias=False, sn=sn, test=test)
         
         # BN -> Relu -> Conv
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, sn=sn)
             h = F.relu(h)
-            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn, test=test)
+            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
+                            with_bias=False, sn=sn, test=test)
             
         # Shortcut: Upsample -> Conv
         with nn.parameter_scope("shortcut"):
             if upsample:
                 s = F.unpooling(s, kernel=(2, 2))
-            s = convolution(s, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn, test=test)
+            s = convolution(s, maps, kernel=kernel, pad=pad, stride=stride, 
+                            with_bias=False, sn=sn, test=test)
     return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
 
 
@@ -321,19 +324,22 @@ def resblock_d(h, y, scopename,
         with nn.parameter_scope("conv1"):
             h = CCBN(h, y, n_classes, test=test, sn=sn)
             h = F.relu(h)
-            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn, test=test)
+            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
+                            with_bias=False, sn=sn, test=test)
         
         # BN -> Relu -> Conv -> Downsample
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, sn=sn)
             h = F.relu(h)
-            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn, test=test)
+            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
+                            with_bias=False, sn=sn, test=test)
             if downsample:
                 h = F.average_pooling(h, kernel=(2, 2))
             
         # Shortcut: Conv -> Downsample
         with nn.parameter_scope("shortcut"):
-            s = convolution(s, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn, test=test)
+            s = convolution(s, maps, kernel=kernel, pad=pad, stride=stride, 
+                            with_bias=False, sn=sn, test=test)
             if downsample:
                 s = F.average_pooling(s, kernel=(2, 2))
     return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
@@ -408,8 +414,8 @@ if __name__ == '__main__':
     print("d.shape = {}".format(d.shape))
 
     print("Parameters")
-    for n in nn.get_parameters(grad_only=False).keys():
-        print(n)
+    for n, v in nn.get_parameters(grad_only=False).items():
+        print(n, v.shape)
 
     # print("Attention block")
     # b, c, h, w = 4, 32, 128, 128
