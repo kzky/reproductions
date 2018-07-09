@@ -81,7 +81,7 @@ def train(args):
             loss_gen.forward(clear_no_need_grad=True)
             loss_gen.backward(clear_buffer=True)
         with nn.parameter_scope("generator"):
-            comm.all_reduce([v.grad for v in nn.get_parameters()])
+            comm.all_reduce([v.grad for v in nn.get_parameters().values()])
         solver_gen.update()
         
         # Train discriminator
@@ -90,11 +90,11 @@ def train(args):
             loss_dis.forward(clear_no_need_grad=True)
             loss_dis.backward(clear_buffer=True)
         with nn.parameter_scope("discriminator"):
-            comm.all_reduce([v.grad for v in nn.get_parameters()])
+            comm.all_reduce([v.grad for v in nn.get_parameters().values()])
         solver_dis.update()
         
         # Save model and image
-        if i % args.save_interval == 0:
+        if i % args.save_interval == 0 and comm.rank == 0:
             x_test.forward(clear_buffer=True)
             nn.save_parameters(os.path.join(args.monitor_path, "params_{}.h5".format(i)))
             monitor_image_tile.add("image_{}".format(i), x_test.d)
