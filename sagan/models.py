@@ -15,8 +15,12 @@ from nnabla.initializer import (
     ConstantInitializer, NormalInitializer, UniformInitializer)
 
 
-def spectral_normalization_for_conv(w, itr=1, eps=1e-12):
+def spectral_normalization_for_conv(w, itr=1, eps=1e-12, test=False):
     w_shape = w.shape
+    w_sn = get_parameter_or_create("W_sn", w_shape, ConstantInitializer(0), False)
+    if test:
+        return w_sn
+
     d0 = w.shape[0]            # Out
     d1 = np.prod(w.shape[1:])  # In
     w = F.reshape(w, [d0, d1], inplace=False)
@@ -36,17 +40,22 @@ def spectral_normalization_for_conv(w, itr=1, eps=1e-12):
     u = F.identity(u, outputs=[u0.data])
     u.persistent = True
     # No grad
-    u.need_grad = False
+    #u.need_grad = False
     v.need_grad = False
     # Spectral normalization
     wv = F.affine(w, v)
     sigma = F.affine(u, wv)
-    w_sn = F.div2(w, sigma)
-    w_sn = F.reshape(w_sn, w_shape)
-    return w_sn
+    _w_sn = F.div2(w, sigma)
+    _w_sn = F.reshape(_w_sn, w_shape)
+    _w_sn = F.identity(_w_sn, outputs=[w_sn.data])
+    return _w_sn
 
 
-def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1):
+def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1, test=False):
+    w_sn = get_parameter_or_create("W_sn", w.shape, ConstantInitializer(0), False)
+    if test:
+        return w_sn
+
     d0 = np.prod(w.shape[0:input_axis])  # In
     d1 = np.prod(w.shape[input_axis:])   # Out
     u0 = get_parameter_or_create("singular-vector", [d1], NormalInitializer(), False)
@@ -65,14 +74,14 @@ def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1):
     u = F.identity(u, outputs=[u0.data])
     u.persistent = True
     # No grad
-    u.need_grad = False
+    #u.need_grad = False
     v.need_grad = False
     # Spectral normalization
     wv = F.affine(v, w)
     sigma = F.affine(wv, u)
     sigma = F.broadcast(F.reshape(sigma, [1 for _ in range(len(w.shape))]), w.shape)
-    w_sn = w / sigma
-    return w_sn
+    _w_sn = F.div2(w, sigma, output=[w_sn.data])
+    return _w_sn
 
 
 @parametric_function_api("sn_conv")
@@ -81,7 +90,8 @@ def convolution(inp, outmaps, kernel,
                 itr=1, 
                 w_init=None, b_init=None,
                 base_axis=1, fix_parameters=False, rng=None, with_bias=True,
-                sn=True):
+                sn=True, test=False):
+                
     """
     N-D Convolution with a bias term.
 
@@ -119,7 +129,7 @@ def convolution(inp, outmaps, kernel,
     w = get_parameter_or_create(
         "W", (outmaps, inp.shape[base_axis] / group) + tuple(kernel),
         w_init, not fix_parameters)
-    w_sn = spectral_normalization_for_conv(w, itr=itr) if sn else w
+    w_sn = spectral_normalization_for_conv(w, itr=itr, test=test) if sn else w
     b = None
     if with_bias:
         b = get_parameter_or_create(
@@ -133,7 +143,7 @@ def affine(inp, n_outmaps,
            w_init=None, b_init=None,
            itr=1, 
            fix_parameters=False, rng=None, with_bias=True,
-           sn=True):
+           sn=True, test=False):
     """
     The affine layer, also known as the fully connected layer. Computes
 
@@ -172,7 +182,7 @@ def affine(inp, n_outmaps,
         "W", [int(np.prod(inp.shape[base_axis:]))] + n_outmaps,
         w_init, not fix_parameters)
     input_axis = len(inp.shape) - base_axis
-    w_sn = spectral_normalization_for_affine(w, itr=itr, input_axis=input_axis) if sn else w
+    w_sn = spectral_normalization_for_affine(w, itr=itr, input_axis=input_axis, test=test) if sn else w
     b = None
     if with_bias:
         b = get_parameter_or_create(
@@ -181,7 +191,7 @@ def affine(inp, n_outmaps,
     
 
 @parametric_function_api("embed")
-def embed(inp, n_inputs, n_features, itr=1, fix_parameters=False, sn=True):
+def embed(inp, n_inputs, n_features, itr=1, fix_parameters=False, sn=True, test=False):
     """Embed.
 
     Embed slices a matrix/tensor with indexing array/tensor
@@ -199,7 +209,7 @@ def embed(inp, n_inputs, n_features, itr=1, fix_parameters=False, sn=True):
     """
     w = get_parameter_or_create("W", [n_inputs, n_features],
                                 UniformInitializer((-np.sqrt(3.), np.sqrt(3))), not fix_parameters)
-    w_sn = spectral_normalization_for_affine(w, itr=itr) if sn else w
+    w_sn = spectral_normalization_for_affine(w, itr=itr, test=test) if sn else w
     return F.embed(inp, w_sn)
     
 
@@ -224,11 +234,11 @@ def CCBN(h, y, n_classes, test=False, fix_parameters=False, sn=True):
     # Condition the gamma and beta with the class label
     b, c = h.shape[0:2]
     with nn.parameter_scope("gamma"):
-        gamma = embed(y, n_classes, c, sn=sn)
+        gamma = embed(y, n_classes, c, sn=sn, test=test)
         gamma = F.reshape(gamma, [b, c] + [1 for _ in range(len(h.shape[2:]))])
         gamma = F.broadcast(gamma, h.shape)
     with nn.parameter_scope("beta"):
-        beta = embed(y, n_classes, c, sn=sn)
+        beta = embed(y, n_classes, c, sn=sn, test=test)
         beta = F.reshape(beta, [b, c] + [1 for _ in range(len(h.shape[2:]))])
         beta = F.broadcast(beta, h.shape)
     return gamma * h + beta
@@ -238,7 +248,7 @@ def convblock(h, scopename, maps, kernel, pad=(1, 1), stride=(1, 1), upsample=Tr
     with nn.parameter_scope(scopename):
         if upsample:
             h = F.unpooling(h, kernel=(2, 2))
-        h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False)
+        h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, test=test)
         h = PF.batch_normalization(h, batch_stat=not test)
     return h
 
@@ -252,9 +262,9 @@ def attnblock(h, r=8, fix_parameters=False, sn=True):
     b, c, s0, s1 = h.shape
     c_r = c // r
     assert c_r > 0
-    f_x = convolution(h, c_r, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="f", with_bias=False, sn=sn)
-    g_x = convolution(h, c_r, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="g", with_bias=False, sn=sn)
-    h_x = convolution(h, c, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="h", with_bias=False, sn=sn)
+    f_x = convolution(h, c_r, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="f", with_bias=False, sn=sn, test=test)
+    g_x = convolution(h, c_r, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="g", with_bias=False, sn=sn, test=test)
+    h_x = convolution(h, c, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="h", with_bias=False, sn=sn, test=test)
 
     # Attend 
     attn = F.batch_matmul(f_x.reshape([b, c_r, -1]), g_x.reshape([b, c_r, -1]), transpose_a=True)
@@ -282,19 +292,19 @@ def resblock_g(h, y, scopename,
             h = F.relu(h)
             if upsample:
                 h = F.unpooling(h, kernel=(2, 2))
-            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn)
+            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn, test=test)
         
         # BN -> Relu -> Conv
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, sn=sn)
             h = F.relu(h)
-            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn)
+            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn, test=test)
             
         # Shortcut: Upsample -> Conv
         with nn.parameter_scope("shortcut"):
             if upsample:
                 s = F.unpooling(s, kernel=(2, 2))
-            s = convolution(s, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn)
+            s = convolution(s, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn, test=test)
     return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
 
 
@@ -309,19 +319,19 @@ def resblock_d(h, y, scopename,
         with nn.parameter_scope("conv1"):
             h = CCBN(h, y, n_classes, test=test, sn=sn)
             h = F.relu(h)
-            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn)
+            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn, test=test)
         
         # BN -> Relu -> Conv -> Downsample
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, sn=sn)
             h = F.relu(h)
-            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn)
+            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn, test=test)
             if downsample:
                 h = F.average_pooling(h, kernel=(2, 2))
             
         # Shortcut: Conv -> Downsample
         with nn.parameter_scope("shortcut"):
-            s = convolution(s, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn)
+            s = convolution(s, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, sn=sn, test=test)
             if downsample:
                 s = F.average_pooling(s, kernel=(2, 2))
     return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
@@ -331,7 +341,7 @@ def generator(z, y, scopename="generator",
               maps=1024, n_classes=1000, s=4, L=5, test=False, sn=True):
     with nn.parameter_scope(scopename):
         # Affine
-        h = affine(z, maps * s * s, with_bias=False, sn=sn)
+        h = affine(z, maps * s * s, with_bias=False, sn=sn, test=test)
         h = F.reshape(h, [h.shape[0]] + [maps, s, s])
 
         # Resblocks
@@ -345,7 +355,7 @@ def generator(z, y, scopename="generator",
         # Last convoltion
         h = CCBN(h, y, n_classes, test=test, sn=sn)
         h = F.relu(h)
-        h = convolution(h, 3, kernel=(3, 3), pad=(1, 1), stride=(1, 1), sn=sn)
+        h = convolution(h, 3, kernel=(3, 3), pad=(1, 1), stride=(1, 1), sn=sn, test=test)
         x = F.tanh(h)
     return x
 
@@ -366,10 +376,10 @@ def discriminator(x, y, scopename="discriminator",
         h = CCBN(h, y, n_classes, test=test, sn=sn)
         h = F.relu(h)
         h = F.reshape(h, (h.shape[0], -1), inplace=True)
-        o0 = affine(h, 1, sn=sn)
+        o0 = affine(h, 1, sn=sn, test=test)
 
         # Project discriminator
-        e = embed(y, n_classes, h.shape[1], name="project-discriminator", sn=sn)
+        e = embed(y, n_classes, h.shape[1], name="project-discriminator", sn=sn, test=test)
         o1 = F.sum(h * e, axis=1, keepdims=True)
     return o0 + o1
 
@@ -404,30 +414,30 @@ if __name__ == '__main__':
     # nn.clear_parameters()
 
     
-    print("Spectral Normalization for Conv")
-    o, i, k0, k1 = 8, 8, 16, 16
-    w = nn.Variable([o, i, k0, k1])
-    w.d = np.random.randn(o, i, k0, k1).astype(np.float32)
-    itr = 3
-    np.random.seed(412)
-    #nn.set_auto_forward(True)
-    w_sn = spectral_normalization_for_conv(w, itr=itr)
-    print("w_sn.shape = {}".format(w_sn))
-    def compute_sigma(w):
-        np.random.seed(412)
-        u = np.random.randn(o)
-        w = np.reshape(w, (o, i*k0*k1))
-        for _ in range(itr):
-            v = np.dot(u, w)
-            v = v / np.sqrt(np.sum(v**2) + 1e-12)
-            u = np.dot(w, v)
-            u = u / np.sqrt(np.sum(u**2) + 1e-12)
-        wv = np.dot(w, v)
-        sigma = np.dot(u, wv)
-        return sigma
-    w_sn.forward()
-    print(np.allclose(w_sn.d, w.d / compute_sigma(w.d)))
-    nn.clear_parameters()
+    # print("Spectral Normalization for Conv")
+    # o, i, k0, k1 = 8, 8, 16, 16
+    # w = nn.Variable([o, i, k0, k1])
+    # w.d = np.random.randn(o, i, k0, k1).astype(np.float32)
+    # itr = 3
+    # np.random.seed(412)
+    # #nn.set_auto_forward(True)
+    # w_sn = spectral_normalization_for_conv(w, itr=itr)
+    # print("w_sn.shape = {}".format(w_sn))
+    # def compute_sigma(w):
+    #     np.random.seed(412)
+    #     u = np.random.randn(o)
+    #     w = np.reshape(w, (o, i*k0*k1))
+    #     for _ in range(itr):
+    #         v = np.dot(u, w)
+    #         v = v / np.sqrt(np.sum(v**2) + 1e-12)
+    #         u = np.dot(w, v)
+    #         u = u / np.sqrt(np.sum(u**2) + 1e-12)
+    #     wv = np.dot(w, v)
+    #     sigma = np.dot(u, wv)
+    #     return sigma
+    # w_sn.forward()
+    # print(np.allclose(w_sn.d, w.d / compute_sigma(w.d)))
+    # nn.clear_parameters()
 
     # print("Spectral Normalization for Affine")
     # o, i = 16, 8
@@ -435,21 +445,3 @@ if __name__ == '__main__':
     # sigma = spectral_normalization_for_affine(w, itr=2)
     # print("w_sn.shape = {}".format(w_sn))
     # nn.clear_parameters()
-
-    
-    # import nnabla as nn
-    # nn.set_auto_forward(True)
-    # x = nn.Variable.from_numpy_array(np.random.randn(*[64, 32, 3, 3]))
-    # y = spectral_normalization_for_conv(x)
-    # y.forward()
-    # print(y.d)
-    # nn.clear_parameters()
-                                     
-    # import nnabla as nn
-    # nn.set_auto_forward(True)
-    # x = nn.Variable.from_numpy_array(np.random.randn(*[64, 32]))
-    # y = spectral_normalization_for_affine(x)
-    # y.forward()
-    # print(y.d)
-    # nn.clear_parameters()
-
