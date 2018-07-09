@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def get_args(batch_size=16, image_size=128, n_classes=1000, max_iter=1282167):
+def get_args(batch_size=16, accum_grad=4, image_size=128, n_classes=1000, max_iter=200000):
     """
     Get command line arguments.
 
@@ -37,7 +37,7 @@ def get_args(batch_size=16, image_size=128, n_classes=1000, max_iter=1282167):
                         help="Image size.")
     parser.add_argument("--batch-size", "-b", type=int, default=batch_size,
                         help="Batch size.")
-    parser.add_argument("--accum-grad", "-a", type=int, default=1,
+    parser.add_argument("--accum-grad", "-a", type=int, default=accum_grad,
                         help="Batch size.")
     parser.add_argument("--max-iter", "-i", type=int, default=max_iter,
                         help="Max iterations.")
