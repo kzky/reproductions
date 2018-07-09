@@ -85,12 +85,12 @@ def validate(args):
     di = data_iterator_imagenet(args.batch_size, args.val_cachefile_dir)
 
     # Compute the validation metric
-    result = compute_metric(x_fake, is_model, di, itr)
+    score = compute_metric(x_fake, is_model, di, itr)
 
     # Monitor
     monitor = Monitor(args.monitor_path)
     monitor_metric = MonitorSeries("{}".format(args.validation_metric), monitor, interval=1)
-    monitor_metric.add(result)
+    monitor_metric.add(score)
 
 
 def main():
