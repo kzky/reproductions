@@ -76,19 +76,21 @@ def train(args):
         x_real.d, y.d = normalize_method(x_data), y_data.flatten()
         
         # Train genrator
+        x_fake.need_grad = True  # need for generator backward
         solver_gen.zero_grad()
         for _ in range(args.accum_grad):
             loss_gen.forward(clear_no_need_grad=True)
-            loss_gen.backward(clear_buffer=True)
+            loss_gen.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
         with nn.parameter_scope("generator"):
             comm.all_reduce([v.grad for v in nn.get_parameters().values()])
         solver_gen.update()
         
         # Train discriminator
+        x_fake.need_grad = False  # no need for discriminator backward
         solver_dis.zero_grad()
         for _ in range(args.accum_grad):
             loss_dis.forward(clear_no_need_grad=True)
-            loss_dis.backward(clear_buffer=True)
+            loss_dis.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
         with nn.parameter_scope("discriminator"):
             comm.all_reduce([v.grad for v in nn.get_parameters().values()])
         solver_dis.update()
