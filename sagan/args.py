@@ -43,7 +43,9 @@ def get_args(batch_size=16, accum_grad=4, image_size=128, n_classes=1000, max_it
                         help="Max iterations.")
     parser.add_argument("--save-interval", type=int, required=True,
                         help="Interval for saving models.")
-    parser.add_argument("--latent", type=int, default=1024,
+    parser.add_argument("--latent", type=int, default=128,
+                        help="Number of latent variables.")
+    parser.add_argument("--maps", type=int, default=1024,
                         help="Number of latent variables.")
     parser.add_argument("--not-sn", action='store_false',
                         help="Not use the spectral normalization")
