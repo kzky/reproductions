@@ -34,7 +34,6 @@ def train(args):
     x_fake = generator(z, y, maps=args.maps, sn=args.not_sn)
     x_fake.persistent = True
     d_fake = discriminator(x_fake, y, sn=args.not_sn)
-    d_fake.persistent = True
     d_real = discriminator(x_real, y, sn=args.not_sn)
     loss_gen = F.mean(gan_loss(d_fake))
     loss_dis = F.mean(gan_loss(d_fake, d_real))
@@ -60,13 +59,15 @@ def train(args):
         monitor_loss_dis = MonitorSeries("Discriminator Loss", monitor, interval=10)
         monitor_time = MonitorTimeElapsed(
             "Training Time per Resolution", monitor, interval=10)
-        monitor_image_tile = MonitorImageTileWithName("Image Tile", monitor,
-                                                      num_images=args.batch_size,
-                                                      normalize_method=lambda x: (x + 1.) / 2.)
+        monitor_image_tile_train = MonitorImageTileWithName("Image Tile Train", monitor,
+                                                            num_images=args.batch_size,
+                                                            normalize_method=lambda x: (x + 1.) / 2.)
+        monitor_image_tile_test = MonitorImageTileWithName("Image Tile Test", monitor,
+                                                            num_images=args.batch_size,
+                                                            normalize_method=lambda x: (x + 1.) / 2.)
     # DataIterator
     rng = np.random.RandomState(410)
     di_train = data_iterator_imagenet(args.batch_size, args.train_cachefile_dir, rng=rng)
-    di_test = data_iterator_imagenet(args.batch_size, args.val_cachefile_dir)
     
     # Train loop
     normalize_method = lambda x: (x - 127.5) / 127.5
@@ -99,7 +100,8 @@ def train(args):
         if i % args.save_interval == 0 and comm.rank == 0:
             x_test.forward(clear_buffer=True)
             nn.save_parameters(os.path.join(args.monitor_path, "params_{}.h5".format(i)))
-            monitor_image_tile.add("image_{}".format(i), x_test.d)
+            monitor_image_tile_train.add("image_{}".format(i), x_fake.d)
+            monitor_image_tile_test.add("image_{}".format(i), x_test.d)
 
         # Monitor
         if comm.rank == 0:

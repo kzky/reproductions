@@ -35,7 +35,6 @@ def train(args):
     y_test = nn.Variable.from_numpy_array(np.random.choice(np.arange(args.n_classes),
                                                            args.batch_size,
                                                            replace=False))
-    print("Test")
     x_test = generator(z_test, y_test, maps=args.maps, test=True, sn=args.not_sn)
     
     # Solver
@@ -52,13 +51,15 @@ def train(args):
     monitor_loss_dis = MonitorSeries("Discriminator Loss", monitor, interval=10)
     monitor_time = MonitorTimeElapsed(
         "Training Time per Resolution", monitor, interval=10)
-    monitor_image_tile = MonitorImageTileWithName("Image Tile", monitor,
-                                                  num_images=args.batch_size,
-                                                  normalize_method=lambda x: (x + 1.) / 2.)
+    monitor_image_tile_train = MonitorImageTileWithName("Image Tile Train", monitor,
+                                                        num_images=args.batch_size,
+                                                        normalize_method=lambda x: (x + 1.) / 2.)
+    monitor_image_tile_test = MonitorImageTileWithName("Image Tile Test", monitor,
+                                                       num_images=args.batch_size,
+                                                       normalize_method=lambda x: (x + 1.) / 2.)
     # DataIterator
     rng = np.random.RandomState(410)
     di_train = data_iterator_imagenet(args.batch_size, args.train_cachefile_dir, rng=rng)
-    di_test = data_iterator_imagenet(args.batch_size, args.val_cachefile_dir)
     
     # Train loop
     normalize_method = lambda x: (x - 127.5) / 127.5
@@ -85,7 +86,8 @@ def train(args):
         if i % args.save_interval == 0:
             x_test.forward(clear_buffer=True)
             nn.save_parameters(os.path.join(args.monitor_path, "params_{}.h5".format(i)))
-            monitor_image_tile.add("image_{}".format(i), x_test.d)
+            monitor_image_tile_test.add("image_{}".format(i), x_fake.d)
+            monitor_image_tile_test.add("image_{}".format(i), x_test.d)
 
         # Monitor
         monitor_loss_gen.add(i, loss_gen.d.copy())
