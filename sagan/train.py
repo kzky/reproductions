@@ -96,7 +96,8 @@ def train(args):
 
     x_test.forward(clear_buffer=True)
     nn.save_parameters(os.path.join(args.monitor_path, "params_{}.h5".format(i)))
-    monitor_image_tile.add("image_{}".format(i))
+    monitor_image_tile_train.add("image_{}".format(i), x_fake.d)
+    monitor_image_tile_test.add("image_{}".format(i), x_test.d)
 
 def main():
     args = get_args()
