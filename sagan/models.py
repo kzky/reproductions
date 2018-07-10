@@ -291,7 +291,7 @@ def resblock_g(h, y, scopename,
         # BN -> Relu -> Upsample -> Conv
         with nn.parameter_scope("conv1"):
             h = CCBN(h, y, n_classes, test=test, sn=sn)
-            h = F.relu(h)
+            h = F.relu(h, inplace=True)
             if upsample:
                 h = F.unpooling(h, kernel=(2, 2))
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
@@ -300,7 +300,7 @@ def resblock_g(h, y, scopename,
         # BN -> Relu -> Conv
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, sn=sn)
-            h = F.relu(h)
+            h = F.relu(h, inplace=True)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=False, sn=sn, test=test)
             
@@ -323,14 +323,14 @@ def resblock_d(h, y, scopename,
         # BN -> Relu -> Conv
         with nn.parameter_scope("conv1"):
             h = CCBN(h, y, n_classes, test=test, sn=sn)
-            h = F.relu(h)
+            h = F.relu(h, inplace=True)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=False, sn=sn, test=test)
         
         # BN -> Relu -> Conv -> Downsample
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, sn=sn)
-            h = F.relu(h)
+            h = F.relu(h, inplace=True)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=False, sn=sn, test=test)
             if downsample:
@@ -362,7 +362,7 @@ def generator(z, y, scopename="generator",
 
         # Last convoltion
         h = CCBN(h, y, n_classes, test=test, sn=sn)
-        h = F.relu(h)
+        h = F.relu(h, inplace=True)
         h = convolution(h, 3, kernel=(3, 3), pad=(1, 1), stride=(1, 1), sn=sn, test=test)
         x = F.tanh(h)
     return x
@@ -382,7 +382,7 @@ def discriminator(x, y, scopename="discriminator",
 
         # Last affine
         h = CCBN(h, y, n_classes, test=test, sn=sn)
-        h = F.relu(h)
+        h = F.relu(h, inplace=True)
         h = F.reshape(h, (h.shape[0], -1), inplace=True)
         o0 = affine(h, 1, sn=sn, test=test)
 
