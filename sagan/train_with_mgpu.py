@@ -45,8 +45,8 @@ def train(args):
     x_test = generator(z_test, y_test, maps=args.maps, test=True, sn=args.not_sn)
     
     # Solver
-    solver_gen = S.Adam(args.learning_rate_for_generator, args.beta1, args.beta2)
-    solver_dis = S.Adam(args.learning_rate_for_discriminator, args.beta1, args.beta2)
+    solver_gen = S.Adam(args.lrg, args.beta1, args.beta2)
+    solver_dis = S.Adam(args.lrd, args.beta1, args.beta2)
     with nn.parameter_scope("generator"):
         solver_gen.set_parameters(nn.get_parameters())
     with nn.parameter_scope("discriminator"):
