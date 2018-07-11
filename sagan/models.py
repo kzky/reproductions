@@ -23,7 +23,7 @@ def spectral_normalization_for_conv(w, itr=1, eps=1e-12, test=False):
 
     d0 = w.shape[0]            # Out
     d1 = np.prod(w.shape[1:])  # In
-    w = F.reshape(w, [d0, d1])
+    w = F.reshape(w, [d0, d1], inplace=False)
     u0 = get_parameter_or_create("singular-vector", [d0], NormalInitializer(), False)
     u = F.reshape(u0, [1, d0])
     # Power method
@@ -322,14 +322,14 @@ def resblock_d(h, y, scopename,
     with nn.parameter_scope(scopename):
         # BN -> LeakyRelu -> Conv
         with nn.parameter_scope("conv1"):
-            h = CCBN(h, y, n_classes, test=test, sn=sn) if not bn else h
+            h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
             h = F.leaky_relu(h, 0.2)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=False, sn=sn, test=test)
         
         # BN -> LeakyRelu -> Conv -> Downsample
         with nn.parameter_scope("conv2"):
-            h = CCBN(h, y, n_classes, test=test, sn=sn) if not bn else h
+            h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
             h = F.leaky_relu(h, 0.2)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=False, sn=sn, test=test)
@@ -381,7 +381,7 @@ def discriminator(x, y, scopename="discriminator",
         h = resblock_d(h, y, "block-6", n_classes, maps * 16, test=test, sn=sn)
 
         # Last affine
-        h = CCBN(h, y, n_classes, test=test, sn=sn) if not bn else h
+        h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
         h = F.leaky_relu(h, 0.2)
         h = F.reshape(h, (h.shape[0], -1))
         o0 = affine(h, 1, sn=sn, test=test)
