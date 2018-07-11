@@ -323,14 +323,14 @@ def resblock_d(h, y, scopename,
         # BN -> LeakyRelu -> Conv
         with nn.parameter_scope("conv1"):
             h = CCBN(h, y, n_classes, test=test, sn=sn) if not bn else h
-            h = F.leaky_relu(h)
+            h = F.leaky_relu(h, 0.2)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=False, sn=sn, test=test)
         
         # BN -> LeakyRelu -> Conv -> Downsample
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, sn=sn) if not bn else h
-            h = F.leaky_relu(h)
+            h = F.leaky_relu(h, 0.2)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=False, sn=sn, test=test)
             if downsample:
