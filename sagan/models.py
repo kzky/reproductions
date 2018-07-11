@@ -23,7 +23,6 @@ def spectral_normalization_for_conv(w, itr=1, eps=1e-12, test=False):
 
     d0 = w.shape[0]            # Out
     d1 = np.prod(w.shape[1:])  # In
-    #w = F.reshape(w, [d0, d1], inplace=False)
     w = F.reshape(w, [d0, d1])
     u0 = get_parameter_or_create("singular-vector", [d0], NormalInitializer(), False)
     u = F.reshape(u0, [1, d0])
@@ -316,22 +315,22 @@ def resblock_g(h, y, scopename,
 
 def resblock_d(h, y, scopename,
                n_classes, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
-               downsample=True, test=False, sn=True):
+               downsample=True, bn=False, test=False, sn=True):
     """Residual block for discriminator"""
     s = h
 
     with nn.parameter_scope(scopename):
-        # BN -> Relu -> Conv
+        # BN -> LeakyRelu -> Conv
         with nn.parameter_scope("conv1"):
-            h = CCBN(h, y, n_classes, test=test, sn=sn)
-            h = F.relu(h, inplace=True)
+            h = CCBN(h, y, n_classes, test=test, sn=sn) if not bn else h
+            h = F.leaky_relu(h)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=False, sn=sn, test=test)
         
-        # BN -> Relu -> Conv -> Downsample
+        # BN -> LeakyRelu -> Conv -> Downsample
         with nn.parameter_scope("conv2"):
-            h = CCBN(h, y, n_classes, test=test, sn=sn)
-            h = F.relu(h, inplace=True)
+            h = CCBN(h, y, n_classes, test=test, sn=sn) if not bn else h
+            h = F.leaky_relu(h)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=False, sn=sn, test=test)
             if downsample:
@@ -347,7 +346,7 @@ def resblock_d(h, y, scopename,
 
 
 def generator(z, y, scopename="generator", 
-              maps=1024, n_classes=1000, s=4, L=5, test=False, sn=True):
+              maps=1024, n_classes=1000, s=4, test=False, sn=True):
     with nn.parameter_scope(scopename):
         # Affine
         h = affine(z, maps * s * s, with_bias=False, sn=sn, test=test)
@@ -370,7 +369,7 @@ def generator(z, y, scopename="generator",
 
 
 def discriminator(x, y, scopename="discriminator", 
-                  maps=64, n_classes=1000, s=4, L=5, test=False, sn=True):
+                  maps=64, n_classes=1000, s=4, bn=False, test=False, sn=True):
     with nn.parameter_scope(scopename):
         # Resblocks
         h = resblock_d(x, y, "block-1", n_classes, maps, test=test, sn=sn)
@@ -382,13 +381,13 @@ def discriminator(x, y, scopename="discriminator",
         h = resblock_d(h, y, "block-6", n_classes, maps * 16, test=test, sn=sn)
 
         # Last affine
-        h = CCBN(h, y, n_classes, test=test, sn=sn)
-        h = F.relu(h, inplace=True)
-        h = F.reshape(h, (h.shape[0], -1), inplace=True)
+        h = CCBN(h, y, n_classes, test=test, sn=sn) if not bn else h
+        h = F.leaky_relu(h, 0.2)
+        h = F.reshape(h, (h.shape[0], -1))
         o0 = affine(h, 1, sn=sn, test=test)
 
         # Project discriminator
-        e = embed(y, n_classes, h.shape[1], name="project-discriminator", sn=sn, test=test)
+        e = embed(y, n_classes, h.shape[1], name="projection", sn=sn, test=test)
         o1 = F.sum(h * e, axis=1, keepdims=True)
     return o0 + o1
 
