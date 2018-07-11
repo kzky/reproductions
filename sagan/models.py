@@ -23,7 +23,8 @@ def spectral_normalization_for_conv(w, itr=1, eps=1e-12, test=False):
 
     d0 = w.shape[0]            # Out
     d1 = np.prod(w.shape[1:])  # In
-    w = F.reshape(w, [d0, d1], inplace=False)
+    #w = F.reshape(w, [d0, d1], inplace=False)
+    w = F.reshape(w, [d0, d1])
     u0 = get_parameter_or_create("singular-vector", [d0], NormalInitializer(), False)
     u = F.reshape(u0, [1, d0])
     # Power method
@@ -40,7 +41,7 @@ def spectral_normalization_for_conv(w, itr=1, eps=1e-12, test=False):
     u = F.identity(u, outputs=[u0.data])
     u.persistent = True
     # No grad
-    #u.need_grad = False
+    u.need_grad = False
     v.need_grad = False
     # Spectral normalization
     wv = F.affine(w, v)
@@ -75,7 +76,7 @@ def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1, test=Fa
     u = F.identity(u, outputs=[u0.data])
     u.persistent = True
     # No grad
-    #u.need_grad = False
+    u.need_grad = False
     v.need_grad = False
     # Spectral normalization
     wv = F.affine(v, w)
