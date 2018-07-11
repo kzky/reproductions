@@ -17,9 +17,9 @@ from nnabla.initializer import (
 
 def spectral_normalization_for_conv(w, itr=1, eps=1e-12, test=False):
     w_shape = w.shape
-    w_sn = get_parameter_or_create("W_sn", w_shape, ConstantInitializer(0), False)
+    W_sn = get_parameter_or_create("W_sn", w_shape, ConstantInitializer(0), False)
     if test:
-        return w_sn
+        return W_sn
 
     d0 = w.shape[0]            # Out
     d1 = np.prod(w.shape[1:])  # In
@@ -45,17 +45,17 @@ def spectral_normalization_for_conv(w, itr=1, eps=1e-12, test=False):
     # Spectral normalization
     wv = F.affine(w, v)
     sigma = F.affine(u, wv)
-    _w_sn = F.div2(w, sigma)
-    _w_sn = F.reshape(_w_sn, w_shape)
-    _w_sn = F.identity(_w_sn, outputs=[w_sn.data])
-    _w_sn.persistent = True
-    return _w_sn
+    w_sn = F.div2(w, sigma)
+    w_sn = F.reshape(w_sn, w_shape)
+    w_sn = F.identity(w_sn, outputs=[W_sn.data])
+    w_sn.persistent = True
+    return w_sn
 
 
 def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1, test=False):
-    w_sn = get_parameter_or_create("W_sn", w.shape, ConstantInitializer(0), False)
+    W_sn = get_parameter_or_create("W_sn", w.shape, ConstantInitializer(0), False)
     if test:
-        return w_sn
+        return W_sn
 
     d0 = np.prod(w.shape[0:input_axis])  # In
     d1 = np.prod(w.shape[input_axis:])   # Out
@@ -81,9 +81,9 @@ def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1, test=Fa
     wv = F.affine(v, w)
     sigma = F.affine(wv, u)
     sigma = F.broadcast(F.reshape(sigma, [1 for _ in range(len(w.shape))]), w.shape)
-    _w_sn = F.div2(w, sigma, outputs=[w_sn.data])
-    _w_sn.persistent = True
-    return _w_sn
+    w_sn = F.div2(w, sigma, outputs=[W_sn.data])
+    w_sn.persistent = True
+    return w_sn
 
 
 @parametric_function_api("sn_conv")
