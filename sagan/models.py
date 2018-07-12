@@ -355,8 +355,8 @@ def generator(z, y, scopename="generator",
         h = resblock_g(h, y, "block-1", n_classes, maps, test=test, sn=sn)
         h = resblock_g(h, y, "block-2", n_classes, maps // 2, test=test, sn=sn)
         h = resblock_g(h, y, "block-3", n_classes, maps // 4, test=test, sn=sn)
-        h = attnblock(h, sn=sn, test=test)
         h = resblock_g(h, y, "block-4", n_classes, maps // 8, test=test, sn=sn)
+        h = attnblock(h, sn=sn, test=test)
         h = resblock_g(h, y, "block-5", n_classes, maps // 16, test=test, sn=sn)
         # Last convoltion
         h = CCBN(h, y, n_classes, test=test, sn=sn)
@@ -372,8 +372,8 @@ def discriminator(x, y, scopename="discriminator",
         # Resblocks
         h = resblock_d(x, y, "block-1", n_classes, maps, downsample=False, test=test, sn=sn)
         h = resblock_d(h, y, "block-2", n_classes, maps * 2, test=test, sn=sn)
-        h = resblock_d(h, y, "block-3", n_classes, maps * 4, test=test, sn=sn)
         h = attnblock(h, sn=sn, test=test)
+        h = resblock_d(h, y, "block-3", n_classes, maps * 4, test=test, sn=sn)
         h = resblock_d(h, y, "block-4", n_classes, maps * 8, test=test, sn=sn)
         h = resblock_d(h, y, "block-5", n_classes, maps * 16, test=test, sn=sn)
         h = resblock_d(h, y, "block-6", n_classes, maps * 16, downsample=True, test=test, sn=sn)
