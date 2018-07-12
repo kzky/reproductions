@@ -331,17 +331,19 @@ def resblock_d(h, y, scopename,
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
             h = F.leaky_relu(h, 0.2)
+            if downsample:
+                stride = (2, 2)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=False, sn=sn, test=test)
-            if downsample:
-                h = F.average_pooling(h, kernel=(2, 2))
+            #if downsample:
+            #    h = F.average_pooling(h, kernel=(2, 2))
             
         # Shortcut: Conv -> Downsample
         with nn.parameter_scope("shortcut"):
             s = convolution(s, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=False, sn=sn, test=test)
-            if downsample:
-                s = F.average_pooling(s, kernel=(2, 2))
+            #if downsample:
+            #    s = F.average_pooling(s, kernel=(2, 2))
     return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
 
 
@@ -349,15 +351,15 @@ def generator(z, y, scopename="generator",
               maps=1024, n_classes=1000, s=4, test=False, sn=True):
     with nn.parameter_scope(scopename):
         # Affine
-        h = affine(z, maps * s * s, with_bias=False, sn=sn, test=test)
-        h = F.reshape(h, [h.shape[0]] + [maps, s, s])
+        h = affine(z, 512 * s * s, with_bias=False, sn=sn, test=test)
+        h = F.reshape(h, [h.shape[0]] + [512, s, s])
         # Resblocks
-        h = resblock_g(h, y, "block-1", n_classes, maps, test=test, sn=sn)
-        h = resblock_g(h, y, "block-2", n_classes, maps // 2, test=test, sn=sn)
-        h = resblock_g(h, y, "block-3", n_classes, maps // 4, test=test, sn=sn)
-        h = resblock_g(h, y, "block-4", n_classes, maps // 8, test=test, sn=sn)
+        h = resblock_g(h, y, "block-1", n_classes, 512, test=test, sn=sn)
+        h = resblock_g(h, y, "block-2", n_classes, 512, test=test, sn=sn)
+        h = resblock_g(h, y, "block-3", n_classes, 512, test=test, sn=sn)
         h = attnblock(h, sn=sn, test=test)
-        h = resblock_g(h, y, "block-5", n_classes, maps // 16, test=test, sn=sn)
+        h = resblock_g(h, y, "block-4", n_classes, 256, test=test, sn=sn)
+        h = resblock_g(h, y, "block-5", n_classes, 128, test=test, sn=sn)
         # Last convoltion
         h = CCBN(h, y, n_classes, test=test, sn=sn)
         h = F.relu(h, inplace=True)
@@ -370,13 +372,13 @@ def discriminator(x, y, scopename="discriminator",
                   maps=64, n_classes=1000, s=4, bn=False, test=False, sn=True):
     with nn.parameter_scope(scopename):
         # Resblocks
-        h = resblock_d(x, y, "block-1", n_classes, maps, downsample=False, test=test, sn=sn)
-        h = resblock_d(h, y, "block-2", n_classes, maps * 2, test=test, sn=sn)
+        h = resblock_d(x, y, "block-1", n_classes, 128, downsample=False, test=test, sn=sn)
+        h = resblock_d(h, y, "block-2", n_classes, 256, test=test, sn=sn)
         h = attnblock(h, sn=sn, test=test)
-        h = resblock_d(h, y, "block-3", n_classes, maps * 4, test=test, sn=sn)
-        h = resblock_d(h, y, "block-4", n_classes, maps * 8, test=test, sn=sn)
-        h = resblock_d(h, y, "block-5", n_classes, maps * 16, test=test, sn=sn)
-        h = resblock_d(h, y, "block-6", n_classes, maps * 16, downsample=True, test=test, sn=sn)
+        h = resblock_d(h, y, "block-3", n_classes, 512, test=test, sn=sn)
+        h = resblock_d(h, y, "block-4", n_classes, 512, test=test, sn=sn)
+        h = resblock_d(h, y, "block-5", n_classes, 512, test=test, sn=sn)
+        h = resblock_d(h, y, "block-6", n_classes, 512, test=test, sn=sn)
         # Last affine
         h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
         h = F.leaky_relu(h, 0.2)
