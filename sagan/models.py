@@ -351,7 +351,6 @@ def generator(z, y, scopename="generator",
         # Affine
         h = affine(z, maps * s * s, with_bias=False, sn=sn, test=test)
         h = F.reshape(h, [h.shape[0]] + [maps, s, s])
-
         # Resblocks
         h = resblock_g(h, y, "block-1", n_classes, maps, test=test, sn=sn)
         h = resblock_g(h, y, "block-2", n_classes, maps // 2, test=test, sn=sn)
@@ -359,7 +358,6 @@ def generator(z, y, scopename="generator",
         h = attnblock(h, sn=sn, test=test)
         h = resblock_g(h, y, "block-4", n_classes, maps // 8, test=test, sn=sn)
         h = resblock_g(h, y, "block-5", n_classes, maps // 16, test=test, sn=sn)
-
         # Last convoltion
         h = CCBN(h, y, n_classes, test=test, sn=sn)
         h = F.relu(h, inplace=True)
@@ -372,20 +370,18 @@ def discriminator(x, y, scopename="discriminator",
                   maps=64, n_classes=1000, s=4, bn=False, test=False, sn=True):
     with nn.parameter_scope(scopename):
         # Resblocks
-        h = resblock_d(x, y, "block-1", n_classes, maps, test=test, sn=sn)
+        h = resblock_d(x, y, "block-1", n_classes, maps, downsample=False, test=test, sn=sn)
         h = resblock_d(h, y, "block-2", n_classes, maps * 2, test=test, sn=sn)
         h = resblock_d(h, y, "block-3", n_classes, maps * 4, test=test, sn=sn)
         h = attnblock(h, sn=sn, test=test)
         h = resblock_d(h, y, "block-4", n_classes, maps * 8, test=test, sn=sn)
         h = resblock_d(h, y, "block-5", n_classes, maps * 16, test=test, sn=sn)
-        h = resblock_d(h, y, "block-6", n_classes, maps * 16, test=test, sn=sn)
-
+        h = resblock_d(h, y, "block-6", n_classes, maps * 16, downsample=True, test=test, sn=sn)
         # Last affine
         h = CCBN(h, y, n_classes, test=test, sn=sn) if not bn else h
         h = F.leaky_relu(h, 0.2)
         h = F.reshape(h, (h.shape[0], -1))
         o0 = affine(h, 1, sn=sn, test=test)
-
         # Project discriminator
         e = embed(y, n_classes, h.shape[1], name="projection", sn=sn, test=test)
         o1 = F.sum(h * e, axis=1, keepdims=True)
@@ -413,9 +409,9 @@ if __name__ == '__main__':
     d = discriminator(x, y)
     print("d.shape = {}".format(d.shape))
 
-    print("Parameters")
-    for n, v in nn.get_parameters(grad_only=False).items():
-        print(n, v.shape)
+    # print("Parameters")
+    # for n, v in nn.get_parameters(grad_only=False).items():
+    #     print(n, v.shape)
 
     # print("Attention block")
     # b, c, h, w = 4, 32, 128, 128
