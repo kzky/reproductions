@@ -66,9 +66,9 @@ def get_args(batch_size=16, ih=256, iw=256, max_iter=468750, save_interval=3125)
                         help='Path to training data')
     parser.add_argument("--val-data-path", "-V", type=str, default="",
                         help='Path to validation data')
-    parser.add_argument("--validation-metric", type=str, default="",
-                        choices=[],
-                        help="Validation metric for Noise2Noise.")
+    parser.add_argument("--validation-metric", type=str, default="psnr",
+                        choices=["psnr"],
+                        help="Validation metric for reconstruction.")
     args = parser.parse_args()
 
     return args

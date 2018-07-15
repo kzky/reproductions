@@ -73,3 +73,7 @@ def apply_noise(x, noise_level, distribution="gaussian"):
         raise ValueError("distribution = {} is not supported.".format(distribution))
     
     
+def psnr(x, y, max_=255):
+    mse = np.mean((x - y) ** 2)
+    return 10 * np.log(max_ ** 2 / mse)
+    
