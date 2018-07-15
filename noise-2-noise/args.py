@@ -45,6 +45,9 @@ def get_args(batch_size=32, ih=256, iw=256, max_iter=200000):
     parser.add_argument("--loss", type=int, default="l2",
                         choices=["l2", "l1"]
                         help="Loss")
+    parser.add_argument("--dist", type=int, default="gaussian",
+                        help="Noise distribution", 
+                        choices=["gaussian", "poisson", "bernoulli"])
     parser.add_argument("--noise-level", type=int, default=50,
                         help="Noise level")
     parser.add_argument("--save-interval", type=int, required=True,

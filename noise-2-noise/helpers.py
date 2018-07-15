@@ -42,10 +42,34 @@ class MonitorImageTileWithName(MonitorImageTile):
         path = os.path.join(self.save_dir, '{}.png'.format(name))
         imsave(path, tile)
 
-def generate_noise(batch_size, noise_level):
-    x = []
-    for i in range(batch_size):
-        std = np.random.randn(np.random.choice(np.arange(args.noise_level), 1))
-        noise = np.random.normal(0, std)
-        x.append(noise)
-    return np.asarray(x)
+def generate_gaussian_noise(shape, noise_level):
+    size = np.prod(shape)
+    stds = np.random.choice(np.arange(args.noise_level), size=size, replace=True)
+    noise = np.random.normal(loc=0, std=stds, size).reshape(shape)
+    return noise
+
+
+def generate_possion_noise(shape, noise_level):
+    size = np.prod(shape)
+    lambda_ = np.random.choice(np.arange(args.noise_level, size=size, replace=True))
+    noise = np.random.poisson(lambda_, size).reshape(shape)
+    return noise
+
+
+def generate_possion_bernoulli(shape, noise_level):
+    size = np.prod(shape)
+    noise = np.random.randint(2, size)
+    return noise
+
+
+def apply_noise(x, noise_level, distribution="gaussian"):
+    if distribution == "gaussian":
+        return x + generate_gaussian_noise(x.shape, noise_level)
+    elif distribution == "poisson":
+        return x + generate_poisson_noise(x.shape, noise_level)
+    elif distribution == "bernoulli":
+        return x * generate_bernoulli(x.shape, noise_level)
+    else:
+        raise ValueError("distribution = {} is not supported.".format(distribution))
+    
+    
