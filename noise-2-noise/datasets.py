@@ -18,13 +18,18 @@ def data_iterator_imagenet(img_path, batch_size, imsize=(256, 256), num_samples=
             "Num. of data ({}) is used for debugging".format(num_samples))
 
     def load_func(i):
+        #TODO: try to use F.image_augmentation
         img = cv.imread(img_path)
+        img = cv2.resize(img, imsize)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).transpose((2, 0, 1))
-        _, h, w = img.shape
-        rh, rw = h - imsize[0], w - imsize[1]
-        ry = np.random.choice(np.arrange(rh), 1)
-        rx = np.random.choice(np.arrange(rw), 1)
-        img = img[:, ry:ry + imsize[0], rx:rx + imsize[1]]
+
+        # Paper said 256x256 random crop, but some images do not have 256 height or width.
+        # _, h, w = img.shape
+        # rh, rw = h - imsize[0], w - imsize[1]
+        # ry = np.random.choice(np.arrange(rh), 1)
+        # rx = np.random.choice(np.arrange(rw), 1)
+        # img = img[:, ry:ry + imsize[0], rx:rx + imsize[1]]
+        
         return img, None
 
     return data_iterator_simple(load_func, num_samples, batch_size, shuffle=shuffle, rng=rng, with_file_cache=False)
