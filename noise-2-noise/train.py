@@ -66,6 +66,7 @@ def train(args):
     for i in range(args.max_iter):
         # Data feed
         x_data, _ = di.next()
+        if np.random.randint(2)
         x.d = x_data
         x_noise.d = apply_noise(x_data, args.noise_level, distribution=args.dist)
         x_noise.persistent = True

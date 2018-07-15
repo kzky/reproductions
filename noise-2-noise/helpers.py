@@ -58,7 +58,7 @@ def generate_possion_noise(shape, noise_level):
 
 def generate_possion_bernoulli(shape, noise_level):
     size = np.prod(shape)
-    noise = np.random.randint(2, size)
+    noise = np.random.randint(2, size).reshape(shape)
     return noise
 
 
