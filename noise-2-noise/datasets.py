@@ -9,7 +9,7 @@ from nnabla.utils.data_source import DataSource
 from nnabla.utils.data_source_loader import download, get_data_home
 
 
-def data_iterator_imagenet(img_path, batch_size, imsize=(256, 256), num_samples=100, shuffle=True, rng=None):
+def data_iterator_imagenet(img_path, batch_size, imsize=(256, 256), num_samples=-1, shuffle=True, rng=None):
     imgs = glob.glob("{}/*.JPEG".format(img_path))
     if num_samples == -1:
         num_samples = len(imgs)

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def get_args(batch_size=16, accum_grad=4, image_size=128, n_classes=1000, max_iter=200000):
+def get_args(batch_size=32, ih=256, iw=256, max_iter=200000):
     """
     Get command line arguments.
 
@@ -31,12 +31,22 @@ def get_args(batch_size=16, accum_grad=4, image_size=128, n_classes=1000, max_it
                         help="Context.")
     parser.add_argument("--type-config", "-t", type=str, default='float',
                         help='Type of computation. e.g. "float", "half".')
-    parser.add_argument("--image-size", type=int, default=image_size,
-                        help="Image size.")
     parser.add_argument("--batch-size", "-b", type=int, default=batch_size,
                         help="Batch size.")
+    parser.add_argument("--ih", type=int, default=ih,
+                        help="Image height.")
+    parser.add_argument("--iw", type=int, default=iw,
+                        help="Image width.")
     parser.add_argument("--max-iter", "-i", type=int, default=max_iter,
                         help="Max iterations.")
+    parser.add_argument("--net", type=int, default="RED",
+                        choices=["RED", "noise2noise"]
+                        help="RED or noise2noise")
+    parser.add_argument("--loss", type=int, default="l2",
+                        choices=["l2", "l1"]
+                        help="Loss")
+    parser.add_argument("--noise-level", type=int, default=50,
+                        help="Noise level")
     parser.add_argument("--save-interval", type=int, required=True,
                         help="Interval for saving models.")
     parser.add_argument("--monitor-path", type=str, default="./result/example_0",

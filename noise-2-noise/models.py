@@ -137,6 +137,21 @@ class REDNetwork(object):
         pred = x + r
         return pred
         
+def l2_loss(x, y):
+    return F.squared_error(x, y)
+
+
+def l1_loss(x, y):
+    return F.absolute_error(x, y)
+
+def get_loss(args.loss):
+    if args.loss == "l2":
+        return l2_loss
+    elif args.loss == "l1":
+        return l1_loss
+    else:
+        raise ValueError("{} is not supported.".format(args.loss))
+
 if __name__ == '__main__':
     # Noise2Noise Nework
     b, c, h, w = 4, 3, 256, 256

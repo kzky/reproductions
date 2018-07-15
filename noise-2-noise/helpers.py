@@ -41,3 +41,11 @@ class MonitorImageTileWithName(MonitorImageTile):
         tile = tile_images(data)
         path = os.path.join(self.save_dir, '{}.png'.format(name))
         imsave(path, tile)
+
+def generate_noise(batch_size, noise_level):
+    x = []
+    for i in range(batch_size):
+        std = np.random.randn(np.random.choice(np.arange(args.noise_level), 1))
+        noise = np.random.normal(0, std)
+        x.append(noise)
+    return np.asarray(x)
