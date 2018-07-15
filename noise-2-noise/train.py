@@ -12,7 +12,7 @@ import nnabla.utils.save as save
 
 from helpers import MonitorImageTileWithName
 from models import generator, discriminator, gan_loss
-from datasets import data_iterator_imagenet
+nfrom datasets import data_iterator_imagenet
 from args import get_args, save_args
 from models import REDNetwork, Noise2Noise, get_loss
 
@@ -57,7 +57,7 @@ def train(args):
         # Data feed
         x_data, _ = di.next()
         x.d = x_data
-        x_noise.d = x_data + generate_noise(batch_size, noise_level)
+        x_noise.d = apply_noise(x_data, noise_level, distribution=args.dist)
         x_noise.persistent = True
 
         # Forward, backward, and update
@@ -66,9 +66,10 @@ def train(args):
         loss.backward(clear_buffer=True)
         solver.update()
 
+        # Save model and images
         if i % args.save_interval == 0:
             nn.save_parameters(args.monitor_path)
-            monitor_image_tile_train_clean.add(i, y_data)
+            monitor_image_tile_train_clean.add(i, x_data)
             monitor_image_tile_train_noisy.add(i, x_noise.d)
             monitor_image_tile_train_recon.add(i, x_recon.d)
 
