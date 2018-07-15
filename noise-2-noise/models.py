@@ -164,5 +164,5 @@ if __name__ == '__main__':
     b, c, h, w = 4, 3, 256, 256
     x = nn.Variable.from_numpy_array(np.random.randn(b, c, h, w))
     network = REDNetwork(layers=15, step_size=2)
-    pred = network(x, maps=64)
+    pred = network(x, maps=128)
     print(pred.shape)
