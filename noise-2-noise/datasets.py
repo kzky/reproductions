@@ -97,7 +97,7 @@ def data_iterator_kodak():
                          
 
 """
-BSDS{300 and 500}
+BSDS{300, 500}
 """
 
 def load_bsds300(dataset="bsds300"):
@@ -153,8 +153,22 @@ def data_iterator_bsds(dataset="bsds300"):
 
 
 """
-Set14
+Set{5, 14}
 """
+def load_set(dataset="set14"):
+    pass
+
+class SetDataSource(DataSource):
+    '''
+    Get data directly from Set dataset from Internet.
+    '''
+    pass
+
+def data_iterator_set():
+    '''
+    '''
+    return data_iterator(SetDataSource(), batch_size=1)
+
 
 if __name__ == '__main__':
     # Kodak
