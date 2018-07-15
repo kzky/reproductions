@@ -29,8 +29,10 @@ def train(args):
     x = nn.Variable([args.batch_size, 3, args.ih, args.iw])
     x.persistent = True
     x_noise = nn.Variable([args.batch_size, 3, args.ih, args.iw])
-    x_recon = net(x)
-    loss = get_loss(args.loss)(x_recon, x)
+    x_noise.persistent = True
+    x_recon = net(x_noise)
+    x_recon.persistent = True
+    loss = F.mean(get_loss(args.loss)(x_recon, x))
     
     # Solver
     solver = S.Adam(args.lr, args.beta1, args.beta2)
@@ -66,10 +68,8 @@ def train(args):
     for i in range(args.max_iter):
         # Data feed
         x_data, _ = di.next()
-        if np.random.randint(2)
         x.d = x_data
         x_noise.d = apply_noise(x_data, args.noise_level, distribution=args.dist)
-        x_noise.persistent = True
 
         # Forward, backward, and update
         loss.forward(clear_no_need_grad=True)
