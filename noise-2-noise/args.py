@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def get_args(batch_size=32, ih=256, iw=256, max_iter=200000):
+def get_args(batch_size=16, ih=256, iw=256, max_iter=468750, save_interval=3125):
     """
     Get command line arguments.
 
@@ -39,18 +39,18 @@ def get_args(batch_size=32, ih=256, iw=256, max_iter=200000):
                         help="Image width.")
     parser.add_argument("--max-iter", "-i", type=int, default=max_iter,
                         help="Max iterations.")
-    parser.add_argument("--net", type=int, default="RED",
-                        choices=["RED", "noise2noise"]
+    parser.add_argument("--net", type=str, default="RED",
+                        choices=["RED", "noise2noise"],
                         help="RED or noise2noise")
-    parser.add_argument("--loss", type=int, default="l2",
-                        choices=["l2", "l1"]
+    parser.add_argument("--loss", type=str, default="l2",
+                        choices=["l2", "l1"],
                         help="Loss")
-    parser.add_argument("--dist", type=int, default="gaussian",
+    parser.add_argument("--dist", type=str, default="gaussian",
                         help="Noise distribution", 
                         choices=["gaussian", "poisson", "bernoulli"])
     parser.add_argument("--noise-level", type=int, default=50,
                         help="Noise level")
-    parser.add_argument("--save-interval", type=int, required=True,
+    parser.add_argument("--save-interval", type=int, required=True, default=3125,
                         help="Interval for saving models.")
     parser.add_argument("--monitor-path", type=str, default="./result/example_0",
                         help="Monitor path.")

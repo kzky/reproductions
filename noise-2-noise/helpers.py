@@ -44,14 +44,14 @@ class MonitorImageTileWithName(MonitorImageTile):
 
 def generate_gaussian_noise(shape, noise_level):
     size = np.prod(shape)
-    stds = np.random.choice(np.arange(args.noise_level), size=size, replace=True)
-    noise = np.random.normal(loc=0, std=stds, size).reshape(shape)
+    stds = np.random.choice(np.arange(noise_level), size=size, replace=True)
+    noise = np.random.normal(0, stds, size).reshape(shape)
     return noise
 
 
 def generate_possion_noise(shape, noise_level):
     size = np.prod(shape)
-    lambda_ = np.random.choice(np.arange(args.noise_level, size=size, replace=True))
+    lambda_ = np.random.choice(np.arange(noise_level), size=size, replace=True)
     noise = np.random.poisson(lambda_, size).reshape(shape)
     return noise
 

@@ -107,12 +107,11 @@ class REDNetwork(object):
         return h
     
     
-    def __call__(self, x, maps=64, bn=False, test=False):
+    def __call__(self, x, maps=128, bn=False, test=False):
         h = x
 
         # Encoder
         encodes = []
-        print("Encoder")
         for l in range(self.layers):
             if (l + 1) % 4 == 1:
                 h = self.conv_block(h, "conv-{:02d}".format(l), maps, kernel=(4, 4), stride=(2, 2))
@@ -121,7 +120,6 @@ class REDNetwork(object):
             if (l + 1) % self.step_size == 0:
                 encodes.append(h)
         # Decoder
-        print("Dencoder")
         for l in range(self.layers - 1, -1, -1):
             if (l + 1) % 4 == 1:
                 h = self.deconv_block(h, "deconv-{:02d}".format(l), maps, 
@@ -144,10 +142,10 @@ def l2_loss(x, y):
 def l1_loss(x, y):
     return F.absolute_error(x, y)
 
-def get_loss(args.loss):
-    if args.loss == "l2":
+def get_loss(loss):
+    if loss == "l2":
         return l2_loss
-    elif args.loss == "l1":
+    elif loss == "l1":
         return l1_loss
     else:
         raise ValueError("{} is not supported.".format(args.loss))

@@ -2,9 +2,11 @@ import cv2
 import numpy as np
 import io
 import os
+import glob
 
 from nnabla.logger import logger
 from nnabla.utils.data_iterator import data_iterator
+from nnabla.utils.data_iterator import data_iterator_simple
 from nnabla.utils.data_source import DataSource
 from nnabla.utils.data_source_loader import download, get_data_home
 
@@ -19,7 +21,7 @@ def data_iterator_imagenet(img_path, batch_size, imsize=(256, 256), num_samples=
 
     def load_func(i):
         #TODO: try to use F.image_augmentation
-        img = cv.imread(img_path)
+        img = cv2.imread(imgs[i])
         img = cv2.resize(img, imsize)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).transpose((2, 0, 1))
 
