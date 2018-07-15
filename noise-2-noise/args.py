@@ -22,7 +22,7 @@ def get_args(batch_size=32, ih=256, iw=256, max_iter=200000):
     import argparse
     import os
 
-    description = "Example of Self-Attention GAN (SAGAN)."
+    description = "Example of Noise-2-Noise netowrk."
     parser = argparse.ArgumentParser(description)
 
     parser.add_argument("-d", "--device-id", type=str, default="0",
