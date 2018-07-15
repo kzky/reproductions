@@ -16,12 +16,12 @@ from nnabla.initializer import (
     ConstantInitializer, NormalInitializer, UniformInitializer)
 
 
-class Noise2NoiseNetwork():
+class Noise2NoiseNetwork(object):
     def __init__(self, ):
         pass
 
 
-    def conv_block(self, h, maps, scope, kernel=(3, 3), stride=(1, 1), bn=False, test=False):
+    def conv_block(self, h, scope, maps, kernel=(3, 3), stride=(1, 1), bn=False, test=False):
         with nn.parameter_scope(scope):
             h = PF.convolution(h, maps, kernel=kernel, stride=stride, pad=(1, 1))
             h = PF.batch_normalization(h, batch_stat=not test) if bn else h
@@ -30,7 +30,7 @@ class Noise2NoiseNetwork():
         return h
     
     
-    def deconv_block(self, h, s, maps, scope, kernel=(3, 3), bn=False, test=False): 
+    def deconv_block(self, h, s, scope, maps, kernel=(3, 3), bn=False, test=False): 
         with nn.parameter_scope(scope):
             h = PF.convolution(h, maps, kernel=kernel, stride=(1, 1), pad=(1, 1), name="conv0")
             h = PF.batch_normalization(h, batch_stat=not test) if bn else h
@@ -51,20 +51,20 @@ class Noise2NoiseNetwork():
         h = PF.batch_normalization(h, batch_stat=not test) if bn else h
         h0 = F.leaky_relu(h)
         # Encoder
-        h1 = self.conv_block(h0, maps, "enc-conv-1", stride=stride)
-        h2 = self.conv_block(h1, maps, "enc-conv-2", stride=stride)
-        h3 = self.conv_block(h2, maps, "enc-conv-3", stride=stride)
-        h4 = self.conv_block(h3, maps, "enc-conv-4", stride=stride)
-        h5 = self.conv_block(h4, maps, "enc-conv-5", stride=stride)
+        h1 = self.conv_block(h0, "enc-conv-1", maps, stride=stride)
+        h2 = self.conv_block(h1, "enc-conv-2", maps, stride=stride)
+        h3 = self.conv_block(h2, "enc-conv-3", maps, stride=stride)
+        h4 = self.conv_block(h3, "enc-conv-4", maps, stride=stride)
+        h5 = self.conv_block(h4, "enc-conv-5", maps, stride=stride)
         # Bottleneck
         b = PF.convolution(h5, maps, kernel=(3, 3), stride=(1, 1), pad=(1, 1), name="bottle-neck")
         b = F.unpooling(b, (2, 2))
         b = F.concatenate(*[b, h4], axis=1)
         # Decoder
-        d0 = self.deconv_block(b, h3, maps * 2, scope="dec-conv-1")
-        d1 = self.deconv_block(d0, h2, maps * 2, scope="dec-conv-2")
-        d2 = self.deconv_block(d1, h1, maps * 2, scope="dec-conv-3")
-        d3 = self.deconv_block(d2, x, maps * 2, scope="dec-conv-4")
+        d0 = self.deconv_block(b, h3, "dec-conv-1", maps * 2)
+        d1 = self.deconv_block(d0, h2, "dec-conv-2", maps * 2)
+        d2 = self.deconv_block(d1, h1, "dec-conv-3", maps * 2)
+        d3 = self.deconv_block(d2, x, "dec-conv-4", maps * 2)
         # Final convolutions
         f = PF.convolution(d3, 64, kernel=(3, 3), stride=(1, 1), pad=(1, 1), name="fconv-0")
         f = PF.batch_normalization(f, batch_stat=not test) if bn else h
@@ -74,10 +74,80 @@ class Noise2NoiseNetwork():
         f = F.leaky_relu(f)
         f = PF.convolution(f, 3, kernel=(3, 3), stride=(1, 1), pad=(1, 1), name="fconv-2")
         return f
+
+
+class REDNetwork(object):
+    """RED Network
+
+    We are not exactly sure what the network architecture is since no details in the paper but assume
+    from some description.
+
+    Ex 1) pool/unpool is performed at conv1, conv5, conv9 indicates it is performed for every 4 layers
+    Ex 2) Final output should be 3 channel, thus we assume the network predicts the residue which is finally added to the input from the Fig. 1
+    """
+
+    def __init__(self, layers=15, step_size=2):
+        self.layers = layers
+        self.step_size = step_size
+
+
+    def conv_block(self, h, scope, maps, kernel=(3, 3), stride=(1, 1), bn=False, test=False):
+        with nn.parameter_scope(scope):
+            h = PF.convolution(h, maps, kernel=kernel, stride=stride, pad=(1, 1))
+            h = PF.batch_normalization(h, batch_stat=not test) if bn else h
+            h = F.relu(h)
+        return h
+    
+    
+    def deconv_block(self, h, scope, maps, kernel=(3, 3), stride=(1, 1), bn=False, test=False): 
+        with nn.parameter_scope(scope):
+            h = PF.deconvolution(h, maps, kernel=kernel, stride=stride, pad=(1, 1))
+            h = PF.batch_normalization(h, batch_stat=not test) if bn else h
+            h = F.relu(h)
+        return h
+    
+    
+    def __call__(self, x, maps=64, bn=False, test=False):
+        h = x
+
+        # Encoder
+        encodes = []
+        print("Encoder")
+        for l in range(self.layers):
+            if (l + 1) % 4 == 1:
+                h = self.conv_block(h, "conv-{:02d}".format(l), maps, kernel=(4, 4), stride=(2, 2))
+            else: 
+                h = self.conv_block(h, "conv-{:02d}".format(l), maps)
+            if (l + 1) % self.step_size == 0:
+                encodes.append(h)
+        # Decoder
+        print("Dencoder")
+        for l in range(self.layers - 1, -1, -1):
+            if (l + 1) % 4 == 1:
+                h = self.deconv_block(h, "deconv-{:02d}".format(l), maps, 
+                                      kernel=(4, 4), stride=(2, 2))
+            else:
+                h = self.deconv_block(h, "deconv-{:02d}".format(l), maps)
+                
+            if (l + 1) % self.step_size == 0:
+                e = encodes.pop()
+                h = h + e
+        # Residue
+        r = PF.convolution(h, 3, kernel=(3, 3), stride=(1, 1), pad=(1, 1))
+        pred = x + r
+        return pred
         
 if __name__ == '__main__':
-     b, c, h, w = 4, 3, 256, 256
-     x = nn.Variable.from_numpy_array(np.random.randn(b, c, h, w))
-     network = Noise2NoiseNetwork()
-     pred = network(x, maps=48)
-     print(pred.shape)
+    # Noise2Noise Nework
+    b, c, h, w = 4, 3, 256, 256
+    x = nn.Variable.from_numpy_array(np.random.randn(b, c, h, w))
+    network = Noise2NoiseNetwork()
+    pred = network(x, maps=48)
+    print(pred.shape)
+    
+    # Red Network
+    b, c, h, w = 4, 3, 256, 256
+    x = nn.Variable.from_numpy_array(np.random.randn(b, c, h, w))
+    network = REDNetwork(layers=15, step_size=2)
+    pred = network(x, maps=64)
+    print(pred.shape)
