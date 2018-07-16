@@ -6,17 +6,23 @@ import nnabla.functions as F
 import nnabla.parametric_functions as PF
 import nnabla.solvers as S
 import nnabla.communicators as C
-from nnabla.monitor import Monitor, MonitorSeries, MonitorTimeElapsed, MonitorImageTile
+from nnabla.utils.data_iterator import data_iterator
+from nnabla.monitor import Monitor, MonitorSeries, MonitorTimeElapsed, MonitorImage
 from nnabla.ext_utils import get_extension_context
 import nnabla.utils.save as save
 
-from helpers import apply_noise
-from datasets import data_iterator_imagenet
+
+from helpers import apply_noise, psnr
+from datasets import KodakDataSource, BSDSDataSource, SetDataSource
 from args import get_args, save_args
 from models import REDNetwork, Noise2NoiseNetwork, get_loss
 
 
 def evaluate(args):
+    # Context
+    ctx = get_extension_context(args.context, device_id=args.device_id)
+    nn.set_default_context(ctx)
+
     # Model
     if args.net == "RED":
         net = REDNetwork(layers=30, step_size=2)
@@ -26,20 +32,20 @@ def evaluate(args):
 
     # Data iterator
     if args.val_dataset == "kodak":
-        ds = KodacDataSource()
-        di = data_iterator_kodak(ds)
+        ds = KodakDataSource()
+        di = data_iterator(ds, batch_size=1)
     elif args.val_dataset == "bsds300":
         ds = BSDSDataSource("bsds300")
-        di = data_iterator(ds)
+        di = data_iterator(ds, batch_size=1)
     elif args.val_dataset == "bsds500":
         ds = BSDSDataSource("bsds500")
-        di = data_iterator(ds)
+        di = data_iterator(ds, batch_size=1)
     elif args.val_dataset == "set5":
         ds = BSDSDataSource("set5")
-        di = data_iterator(ds)
+        di = data_iterator(ds, batch_size=1)
     elif args.val_dataset == "set14":
         ds = BSDSDataSource("set14")
-        di = data_iterator(ds)
+        di = data_iterator(ds, batch_size=1)
     else:
         raise ValueError("{} is not supported.".format(args.val_dataset))
 
@@ -51,7 +57,7 @@ def evaluate(args):
         x[min_idx] = 0
         return x
     monitor = Monitor(args.monitor_path)
-    monitor_loss = MonitorSeries("Reconstruction Loss", monitor, interval=10)
+    monitor_loss = MonitorSeries("Evaluation Metric", monitor, interval=10)
     monitor_time = MonitorTimeElapsed("Training Time per Resolution", monitor, interval=10)
     monitor_image_train_clean = MonitorImage("Image Train Clean", monitor,
                                                  num_images=1, 
@@ -69,7 +75,7 @@ def evaluate(args):
     # Evaluate
     for i in range(ds.size):
         # Read data
-        x_data, _ = di.next()
+        x_data = di.next()[0]  # DI return as tupple
         
         # Create model
         x = nn.Variable([1, 3, x_data.shape[2], x_data.shape[3]])
@@ -82,9 +88,10 @@ def evaluate(args):
         x_noise.d = apply_noise(x_data, args.noise_level, distribution=args.dist, fix=True)
 
         # Forward (denoise)
-        loss.forward(clear_buffer=True)
+        x_recon.forward(clear_buffer=True)
 
-        # Save
+        # Log
+        monitor_loss.add(i, psnr(x_recon.d, x_data))
         monitor_image_train_clean.add(i, x_data)
         monitor_image_train_noisy.add(i, x_noise.d)
         monitor_image_train_recon.add(i, x_recon.d)
