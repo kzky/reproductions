@@ -22,12 +22,7 @@ def evaluate(args):
         net = REDNetwork(layers=30, step_size=2)
     elif args.net == "noise2noise":
         net = Noise2NoiseNetwork()
-    x = nn.Variable([1, 3, args.ih, args.iw])
-    x.persistent = True
-    x_noise = nn.Variable([1, 3, args.ih, args.iw])
-    x_noise.persistent = True
-    x_recon = net(x_noise)
-    x_recon.persistent = True
+    nn.load_parameters(args.model_load_path)
 
     # Data iterator
     if args.val_dataset == "kodak":
@@ -73,10 +68,20 @@ def evaluate(args):
 
     # Evaluate
     for i in range(ds.size):
-        # Denoise
+        # Read data
         x_data, _ = di.next()
+        
+        # Create model
+        x = nn.Variable([1, 3, x_data.shape[2], x_data.shape[3]])
+        x.persistent = True
+        x_noise = nn.Variable([1, 3, x_data.shape[2], x_data.shape[3]])
+        x_noise.persistent = True
+        x_recon = net(x_noise)
+        x_recon.persistent = True
         x.d = x_data
         x_noise.d = apply_noise(x_data, args.noise_level, distribution=args.dist)
+
+        # Forward (denoise)
         loss.forward(clear_buffer=True)
 
         # Save
@@ -84,7 +89,7 @@ def evaluate(args):
         monitor_image_train_noisy.add(i, x_noise.d)
         monitor_image_train_recon.add(i, x_recon.d)
 
-        # Clear memory
+        # Clear memory since the input is varaible size.
         import nnabla_ext.cuda
         nnabla_ext.cuda.clear_memory_cache()
 
