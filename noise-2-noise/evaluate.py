@@ -15,7 +15,7 @@ import nnabla.utils.save as save
 from helpers import apply_noise, psnr
 from datasets import KodakDataSource, BSDSDataSource, SetDataSource
 from args import get_args, save_args
-from models import REDNetwork, Noise2NoiseNetwork, get_loss
+from models import REDNetwork, Unet, get_loss
 
 
 def evaluate(args):
@@ -27,7 +27,7 @@ def evaluate(args):
     if args.net == "RED":
         net = REDNetwork(layers=30, step_size=2)
     elif args.net == "noise2noise":
-        net = Noise2NoiseNetwork()
+        net = Unet()
     nn.load_parameters(args.model_load_path)
 
     # Data iterator

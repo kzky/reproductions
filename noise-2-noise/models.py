@@ -16,7 +16,7 @@ from nnabla.initializer import (
     ConstantInitializer, NormalInitializer, UniformInitializer)
 
 
-class Noise2NoiseNetwork(object):
+class Unet(object):
     def __init__(self, ):
         pass
 
@@ -154,7 +154,7 @@ if __name__ == '__main__':
     # Noise2Noise Nework
     b, c, h, w = 4, 3, 256, 256
     x = nn.Variable.from_numpy_array(np.random.randn(b, c, h, w))
-    network = Noise2NoiseNetwork()
+    network = Unet()
     pred = network(x, maps=48)
     print(pred.shape)
     

@@ -13,7 +13,7 @@ import nnabla.utils.save as save
 from helpers import apply_noise
 from datasets import data_iterator_imagenet
 from args import get_args, save_args
-from models import REDNetwork, Noise2NoiseNetwork, get_loss
+from models import REDNetwork, Unet, get_loss
 
 def train(args):
     # Communicator and Context
@@ -25,7 +25,7 @@ def train(args):
     if args.net == "RED":
         net = REDNetwork(layers=30, step_size=2)
     elif args.net == "noise2noise":
-        net = Noise2NoiseNetwork()
+        net = Unet()
     x = nn.Variable([args.batch_size, 3, args.ih, args.iw])
     x.persistent = True
     x_noise = nn.Variable([args.batch_size, 3, args.ih, args.iw])
