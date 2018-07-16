@@ -18,7 +18,7 @@ from models import REDNetwork, Noise2NoiseNetwork, get_loss
 def train(args):
     # Communicator and Context
     extension_module = args.context
-    ctx = get_extension_context(extension_module)
+    ctx = get_extension_context(extension_module, device_id=args.device_id)
     nn.set_default_context(ctx)
 
     # Model
@@ -49,17 +49,17 @@ def train(args):
     monitor_loss = MonitorSeries("Reconstruction Loss", monitor, interval=10)
     monitor_time = MonitorTimeElapsed("Training Time per Resolution", monitor, interval=10)
     monitor_image_train_clean = MonitorImageTile("Image Tile Train Clean", monitor,
-                                                 num_images=args.batch_size, 
+                                                 num_images=10, 
                                                  normalize_method=normalize_method, 
-                                                 interval=10)
+                                                 interval=1)
     monitor_image_train_noisy = MonitorImageTile("Image Tile Train Noisy", monitor,
-                                                 num_images=args.batch_size, 
+                                                 num_images=10,
                                                  normalize_method=normalize_method, 
-                                                 interval=10)
+                                                 interval=1)
     monitor_image_train_recon = MonitorImageTile("Image Tile Train Recon", monitor,
-                                                 num_images=args.batch_size, 
+                                                 num_images=10,
                                                  normalize_method=normalize_method, 
-                                                 interval=10)
+                                                 interval=1)
     # DataIterator
     rng = np.random.RandomState(410)
     di = data_iterator_imagenet(args.train_data_path, args.batch_size, rng=rng)
