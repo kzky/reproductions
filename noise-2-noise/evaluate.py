@@ -57,8 +57,9 @@ def evaluate(args):
         x[min_idx] = 0
         return x
     monitor = Monitor(args.monitor_path)
-    monitor_loss = MonitorSeries("Evaluation Metric", monitor, interval=10)
-    monitor_time = MonitorTimeElapsed("Training Time per Resolution", monitor, interval=10)
+    monitor_loss = MonitorSeries("{} Evaluation Metric {}".format(args.val_dataset, 
+                                                                  args.noise_dist), 
+                                 monitor, interval=1)
     monitor_image_test_clean = MonitorImage("{} Image Test {} Clean".format(args.val_dataset, 
                                                                             args.noise_dist), 
                                             monitor,
@@ -95,7 +96,6 @@ def evaluate(args):
 
         # Forward (denoise)
         x_recon.forward(clear_buffer=True)
-
 
         # Log
         monitor_loss.add(i, psnr(x_recon.d, x_data))
