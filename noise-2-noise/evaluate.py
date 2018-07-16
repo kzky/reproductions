@@ -79,7 +79,7 @@ def evaluate(args):
         x_recon = net(x_noise)
         x_recon.persistent = True
         x.d = x_data
-        x_noise.d = apply_noise(x_data, args.noise_level, distribution=args.dist)
+        x_noise.d = apply_noise(x_data, args.noise_level, distribution=args.dist, fix=True)
 
         # Forward (denoise)
         loss.forward(clear_buffer=True)
