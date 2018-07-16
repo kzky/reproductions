@@ -53,18 +53,24 @@ def evaluate(args):
     monitor = Monitor(args.monitor_path)
     monitor_loss = MonitorSeries("Reconstruction Loss", monitor, interval=10)
     monitor_time = MonitorTimeElapsed("Training Time per Resolution", monitor, interval=10)
-    monitor_image_train_clean = MonitorImage("Image Train Clean", monitor,
-                                                 num_images=1, 
-                                                 normalize_method=normalize_method, 
-                                                 interval=1)
-    monitor_image_train_noisy = MonitorImage("Image Train Noisy", monitor,
-                                                 num_images=1, 
-                                                 normalize_method=normalize_method, 
-                                                 interval=1)
-    monitor_image_train_recon = MonitorImage("Image Train Recon", monitor,
-                                                 num_images=1, 
-                                                 normalize_method=normalize_method, 
-                                                 interval=1)
+    monitor_image_test_clean = MonitorImage("{} Image Test {} Clean".format(args.val_dataset, 
+                                                                             args.noise_dist), 
+                                             monitor,
+                                             num_images=1, 
+                                             normalize_method=normalize_method, 
+                                             interval=1)
+    monitor_image_test_noisy = MonitorImage("{} Image Test {} Noisy".format(args.val_dataset
+                                                                             args.noise_dist), 
+                                             monitor,
+                                             num_images=1, 
+                                             normalize_method=normalize_method, 
+                                             interval=1)
+    monitor_image_test_recon = MonitorImage("{} Image Test {} Recon".format(args.val_dataset
+                                                                             args.noise_dist), 
+                                             monitor,
+                                             num_images=1, 
+                                             normalize_method=normalize_method, 
+                                             interval=1)
 
     # Evaluate
     for i in range(ds.size):
@@ -79,15 +85,15 @@ def evaluate(args):
         x_recon = net(x_noise)
         x_recon.persistent = True
         x.d = x_data
-        x_noise.d = apply_noise(x_data, args.noise_level, distribution=args.dist, fix=True)
+        x_noise.d = apply_noise(x_data, args.noise_level, distribution=args.noise_dist, fix=True)
 
         # Forward (denoise)
         loss.forward(clear_buffer=True)
 
         # Save
-        monitor_image_train_clean.add(i, x_data)
-        monitor_image_train_noisy.add(i, x_noise.d)
-        monitor_image_train_recon.add(i, x_recon.d)
+        monitor_image_test_clean.add(i, x_data)
+        monitor_image_test_noisy.add(i, x_noise.d)
+        monitor_image_test_recon.add(i, x_recon.d)
 
         # Clear memory since the input is varaible size.
         import nnabla_ext.cuda

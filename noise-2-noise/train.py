@@ -48,15 +48,18 @@ def train(args):
     monitor = Monitor(args.monitor_path)
     monitor_loss = MonitorSeries("Reconstruction Loss", monitor, interval=10)
     monitor_time = MonitorTimeElapsed("Training Time per Resolution", monitor, interval=10)
-    monitor_image_train_clean = MonitorImageTile("Image Tile Train Clean", monitor,
+    monitor_image_train_clean = MonitorImageTile("Image Tile Train {} Clean".format(args.noise_dist), 
+                                                 monitor,
                                                  num_images=4, 
                                                  normalize_method=normalize_method, 
                                                  interval=1)
-    monitor_image_train_noisy = MonitorImageTile("Image Tile Train Noisy", monitor,
+    monitor_image_train_noisy = MonitorImageTile("Image Tile Train {} Noisy".format(args.noise_dist), 
+                                                 monitor,
                                                  num_images=4,
                                                  normalize_method=normalize_method, 
                                                  interval=1)
-    monitor_image_train_recon = MonitorImageTile("Image Tile Train Recon", monitor,
+    monitor_image_train_recon = MonitorImageTile("Image Tile Train {} Recon".format(args.noise_dist), 
+                                                 monitor,
                                                  num_images=4,
                                                  normalize_method=normalize_method, 
                                                  interval=1)
@@ -69,7 +72,7 @@ def train(args):
         # Data feed
         x_data, _ = di.next()
         x.d = x_data
-        x_noise.d = apply_noise(x_data, args.noise_level, distribution=args.dist)
+        x_noise.d = apply_noise(x_data, args.noise_level, distribution=args.noise_dist)
 
         # Forward, backward, and update
         loss.forward(clear_no_need_grad=True)
