@@ -26,9 +26,10 @@ def evaluate(args):
     # Model
     if args.net == "RED":
         net = REDNetwork(layers=30, step_size=2)
-    elif args.net == "noise2noise":
+    elif args.net == "unet":
         net = Unet()
     nn.load_parameters(args.model_load_path)
+
 
     # Data iterator
     if args.val_dataset == "kodak":

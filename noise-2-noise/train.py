@@ -24,7 +24,7 @@ def train(args):
     # Model
     if args.net == "RED":
         net = REDNetwork(layers=30, step_size=2)
-    elif args.net == "noise2noise":
+    elif args.net == "unet":
         net = Unet()
     x = nn.Variable([args.batch_size, 3, args.ih, args.iw])
     x.persistent = True
