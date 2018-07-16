@@ -49,15 +49,15 @@ def train(args):
     monitor_loss = MonitorSeries("Reconstruction Loss", monitor, interval=10)
     monitor_time = MonitorTimeElapsed("Training Time per Resolution", monitor, interval=10)
     monitor_image_train_clean = MonitorImageTile("Image Tile Train Clean", monitor,
-                                                 num_images=10, 
+                                                 num_images=4, 
                                                  normalize_method=normalize_method, 
                                                  interval=1)
     monitor_image_train_noisy = MonitorImageTile("Image Tile Train Noisy", monitor,
-                                                 num_images=10,
+                                                 num_images=4,
                                                  normalize_method=normalize_method, 
                                                  interval=1)
     monitor_image_train_recon = MonitorImageTile("Image Tile Train Recon", monitor,
-                                                 num_images=10,
+                                                 num_images=4,
                                                  normalize_method=normalize_method, 
                                                  interval=1)
     # DataIterator
