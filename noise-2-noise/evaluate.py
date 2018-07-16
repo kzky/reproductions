@@ -60,23 +60,23 @@ def evaluate(args):
     monitor_loss = MonitorSeries("Evaluation Metric", monitor, interval=10)
     monitor_time = MonitorTimeElapsed("Training Time per Resolution", monitor, interval=10)
     monitor_image_test_clean = MonitorImage("{} Image Test {} Clean".format(args.val_dataset, 
-                                                                             args.noise_dist), 
-                                             monitor,
-                                             num_images=1, 
-                                             normalize_method=normalize_method, 
-                                             interval=1)
-    monitor_image_test_noisy = MonitorImage("{} Image Test {} Noisy".format(args.val_dataset
-                                                                             args.noise_dist), 
-                                             monitor,
-                                             num_images=1, 
-                                             normalize_method=normalize_method, 
-                                             interval=1)
-    monitor_image_test_recon = MonitorImage("{} Image Test {} Recon".format(args.val_dataset
-                                                                             args.noise_dist), 
-                                             monitor,
-                                             num_images=1, 
-                                             normalize_method=normalize_method, 
-                                             interval=1)
+                                                                            args.noise_dist), 
+                                            monitor,
+                                            num_images=1, 
+                                            normalize_method=normalize_method, 
+                                            interval=1)
+    monitor_image_test_noisy = MonitorImage("{} Image Test {} Noisy".format(args.val_dataset,
+                                                                            args.noise_dist), 
+                                            monitor,
+                                            num_images=1, 
+                                            normalize_method=normalize_method, 
+                                            interval=1)
+    monitor_image_test_recon = MonitorImage("{} Image Test {} Recon".format(args.val_dataset,
+                                                                            args.noise_dist), 
+                                            monitor,
+                                            num_images=1, 
+                                            normalize_method=normalize_method, 
+                                            interval=1)
 
     # Evaluate
     for i in range(ds.size):
