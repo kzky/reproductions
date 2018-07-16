@@ -81,5 +81,5 @@ def apply_noise(x, noise_level, distribution="gaussian", fix=False):
     
 def psnr(x, y, max_=255):
     mse = np.mean((x - y) ** 2)
-    return 10 * np.log(max_ ** 2 / mse)
+    return 10 * np.log10(max_ ** 2 / mse)
     
