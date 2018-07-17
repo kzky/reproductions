@@ -11,6 +11,7 @@ from nnabla.ext_utils import get_extension_context
 import nnabla.utils.save as save
 
 from helpers import apply_noise
+from helpers import RampdownLRScheduler
 from datasets import data_iterator_imagenet
 from args import get_args, save_args
 from models import REDNetwork, Unet, get_loss
@@ -37,6 +38,7 @@ def train(args):
     # Solver
     solver = S.Adam(args.lr, args.beta1, args.beta2)
     solver.set_parameters(nn.get_parameters())
+    lr_scheduler = RampdownLRScheduler(solver)
 
     # Monitor
     def normalize_method(x):
@@ -48,17 +50,17 @@ def train(args):
     monitor = Monitor(args.monitor_path)
     monitor_loss = MonitorSeries("Reconstruction Loss", monitor, interval=10)
     monitor_time = MonitorTimeElapsed("Training Time per Resolution", monitor, interval=10)
-    monitor_image_train_clean = MonitorImageTile("Image Tile Train {} Clean".format(args.noise_dist), 
+    monitor_image_train_clean = MonitorImageTile("Image Tile Train Clean",
                                                  monitor,
                                                  num_images=4, 
                                                  normalize_method=normalize_method, 
                                                  interval=1)
-    monitor_image_train_noisy = MonitorImageTile("Image Tile Train {} Noisy".format(args.noise_dist), 
+    monitor_image_train_noisy = MonitorImageTile("Image Tile Train Noisy",
                                                  monitor,
                                                  num_images=4,
                                                  normalize_method=normalize_method, 
                                                  interval=1)
-    monitor_image_train_recon = MonitorImageTile("Image Tile Train {} Recon".format(args.noise_dist), 
+    monitor_image_train_recon = MonitorImageTile("Image Tile Train Recon",
                                                  monitor,
                                                  num_images=4,
                                                  normalize_method=normalize_method, 
@@ -79,6 +81,9 @@ def train(args):
         solver.zero_grad()
         loss.backward(clear_buffer=True)
         solver.update()
+
+        # Schedule LR
+        lr_scheduler(loss.d)
 
         # Save model and images
         if i % args.save_interval == 0:

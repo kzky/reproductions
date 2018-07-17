@@ -16,7 +16,7 @@ class MonitorImageTileWithName(MonitorImageTile):
 
     def __init__(self, name, monitor, num_images=4, normalize_method=None):
         super(MonitorImageTileWithName, self).__init__(
-            name, monitor, interval=1000, verbose=True, num_images=num_images, normalize_method=normalize_method)
+            name, monitor, interval=10000, verbose=True, num_images=num_images, normalize_method=normalize_method)
 
     def add(self, name, var):
         import nnabla as nn
@@ -52,7 +52,7 @@ def generate_gaussian_noise(shape, noise_level, fix=False):
     return noise
 
 
-def generate_possion_noise(shape, noise_level, fix=False):
+def generate_poisson_noise(shape, noise_level, fix=False):
     size = np.prod(shape)
     if fix:
         lambda_ = np.asarray([noise_level] * size)
@@ -62,9 +62,9 @@ def generate_possion_noise(shape, noise_level, fix=False):
     return noise
 
 
-def generate_possion_bernoulli(shape, noise_level, fix=False):
+def generate_bernoulli_noise(shape, noise_level, fix=False):
     size = np.prod(shape)
-    noise = np.random.randint(2, size).reshape(shape)
+    noise = np.random.randint(2, size=size).reshape(shape)
     return noise
 
 
@@ -74,7 +74,7 @@ def apply_noise(x, noise_level, distribution="gaussian", fix=False):
     elif distribution == "poisson":
         return x + generate_poisson_noise(x.shape, noise_level, fix)
     elif distribution == "bernoulli":
-        return x * generate_bernoulli(x.shape, noise_level, fix)
+        return x * generate_bernoulli_noise(x.shape, noise_level, fix)
     else:
         raise ValueError("distribution = {} is not supported.".format(distribution))
     
@@ -83,3 +83,39 @@ def psnr(x, y, max_=255):
     mse = np.mean((x - y) ** 2)
     return 10 * np.log10(max_ ** 2 / mse)
     
+
+
+class RampdownLRScheduler(object):
+
+    def __init__(self, solver, interval=1000, decay_factor=0.5):
+        """
+        Args:
+           solver (`S.solver`): solver
+           interval (`int`): interval
+           decay_fator (`int`): decay_fator
+        """
+        self.solver = solver
+        self.interval = interval
+        self.decay_factor = decay_factor
+        self.losses = []
+
+    def __call__(self, loss):
+        """Set learning rate
+        Args:
+           loss (`numpy.ndarray`): loss
+
+        """
+        loss = loss.copy()
+        if len(self.losses) < self.interval:
+            self.losses.append(loss)
+            return
+
+        self.losses.pop(0)
+        self.losses.append(loss)
+        ave_loss = np.mean(self.losses)
+        lr = self.solver.learning_rate()
+        if loss > ave_loss:
+            lr = lr * self.decay_factor
+            logger.info("LR rampdowns to {}.".format(lr))
+            self.losses = []
+        self.solver.set_learning_rate(lr)
