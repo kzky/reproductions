@@ -44,6 +44,7 @@ class MonitorImageTileWithName(MonitorImageTile):
 
 def generate_gaussian_noise(shape, noise_level, fix=False):
     size = np.prod(shape)
+    noise_level = int(noise_level)
     if fix:
         stds = np.asarray([noise_level] * size)
     else:
@@ -54,6 +55,7 @@ def generate_gaussian_noise(shape, noise_level, fix=False):
 
 def generate_poisson_noise(shape, noise_level, fix=False):
     size = np.prod(shape)
+    noise_level = int(noise_level)
     if fix:
         lambda_ = np.asarray([noise_level] * size)
     else:
@@ -62,9 +64,10 @@ def generate_poisson_noise(shape, noise_level, fix=False):
     return noise
 
 
-def generate_bernoulli_noise(shape, noise_level, fix=False):
+def generate_bernoulli_noise(shape, noise_level=0.95, fix=False):
     size = np.prod(shape)
-    noise = np.random.randint(2, size=size).reshape(shape)
+    p = np.random.uniform(0, noise_level, size=size)
+    noise = np.random.binomial(1, p, size=size).reshape(shape)
     return noise
 
 
