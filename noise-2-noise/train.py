@@ -33,9 +33,9 @@ def train(args):
     x_noise.persistent = True
     x_recon = net(x_noise)
     x_recon.persistent = True
-    loss = F.mean(get_loss(args.loss)(x_recon, x_noise)) \
-           if not args.use_clean else F.mean(get_loss(args.loss)(x_recon, x))
-    
+    gamma = nn.Variable.from_numpy_array(np.asarray([2.]))
+    loss = get_loss(args.loss, x_clean, x_noise, x_recon, args.use_clean, gamma)
+
     # Solver
     solver = S.Adam(args.lr, args.beta1, args.beta2)
     solver.set_parameters(nn.get_parameters())
@@ -85,6 +85,9 @@ def train(args):
 
         # Schedule LR
         lr_scheduler(loss.d)
+
+        # Update gamma if L0 loss is used
+        gamma.d = gamma.d * (1.0 - 1.0 * itr / max_itr) if args.loss == "l0" else 2.0
 
         # Save model and images
         if i % args.save_interval == 0:

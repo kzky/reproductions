@@ -142,13 +142,26 @@ def l2_loss(x, y):
 def l1_loss(x, y):
     return F.absolute_error(x, y)
 
-def get_loss(loss):
+def l0_loss(x, y, gamma, eps=1e-8):
+    return F.pow2(F.squared_error(x, y) + eps, F.broadcast(gamma, x.shape))
+
+def get_loss(loss, x_clean, x_noise, x_recon, use_clean, gamma=None):
     if loss == "l2":
-        return l2_loss
+        loss_func = l2_loss
     elif loss == "l1":
-        return l1_loss
+        loss_func = l1_loss
+    elif loss == "l0":
+        loss_func = l0_loss
     else:
-        raise ValueError("{} is not supported.".format(args.loss))
+        raise ValueError("{} is not supported.".format(loss))
+
+    if loss != "l0":
+        lossv = F.mean(loss_func(x_recon, x_noise)) \
+               if not use_clean else F.mean(loss_func(x_recon, x))
+    else:
+        lossv = F.mean(loss_func(x_recon, x_noise, gamma)) \
+               if not use_clean else F.mean(loss_func(x_recon, x, gamma))
+    return lossv
 
 if __name__ == '__main__':
     # Noise2Noise Nework
