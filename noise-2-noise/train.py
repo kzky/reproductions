@@ -23,17 +23,18 @@ def train(args):
     nn.set_default_context(ctx)
 
     # Model
-    if args.net == "RED":
+    if args.net == "RED30":
         net = REDNetwork(layers=30, step_size=2)
     elif args.net == "unet":
         net = Unet()
-    x = nn.Variable([args.batch_size, 3, args.ih, args.iw])
-    x.persistent = True
+    x_clean = nn.Variable([args.batch_size, 3, args.ih, args.iw])
+    x_clean.persistent = True
     x_noise = nn.Variable([args.batch_size, 3, args.ih, args.iw])
     x_noise.persistent = True
     x_recon = net(x_noise)
     x_recon.persistent = True
-    loss = F.mean(get_loss(args.loss)(x_recon, x))
+    loss = F.mean(get_loss(args.loss)(x_recon, x_noise)) \
+           if not args.use_clean else F.mean(get_loss(args.loss)(x_recon, x))
     
     # Solver
     solver = S.Adam(args.lr, args.beta1, args.beta2)
@@ -73,7 +74,7 @@ def train(args):
     for i in range(args.max_iter):
         # Data feed
         x_data, _ = di.next()
-        x.d = x_data
+        x_clean.d = x_data
         x_noise.d = apply_noise(x_data, args.noise_level, distribution=args.noise_dist)
 
         # Forward, backward, and update
