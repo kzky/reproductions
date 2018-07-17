@@ -179,7 +179,7 @@ if __name__ == '__main__':
     di = data_iterator_bsds(dataset="bsds300")
     img = di.next()
 
-    # BSDS300
+    # BSDS500
     di = data_iterator_bsds(dataset="bsds500")
     img = di.next()
     

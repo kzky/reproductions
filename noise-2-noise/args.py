@@ -67,7 +67,7 @@ def get_args(batch_size=16, ih=256, iw=256, max_iter=468750, save_interval=3125)
     parser.add_argument("--train-data-path", "-T", type=str, default="",
                         help='Path to training data')
     parser.add_argument("--val-dataset", "-V", type=str, default="kodak",
-                        choices=["kodak", "bsds300", "bsds500", "set14"],
+                        choices=["kodak", "bsds300", "bsds500"],
                         help='Validation data to be used')
     #TODO: add SSIM
     parser.add_argument("--validation-metric", type=str, default="psnr",
