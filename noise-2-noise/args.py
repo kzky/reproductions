@@ -47,7 +47,7 @@ def get_args(batch_size=16, ih=256, iw=256, max_iter=468750, save_interval=3125)
                         help="Loss")
     parser.add_argument("--noise-dist", type=str, default="gaussian",
                         help="Noise distribution", 
-                        choices=["gaussian", "poisson", "bernoulli"])
+                        choices=["gaussian", "poisson", "bernoulli", "impulse", "text"])
     parser.add_argument("--noise-level", type=float, default=50,
                         help="Noise level")
     parser.add_argument("--use-clean", action='store_true',

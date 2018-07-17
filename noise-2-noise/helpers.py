@@ -42,6 +42,7 @@ class MonitorImageTileWithName(MonitorImageTile):
         path = os.path.join(self.save_dir, '{}.png'.format(name))
         imsave(path, tile)
 
+
 def generate_gaussian_noise(shape, noise_level, fix=False):
     size = np.prod(shape)
     noise_level = int(noise_level)
@@ -71,6 +72,14 @@ def generate_bernoulli_noise(shape, noise_level=0.95, fix=False):
     return noise
 
 
+def generate_impulse_noise(shape, noise_level=0.95, fix=False):
+    size = np.prod(shape)
+    p = np.random.uniform(0, noise_level, size=size)
+    m = np.random.binomial(1, p, size=size).reshape(shape)
+    v = np.random.uniform(0, 256, size=size).reshape(shape)
+    return m, v
+
+
 def apply_noise(x, noise_level, distribution="gaussian", fix=False):
     if distribution == "gaussian":
         return x + generate_gaussian_noise(x.shape, noise_level, fix)
@@ -78,6 +87,12 @@ def apply_noise(x, noise_level, distribution="gaussian", fix=False):
         return x + generate_poisson_noise(x.shape, noise_level, fix)
     elif distribution == "bernoulli":
         return x * generate_bernoulli_noise(x.shape, noise_level, fix)
+    elif distribution == "impulse":
+        m, v = generate_impulse_noise(x.shape, noise_level, fix)
+        #return x * m + v * (1 - m)
+        return m * (x - v) + v
+    elif distribution == "text":
+        raise ValueError("distribution = {} is not supported.".format(distribution))
     else:
         raise ValueError("distribution = {} is not supported.".format(distribution))
     
