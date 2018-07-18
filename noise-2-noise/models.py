@@ -146,7 +146,7 @@ def l0_loss(x, y, gamma, eps=1e-8):
     reshape = [1 for _ in range(len(x.shape))]
     return F.pow2(F.absolute_error(x, y) + eps, F.broadcast(F.reshape(gamma, reshape), x.shape))
 
-def get_loss(loss, x_clean, x_noise, x_recon, use_clean, gamma=None):
+def get_loss(loss, x_clean, x_noise, x_recon, use_clean, mask, gamma=None):
     if loss == "l2":
         loss_func = l2_loss
     elif loss == "l1":
@@ -156,13 +156,13 @@ def get_loss(loss, x_clean, x_noise, x_recon, use_clean, gamma=None):
     else:
         raise ValueError("{} is not supported.".format(loss))
 
-    if loss != "l0":
-        lossv = F.mean(loss_func(x_recon, x_noise)) \
-               if not use_clean else F.mean(loss_func(x_recon, x_clean))
+    if loss == "l0":
+        lossv = loss_func(x_recon, x_noise, gamma) \
+               if not use_clean else loss_func(x_recon, x_clean, gamma)
     else:
-        lossv = F.mean(loss_func(x_recon, x_noise, gamma)) \
-               if not use_clean else F.mean(loss_func(x_recon, x_clean, gamma))
-    return lossv
+        lossv = loss_func(x_recon, x_noise) \
+               if not use_clean else loss_func(x_recon, x_clean)
+    return F.mean(lossv * mask)
 
 if __name__ == '__main__':
     # Noise2Noise Nework

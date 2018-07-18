@@ -34,7 +34,8 @@ def train(args):
     x_recon = net(x_noise)
     x_recon.persistent = True
     gamma = nn.Variable.from_numpy_array(np.asarray([2.]))
-    loss = get_loss(args.loss, x_clean, x_noise, x_recon, args.use_clean, gamma)
+    mask = nn.Variable.from_numpy_array(np.ones(x_recon.shape))
+    loss = get_loss(args.loss, x_clean, x_noise, x_recon, args.use_clean, mask, gamma)
 
     # Solver
     solver = S.Adam(args.lr, args.beta1, args.beta2)
@@ -78,9 +79,10 @@ def train(args):
         x_noise.d, noise = apply_noise(x_data, args.noise_level, distribution=args.noise_dist)
 
         # Forward, backward, and update
+        scale = noise if args.noise_dist == "bernoulli" else np.ones(x_recon.shape)
+        mask.d = scale
         loss.forward(clear_no_need_grad=True)
         solver.zero_grad()
-        scale = noise if args.noise_dist == "bernoulli" else 1.0
         loss.backward(clear_buffer=True)
         solver.update()
 
