@@ -75,11 +75,12 @@ def train(args):
         # Data feed
         x_data, _ = di.next()
         x_clean.d = x_data
-        x_noise.d = apply_noise(x_data, args.noise_level, distribution=args.noise_dist)
+        x_noise.d, noise = apply_noise(x_data, args.noise_level, distribution=args.noise_dist)
 
         # Forward, backward, and update
         loss.forward(clear_no_need_grad=True)
         solver.zero_grad()
+        scale = noise if args.noise_dist == "bernoulli" else 1.0
         loss.backward(clear_buffer=True)
         solver.update()
 

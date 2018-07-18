@@ -82,15 +82,18 @@ def generate_impulse_noise(shape, noise_level=0.95, fix=False):
 
 def apply_noise(x, noise_level, distribution="gaussian", fix=False):
     if distribution == "gaussian":
-        return x + generate_gaussian_noise(x.shape, noise_level, fix)
+        n = generate_gaussian_noise(x.shape, noise_level, fix)
+        return x + n, n
     elif distribution == "poisson":
-        return x + generate_poisson_noise(x.shape, noise_level, fix)
+        n = generate_poisson_noise(x.shape, noise_level, fix)
+        return x + n, n
     elif distribution == "bernoulli":
-        return x * generate_bernoulli_noise(x.shape, noise_level, fix)
+        n = generate_bernoulli_noise(x.shape, noise_level, fix)
+        return x * n, n
     elif distribution == "impulse":
         m, v = generate_impulse_noise(x.shape, noise_level, fix)
         #return x * m + v * (1 - m)
-        return m * (x - v) + v
+        return m * (x - v) + v, m
     elif distribution == "text":
         raise ValueError("distribution = {} is not supported.".format(distribution))
     else:

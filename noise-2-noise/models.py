@@ -158,10 +158,10 @@ def get_loss(loss, x_clean, x_noise, x_recon, use_clean, gamma=None):
 
     if loss != "l0":
         lossv = F.mean(loss_func(x_recon, x_noise)) \
-               if not use_clean else F.mean(loss_func(x_recon, x))
+               if not use_clean else F.mean(loss_func(x_recon, x_clean))
     else:
         lossv = F.mean(loss_func(x_recon, x_noise, gamma)) \
-               if not use_clean else F.mean(loss_func(x_recon, x, gamma))
+               if not use_clean else F.mean(loss_func(x_recon, x_clean, gamma))
     return lossv
 
 if __name__ == '__main__':
