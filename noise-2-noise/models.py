@@ -143,7 +143,8 @@ def l1_loss(x, y):
     return F.absolute_error(x, y)
 
 def l0_loss(x, y, gamma, eps=1e-8):
-    return F.pow2(F.squared_error(x, y) + eps, F.broadcast(gamma, x.shape))
+    reshape = [1 for _ in range(len(x.shape))]
+    return F.pow2(F.absolute_error(x, y) + eps, F.broadcast(F.reshape(gamma, reshape), x.shape))
 
 def get_loss(loss, x_clean, x_noise, x_recon, use_clean, gamma=None):
     if loss == "l2":

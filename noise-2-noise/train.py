@@ -87,7 +87,7 @@ def train(args):
         lr_scheduler(loss.d)
 
         # Update gamma if L0 loss is used
-        gamma.d = gamma.d * (1.0 - 1.0 * itr / max_itr) if args.loss == "l0" else 2.0
+        gamma.d = gamma.d * (1.0 - 1.0 * i / args.max_iter) if args.loss == "l0" else 2.0
 
         # Save model and images
         if i % args.save_interval == 0:
