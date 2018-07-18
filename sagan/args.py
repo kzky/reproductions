@@ -73,7 +73,7 @@ def get_args(batch_size=16, accum_grad=4, image_size=128, n_classes=1000, max_it
                         choices=["IS", "FID"],
                         help="Validation metric for SAGAN; IS or FID, FID is the default.")
     parser.add_argument("--sync-weight-every-itr",
-                        type=int, default=10,
+                        type=int, default=1,
                         help="Sync weights every specified iteration. NCCL uses the ring all reduce, so gradients in each device are not exactly same. When it is accumulated in the weights, the weight values in each device diverge.")
 
     args = parser.parse_args()
