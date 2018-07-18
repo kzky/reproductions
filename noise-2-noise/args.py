@@ -52,6 +52,8 @@ def get_args(batch_size=16, ih=256, iw=256, max_iter=468750, save_interval=3125)
                         help="Noise level")
     parser.add_argument("--use-clean", action='store_true',
                         help="Use clean target.")
+    parser.add_argument("--use-two-noises", action='store_true',
+                        help="Use different noise as noisy target.")
     parser.add_argument("--save-interval", type=int, default=3125,
                         help="Interval for saving models.")
     parser.add_argument("--monitor-path", type=str, default="./result/example_0",

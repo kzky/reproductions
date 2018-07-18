@@ -29,13 +29,17 @@ def train(args):
         net = Unet()
     x_clean = nn.Variable([args.batch_size, 3, args.ih, args.iw])
     x_clean.persistent = True
-    x_noise = nn.Variable([args.batch_size, 3, args.ih, args.iw])
-    x_noise.persistent = True
-    x_recon = net(x_noise)
+    x_noise0 = nn.Variable([args.batch_size, 3, args.ih, args.iw])
+    x_noise0.persistent = True
+    x_noise1 = None
+    if args.use_two_noises and not args.use_clean:
+        x_noise1 = nn.Variable([args.batch_size, 3, args.ih, args.iw])
+        x_noise1.persistent = True
+    x_recon = net(x_noise0)
     x_recon.persistent = True
     gamma = nn.Variable.from_numpy_array(np.asarray([2.]))
     mask = nn.Variable.from_numpy_array(np.ones(x_recon.shape))
-    loss = get_loss(args.loss, x_clean, x_noise, x_recon, args.use_clean, mask, gamma)
+    loss = get_loss(args.loss, x_recon, x_clean, x_noise0, x_noise1, args.use_clean, mask, gamma)
 
     # Solver
     solver = S.Adam(args.lr, args.beta1, args.beta2)
@@ -76,7 +80,7 @@ def train(args):
         # Data feed
         x_data, _ = di.next()
         x_clean.d = x_data
-        x_noise.d, noise = apply_noise(x_data, args.noise_level, distribution=args.noise_dist)
+        x_noise0.d, noise = apply_noise(x_data, args.noise_level, distribution=args.noise_dist)
 
         # Forward, backward, and update
         scale = noise if args.noise_dist == "bernoulli" else np.ones(x_recon.shape)
@@ -87,7 +91,7 @@ def train(args):
         solver.update()
 
         # Schedule LR
-        lr_scheduler(loss.d)
+        #lr_scheduler(loss.d)
 
         # Update gamma if L0 loss is used
         gamma.d = gamma.d * (1.0 - 1.0 * i / args.max_iter) if args.loss == "l0" else 2.0
@@ -96,7 +100,7 @@ def train(args):
         if i % args.save_interval == 0:
             nn.save_parameters("{}/param_{}.h5".format(args.monitor_path, i))
             monitor_image_train_clean.add(i, x_data)
-            monitor_image_train_noisy.add(i, x_noise.d)
+            monitor_image_train_noisy.add(i, x_noise0.d)
             monitor_image_train_recon.add(i, x_recon.d)
         
         # Monitor
