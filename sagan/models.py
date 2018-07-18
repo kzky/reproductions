@@ -375,7 +375,7 @@ def discriminator(x, y, scopename="discriminator",
         h = resblock_d(x, y, "block-1", n_classes, maps, downsample=False, test=test, sn=sn)
         h = resblock_d(h, y, "block-2", n_classes, maps * 2, test=test, sn=sn)
         h = resblock_d(h, y, "block-3", n_classes, maps * 4, test=test, sn=sn)
-        h = attnblock(h, sn=sn, test=test)  # not use attention for discriminator
+        #h = attnblock(h, sn=sn, test=test)  # not use attention for discriminator
         h = resblock_d(h, y, "block-4", n_classes, maps * 8, test=test, sn=sn)
         h = resblock_d(h, y, "block-5", n_classes, maps * 16, test=test, sn=sn)
         h = resblock_d(h, y, "block-6", n_classes, maps * 16, test=test, sn=sn)
