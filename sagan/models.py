@@ -310,7 +310,8 @@ def resblock_g(h, y, scopename,
                 s = F.unpooling(s, kernel=(2, 2))
             s = convolution(s, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=False, sn=sn, test=test)
-    return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
+    #return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
+    return F.add2(h, s)
 
 
 def resblock_d(h, y, scopename,
@@ -342,11 +343,13 @@ def resblock_d(h, y, scopename,
                             with_bias=False, sn=sn, test=test)
             if downsample:
                 s = F.average_pooling(s, kernel=(2, 2))
-    return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
+    #return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
+    return F.add2(h, s)
 
 
 def generator(z, y, scopename="generator", 
               maps=1024, n_classes=1000, s=4, test=False, sn=True):
+    sn = False
     with nn.parameter_scope(scopename):
         # Affine
         h = affine(z, maps * s * s, with_bias=False, sn=sn, test=test)
@@ -355,8 +358,8 @@ def generator(z, y, scopename="generator",
         h = resblock_g(h, y, "block-1", n_classes, maps, test=test, sn=sn)
         h = resblock_g(h, y, "block-2", n_classes, maps // 2, test=test, sn=sn)
         h = resblock_g(h, y, "block-3", n_classes, maps // 4, test=test, sn=sn)
-        h = resblock_g(h, y, "block-4", n_classes, maps // 8, test=test, sn=sn)
         h = attnblock(h, sn=sn, test=test)
+        h = resblock_g(h, y, "block-4", n_classes, maps // 8, test=test, sn=sn)
         h = resblock_g(h, y, "block-5", n_classes, maps // 16, test=test, sn=sn)
         # Last convoltion
         h = CCBN(h, y, n_classes, test=test, sn=sn)
@@ -372,11 +375,11 @@ def discriminator(x, y, scopename="discriminator",
         # Resblocks
         h = resblock_d(x, y, "block-1", n_classes, maps, downsample=False, test=test, sn=sn)
         h = resblock_d(h, y, "block-2", n_classes, maps * 2, test=test, sn=sn)
-        h = attnblock(h, sn=sn, test=test)
         h = resblock_d(h, y, "block-3", n_classes, maps * 4, test=test, sn=sn)
+        #h = attnblock(h, sn=sn, test=test)  # not use attention for discriminator
         h = resblock_d(h, y, "block-4", n_classes, maps * 8, test=test, sn=sn)
         h = resblock_d(h, y, "block-5", n_classes, maps * 16, test=test, sn=sn)
-        h = resblock_d(h, y, "block-6", n_classes, maps * 16, downsample=True, test=test, sn=sn)
+        h = resblock_d(h, y, "block-6", n_classes, maps * 16, test=test, sn=sn)
         # Last affine
         h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
         h = F.leaky_relu(h, 0.2)
@@ -393,6 +396,7 @@ def gan_loss(d_x_fake, d_x_real=None):
     if d_x_real is None:
         return -d_x_fake
     return F.maximum_scalar(1 - d_x_real, 0.0) + F.maximum_scalar(1 + d_x_fake, 0.0)
+    
     
 if __name__ == '__main__':
     b, c, h, w = 4, 3, 128, 128
