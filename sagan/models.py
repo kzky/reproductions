@@ -349,7 +349,6 @@ def resblock_d(h, y, scopename,
 
 def generator(z, y, scopename="generator", 
               maps=1024, n_classes=1000, s=4, test=False, sn=True):
-    sn = False
     with nn.parameter_scope(scopename):
         # Affine
         h = affine(z, maps * s * s, with_bias=False, sn=sn, test=test)
