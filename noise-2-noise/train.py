@@ -55,7 +55,7 @@ def train(args):
         return x
     monitor = Monitor(args.monitor_path)
     monitor_loss = MonitorSeries("Reconstruction Loss", monitor, interval=10)
-    monitor_time = MonitorTimeElapsed("Training Time per Resolution", monitor, interval=10)
+    monitor_time = MonitorTimeElapsed("Training Time", monitor, interval=10)
     monitor_image_train_clean = MonitorImageTile("Image Tile Train Clean",
                                                  monitor,
                                                  num_images=4, 
