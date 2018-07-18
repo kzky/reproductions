@@ -86,14 +86,16 @@ def evaluate(args):
         x_data = di.next()[0]  # DI return as tupple
         
         # Create model
-        x = nn.Variable([1, 3, x_data.shape[2], x_data.shape[3]])
-        x.persistent = True
+        x_clean = nn.Variable([1, 3, x_data.shape[2], x_data.shape[3]])
+        x_clean.persistent = True
         x_noise = nn.Variable([1, 3, x_data.shape[2], x_data.shape[3]])
         x_noise.persistent = True
         x_recon = net(x_noise)
         x_recon.persistent = True
-        x.d = x_data
-        x_noise.d = apply_noise(x_data, args.noise_level, distribution=args.noise_dist, fix=True)
+
+        # Feed data
+        x_clean.d = x_data
+        x_noise.d, noise = apply_noise(x_data, args.noise_level, distribution=args.noise_dist, fix=True)
 
         # Forward (denoise)
         x_recon.forward(clear_buffer=True)
