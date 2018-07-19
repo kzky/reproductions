@@ -21,8 +21,8 @@ def rblock(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
     h = x
     for d in range(D):
         with nn.parameter_scope("recursive-block-{}-{}".format(d, name)):
-            # Relu -> Conv -> (BN)
-            h = F.relu(h)
+            # LeakyRelu -> Conv -> (BN)
+            h = F.leaky_relu(h, 0.2)
             h = PF.convolution(h, maps, kernel, pad, stride)
             h = h if not bn \
                 else PF.batch_normalization(h, batch_stat=not test, name="bn-{}".format(r))
@@ -50,10 +50,10 @@ def feature_extractor(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
         r = residue(u, 3, kernel, pad, stride, name="shared")
     return u, r
 
-def lapsrn(x_l, maps=64, S=3, R=8, D=5, bn=False, test=False):
+def lapsrn(x, maps=64, S=3, R=8, D=5, bn=False, test=False):
     u_irbs = []
-    u_irb = x_l
-    u_feb = PF.convolution(x_l, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name="first-conv")
+    u_irb = x
+    u_feb = PF.convolution(x, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name="first-conv")
     for s in range(S):
         u_feb, r = feature_extractor(u_feb, maps, R=R, D=D, bn=bn, test=test, name="shared")
         u_irb = upsample(u_irb, 3, name="shared") + r

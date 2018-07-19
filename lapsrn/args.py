@@ -39,6 +39,12 @@ def get_args(batch_size=16, ih=256, iw=256, max_iter=468750, save_interval=3125)
                         help="Image width.")
     parser.add_argument("--max-epoch", "-e", type=int, default=max_iter,
                         help="Max iterations.")
+    parser.add_argument("--S", type=int, default=iw,
+                        help="Super resolution number.")
+    parser.add_argument("--R", type=int, default=iw,
+                        help="Recursive number.")
+    parser.add_argument("--D", type=int, default=iw,
+                        help="Depth for recursive block.")
     parser.add_argument("--loss", type=str, default="l2",
                         choices=["charbonnier", "l2", "l1"],
                         help="Loss")
@@ -52,6 +58,8 @@ def get_args(batch_size=16, ih=256, iw=256, max_iter=468750, save_interval=3125)
                         help="Model load path to a h5 file used in generation and validation.")
     parser.add_argument("--lr", type=float, default=1 * 1e-3,
                         help="Learning rate for generator")
+    parser.add_argument("--decay-at", "-D", type=int, nargs='+', default=-1,
+                        help="Decay-at `iteration` about learning rate.")
     parser.add_argument("--train-data-path", "-T", type=str, default="",
                         help='Path to training data')
     parser.add_argument("--val-dataset", "-V", type=str, default="kodak",
