@@ -16,40 +16,49 @@ from nnabla.initializer import (
     ConstantInitializer, NormalInitializer, UniformInitializer)
 
 
-def rblock(x, name, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1), r=0, D=5, bn=False, test=False):
+def rblock(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
+           r=0, D=5, bn=False, test=False, name=None):
     h = x
     for d in range(D):
         with nn.parameter_scope("recursive-block-{}-{}".format(d, name)):
             # Relu -> Conv -> (BN)
             h = F.relu(h)
             h = PF.convolution(h, maps, kernel, pad, stride)
-            h = h if not bn else PF.batch_normalization(h, batch_stat=not test, name="bn-{}".format(r))
+            h = h if not bn \
+                else PF.batch_normalization(h, batch_stat=not test, name="bn-{}".format(r))
     return h + x
 
 
-def upsample(x, name, maps=64, kernel=(4, 4), pad=(1, 1), stride=(2, 2)):
-    return PF.deconvolution(x, maps, kernel, pad, stride, name=name)
+def upsample(x, maps=64, kernel=(4, 4), pad=(1, 1), stride=(2, 2), name=None):
+    with nn.parameter_scope("upsample-{}".format(name)):
+        return PF.deconvolution(x, maps, kernel, pad, stride)
 
 
-def feature_extractor(x, name, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1), R=8, D=5,
-                      bn=False, test=False):
+def residue(x, maps=3, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name=None):
+    with nn.parameter_scope("residue-{}".format(name)):
+        return PF.convolution(x, maps, kernel, pad, stride)
+
+
+def feature_extractor(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
+                      R=8, D=5, bn=False, test=False, name=None):
     h = x
     with nn.parameter_scope("feature-extractor-{}".format(name)):
         # {Relu -> Conv -> (BN)} x R -> upsample -> conv
         for r in range(R):
-            h = rblock(h, "shared", maps, kernel, pad, stride, r=r, D=D, bn=bn, test=test)
-        u = upsample(h, "shared", maps)
-        r = PF.convolution(u, 3, name="shared", kernel=kernel, pad=pad, stride=stride)
+            h = rblock(h, maps, kernel, pad, stride, r=r, D=D, bn=bn, test=test, name="shared")
+        u = upsample(h, maps, name="shared")
+        r = residue(u, 3, kernel, pad, stride, name="shared")
     return u, r
 
 def lapsrn(x_l, maps=64, S=3, R=8, D=5, bn=False, test=False):
+    u_irbs = []
     u_irb = x_l
     u_feb = PF.convolution(x_l, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name="first-conv")
     for s in range(S):
-        u_feb, r = feature_extractor(u_feb, "shared", maps, R=R, D=D, bn=bn, test=test)
-        u_irb = upsample(u_irb, "shared", 3) + r
-    x_h = PF.convolution(u_irb, 3, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name="last-conv")
-    return x_h
+        u_feb, r = feature_extractor(u_feb, maps, R=R, D=D, bn=bn, test=test, name="shared")
+        u_irb = upsample(u_irb, 3, name="shared") + r
+        u_irbs.append(u_irb)
+    return u_irbs
 
 def loss_charbonnier(x, y, eps=1e-3):
     lossv = F.pow_scalar((y - x) ** 2 + eps ** 2, )
