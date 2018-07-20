@@ -27,7 +27,7 @@ def train(args):
         x_LR = F.average_pooling(x_LRs[-1], (2**s, 2**s))
         x_LRs.append(x_LR)
     x_LRs = x_LRs[:0:-1]
-    x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D)
+    x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D, args.skip_type)
     loss = reduce(lambda x, y: x + y, 
                   [F.mean(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs, x_SRs)])
 
@@ -59,6 +59,11 @@ def train(args):
                                         normalize_method=normalize_method, 
                                         interval=1)
     #TODO
+    # augmentation:
+    #    - random downsample: [0.5, 1.0]
+    #    - rotation: 90, 180, 270
+    #    - flip: horizontal
+    
     # DataIterator
     rng = np.random.RandomState(410)
     di = data_iterator_imagenet(args.train_data_path, args.batch_size, rng=rng)

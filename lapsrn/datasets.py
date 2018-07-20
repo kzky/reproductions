@@ -16,34 +16,6 @@ def get_np_array_from_tar_object(tar_extractfl):
     return np.asarray(
         bytearray(tar_extractfl.read()), 
         dtype=np.uint8)
-"""
-Imagenet
-"""
-def data_iterator_imagenet(img_path, batch_size, imsize=(256, 256), num_samples=-1, shuffle=True, rng=None):
-    imgs = glob.glob("{}/*.JPEG".format(img_path))
-    if num_samples == -1:
-        num_samples = len(imgs)
-    else:
-        logger.info(
-            "Num. of data ({}) is used for debugging".format(num_samples))
-
-    def load_func(i):
-        #TODO: try to use F.image_augmentation
-        img = cv2.imread(imgs[i])
-        img = cv2.resize(img, imsize)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).transpose((2, 0, 1))
-
-        # Paper said 256x256 random crop, but some images do not have 256 height or width.
-        # _, h, w = img.shape
-        # rh, rw = h - imsize[0], w - imsize[1]
-        # ry = np.random.choice(np.arrange(rh), 1)
-        # rx = np.random.choice(np.arrange(rw), 1)
-        # img = img[:, ry:ry + imsize[0], rx:rx + imsize[1]]
-        
-        return img, None
-
-    return data_iterator_simple(load_func, num_samples, batch_size, shuffle=shuffle, rng=rng, with_file_cache=False)
-
 
 """
 Kodak
@@ -168,6 +140,41 @@ def data_iterator_set():
     '''
     '''
     return data_iterator(SetDataSource(), batch_size=1)
+
+"""
+Urban100
+"""
+def load_set(dataset="urban100"):
+    pass
+
+class UrbanDataSource(DataSource):
+    '''
+    Get data directly from Urban dataset from Internet.
+    '''
+    pass
+
+def data_iterator_urban():
+    '''
+    '''
+    return data_iterator(UrbanDataSource(), batch_size=1)
+
+
+"""
+Manga
+"""
+def load_set():
+    pass
+
+class MangaDataSource(DataSource):
+    '''
+    Get data directly from Manga dataset from Internet.
+    '''
+    pass
+
+def data_iterator_manga():
+    '''
+    '''
+    return data_iterator(MangaDataSource(), batch_size=1)
 
 
 if __name__ == '__main__':

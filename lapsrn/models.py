@@ -40,22 +40,31 @@ def residue(x, maps=3, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name=None):
 
 
 def feature_extractor(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
-                      R=8, D=5, bn=False, test=False, name=None):
+                      R=8, D=5, skip_type="ss", bn=False, test=False, name=None):
     h = x
+    s = h
     with nn.parameter_scope("feature-extractor-{}".format(name)):
         # {Relu -> Conv -> (BN)} x R -> upsample -> conv
         for r in range(R):
             h = rblock(h, maps, kernel, pad, stride, r=r, D=D, bn=bn, test=test, name="shared")
+            if skip_type == "ss":
+                h = h + x
+            elif skip_type == "ds":
+                h = h + s
+                s = h
+            elif skip_type == "ns":
+                h = h
         u = upsample(h, maps, name="shared")
         r = residue(u, 3, kernel, pad, stride, name="shared")
     return u, r
 
-def lapsrn(x, maps=64, S=3, R=8, D=5, bn=False, test=False):
+def lapsrn(x, maps=64, S=3, R=8, D=5, skip_type="ss", bn=False, test=False):
     u_irbs = []
     u_irb = x
     u_feb = PF.convolution(x, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name="first-conv")
     for s in range(S):
-        u_feb, r = feature_extractor(u_feb, maps, R=R, D=D, bn=bn, test=test, name="shared")
+        u_feb, r = feature_extractor(u_feb, maps, R=R, D=D, 
+                                     skip_type=skip_type, bn=bn, test=test, name="shared")
         u_irb = upsample(u_irb, 3, name="shared") + r
         u_irbs.append(u_irb)
     return u_irbs

@@ -45,6 +45,8 @@ def get_args(batch_size=16, ih=256, iw=256, max_iter=468750, save_interval=3125)
                         help="Recursive number.")
     parser.add_argument("--D", type=int, default=iw,
                         help="Depth for recursive block.")
+    parser.add_argument("--skip-type", type=str, default="ss",
+                        help="Skip type")
     parser.add_argument("--loss", type=str, default="l2",
                         choices=["charbonnier", "l2", "l1"],
                         help="Loss")
