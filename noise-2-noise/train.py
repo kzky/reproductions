@@ -80,10 +80,14 @@ def train(args):
         # Data feed
         x_data, _ = di.next()
         x_clean.d = x_data
-        x_noise0.d, noise = apply_noise(x_data, args.noise_level, distribution=args.noise_dist)
+        x_noise0.d, noise = apply_noise(
+            x_data, 
+            args.n_replica,
+            args.noise_level, 
+            distribution=args.noise_dist)
 
         # Forward, backward, and update
-        scale = noise if args.noise_dist == "bernoulli" else np.ones(x_recon.shape)
+        scale = noise **2 if args.noise_dist == "bernoulli" else np.ones(x_recon.shape)
         mask.d = scale
         loss.forward(clear_no_need_grad=True)
         solver.zero_grad()

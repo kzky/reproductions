@@ -43,57 +43,82 @@ class MonitorImageTileWithName(MonitorImageTile):
         imsave(path, tile)
 
 
-def generate_gaussian_noise(shape, noise_level, fix=False):
+def generate_gaussian_noise(shape, noise_level, test=False):
     size = np.prod(shape)
-    noise_level = int(noise_level)
-    if fix:
-        stds = np.asarray([noise_level] * size)
+    if test:
+        std = noise_level
+        noise = np.random.normal(0, std, size).reshape(shape)
     else:
-        stds = np.random.choice(np.arange(noise_level), size=size, replace=True)
-    noise = np.random.normal(0, stds, size).reshape(shape)
+        std = np.random.uniform(1, noise_level, size=size)
+        noise = np.random.normal(0, std, size).reshape(shape)
     return noise
 
 
-def generate_poisson_noise(shape, noise_level, fix=False):
+def generate_poisson_noise(shape, noise_level, test=False):
     size = np.prod(shape)
-    noise_level = int(noise_level)
-    if fix:
-        lambda_ = np.asarray([noise_level] * size)
+    if test:
+        lambda_ = noise_level
+        noise = np.random.poisson(lambda_, size).reshape(shape)
+        noise = noise - lambda_
     else:
-        lambda_ = np.random.choice(np.arange(noise_level), size=size, replace=True)
-    noise = np.random.poisson(lambda_, size).reshape(shape)
+        lambda_ = np.random.uniform(1, noise_level, size=size)
+        noise = np.random.poisson(lambda_, size).reshape(shape)
+        noise = noise - lambda_.reshape(shape)
     return noise
 
 
-def generate_bernoulli_noise(shape, noise_level=0.95, fix=False):
+def generate_bernoulli_noise(shape, noise_level=0.95, test=False):
     size = np.prod(shape)
-    p = np.random.uniform(0, noise_level, size=size)
-    noise = np.random.binomial(1, p, size=size).reshape(shape)
+    if test:
+        p = np.random.uniform(0, noise_level, size=1)
+        noise = np.random.binomial(1, p, size=size).reshape(shape)
+        noise = noise - p.reshape(shape)
+    else:
+        p = np.random.uniform(0, noise_level, size=size)
+        noise = np.random.binomial(1, p, size=size).reshape(shape)
+        noise = noise - p.reshape(shape)
     return noise
 
 
-def generate_impulse_noise(shape, noise_level=0.95, fix=False):
+def generate_impulse_noise(shape, noise_level=0.95, test=False):
     size = np.prod(shape)
-    p = np.random.uniform(0, noise_level, size=size)
-    m = np.random.binomial(1, p, size=size).reshape(shape)
-    v = np.random.uniform(0, 256, size=size).reshape(shape)
+    if test:
+        p = np.random.uniform(0, noise_level, size=1)
+        m = np.random.binomial(1, p, size=size).reshape(shape)
+        v = np.random.uniform(0, 1, size=size).reshape(shape)
+    else:
+        p = np.random.uniform(0, noise_level, size=size)
+        m = np.random.binomial(1, p, size=size).reshape(shape)
+        v = np.random.uniform(0,1, size=size).reshape(shape)
     return m, v
 
 
-def apply_noise(x, noise_level, distribution="gaussian", fix=False):
+def apply_noise(x, n_replica, noise_level, distribution="gaussian", test=False):
+    # B, C, H, W
+    shape = x.shape
+    b, c, h, w = shape
+    # B, R, C, H, W
+    x = np.asarray([np.broadcast_to(x_.reshape(1, c, h, w), x.shape) for x_ in x])
+
+    #TODO: change how to take the expectation according to loss?
     if distribution == "gaussian":
-        n = generate_gaussian_noise(x.shape, noise_level, fix)
-        return x + n, n
+        n = generate_gaussian_noise(x.shape, noise_level, test)
+        x_noise = np.mean(x + n, axis=(1, )).reshape(shape)
+        return x_noise, None
     elif distribution == "poisson":
-        n = generate_poisson_noise(x.shape, noise_level, fix)
-        return x + n, n
+        n = generate_poisson_noise(x.shape, noise_level, test)
+        x_noise = np.mean(x + n, axis=(1, )).reshape(shape)
+        return x_noise, None
     elif distribution == "bernoulli":
-        n = generate_bernoulli_noise(x.shape, noise_level, fix)
-        return x * n, n
+        #TODO: how to create mask is wrong
+        n = generate_bernoulli_noise(x.shape, noise_level, test)
+        x_noise = np.mean(x + n, axis=(1, )).reshape(shape)
+        n = np.mean(n, axis=(1, )).reshape(shape)
+        return x_noise, n
     elif distribution == "impulse":
-        m, v = generate_impulse_noise(x.shape, noise_level, fix)
-        #return x * m + v * (1 - m)
-        return m * (x - v) + v, m
+        m, v = generate_impulse_noise(x.shape, noise_level, test)
+        x_noise = np.mean(m * (x - v - 0.5) + v + 0.5, axis=(1, )).reshape(shape)
+        return x_noise, None
     elif distribution == "text":
         raise ValueError("distribution = {} is not supported.".format(distribution))
     else:

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def get_args(batch_size=16, ih=256, iw=256, max_iter=468750, save_interval=3125):
+def get_args(batch_size=16, ih=256, iw=256, n_replica=4, max_iter=625000, save_interval=62500):
     """
     Get command line arguments.
 
@@ -37,11 +37,13 @@ def get_args(batch_size=16, ih=256, iw=256, max_iter=468750, save_interval=3125)
                         help="Image height.")
     parser.add_argument("--iw", type=int, default=iw,
                         help="Image width.")
+    parser.add_argument("--n-replica", type=int, default=n_replica,
+                        help="Number of replicas of an image.")
     parser.add_argument("--max-iter", "-i", type=int, default=max_iter,
                         help="Max iterations.")
-    parser.add_argument("--net", type=str, default="RED",
-                        choices=["RED", "unet"],
-                        help="RED or unet")
+    parser.add_argument("--net", type=str, default="RED30",
+                        choices=["RED30", "unet"],
+                        help="RED30 or unet")
     parser.add_argument("--loss", type=str, default="l2",
                         choices=["l2", "l1", "l0"],
                         help="Loss")

@@ -95,7 +95,7 @@ def evaluate(args):
 
         # Feed data
         x_clean.d = x_data
-        x_noise.d, noise = apply_noise(x_data, args.noise_level, distribution=args.noise_dist, fix=True)
+        x_noise.d, noise = apply_noise(x_data, args.noise_level, distribution=args.noise_dist, test=True)
 
         # Forward (denoise)
         x_recon.forward(clear_buffer=True)
