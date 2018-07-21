@@ -59,6 +59,9 @@ def train(args):
                                         normalize_method=normalize_method, 
                                         interval=1)
     # DataIterator
+    img_paths = ["/home/kzky/nnabla_data/BSD200", 
+                 "/home/kzky/nnabla_data/General100", 
+                 "/home/kzky/nnabla_data/T90"]
     di = data_iterator_lapsrn(img_paths, batch_size=batch_size, train=train, shuffle=True)
     
     # Train loop
