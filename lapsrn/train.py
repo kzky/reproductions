@@ -58,19 +58,12 @@ def train(args):
                                         num_images=4,
                                         normalize_method=normalize_method, 
                                         interval=1)
-    #TODO
-    # augmentation:
-    #    - random downsample: [0.5, 1.0]
-    #    - rotation: 90, 180, 270
-    #    - flip: horizontal
-    
     # DataIterator
-    rng = np.random.RandomState(410)
-    di = data_iterator_imagenet(args.train_data_path, args.batch_size, rng=rng)
+    di = data_iterator_lapsrn(img_paths, batch_size=batch_size, train=train, shuffle=True)
     
     # Train loop
     for i in range(args.max_epoch):
-        x_HR.d = di.next()
+        x_HR.d = di.next()[0]
         solver.zero_grad()
         loss.forward(clear_no_need_grad=True)
         solver.backward(clear_buffer=True)
@@ -81,7 +74,7 @@ def train(args):
         # Monitor
         monitor_loss.add(i, loss.d)
         monitor_time.add(i)
-        if i % 1000 == 0:
+        if i % 10000 == 0:
             for s in range(args.S):
                 monitor_image_lr_list[s].add(x_LRs[s].d.copy())
             monitor_image_hr.add(x_HR.d.copy())

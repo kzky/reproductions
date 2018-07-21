@@ -60,14 +60,14 @@ def get_args(batch_size=16, ih=256, iw=256, max_iter=468750, save_interval=3125)
                         help="Model load path to a h5 file used in generation and validation.")
     parser.add_argument("--lr", type=float, default=1 * 1e-3,
                         help="Learning rate for generator")
-    parser.add_argument("--decay-at", "-D", type=int, nargs='+', default=-1,
-                        help="Decay-at `iteration` about learning rate.")
+    parser.add_argument("--decay-at", "-D", type=int, nargs='+', default=[50000, 100000, 150000],
+                        help="Decay-at `iteration` for learning rate.")
     parser.add_argument("--train-data-path", "-T", type=str, default="",
                         help='Path to training data')
     parser.add_argument("--val-dataset", "-V", type=str, default="kodak",
                         choices=["kodak", "bsds300", "bsds500"],
                         help='Validation data to be used')
-    #TODO: add SSIM
+    #TODO: add SSIM, IFC
     parser.add_argument("--validation-metric", type=str, default="psnr",
                         choices=["psnr"],
                         help="Validation metric for reconstruction.")
