@@ -4,6 +4,7 @@ import io
 import os
 import glob
 import tarfile
+import zipfile
 
 from nnabla.logger import logger
 from nnabla.utils.data_iterator import data_iterator
@@ -123,70 +124,116 @@ class BSDSDataSource(DataSource):
 def data_iterator_bsds(dataset="bsds300"):
     return data_iterator(BSDSDataSource(), batch_size=1)
 
-
 """
-Set{5, 14}
+LapSRN
 """
-def load_set(dataset="set14"):
-    pass
 
-class SetDataSource(DataSource):
+def load_lapsrn(train=True, test_data="Set5"):
+    if train:
+        data_uri = "http://vllab.ucmerced.edu/wlai24/LapSRN/results/SR_training_datasets.zip"
+    else:
+        data_uri = "http://vllab.ucmerced.edu/wlai24/LapSRN/results/SR_testing_datasets.zip"
+    logger.info('Getting image data from {}.'.format(data_uri))
+    images = []
+    r = download(data_uri)
+    with zipfile.ZipFile(io.BytesIO(r.read())) as fp:
+        for name in fp.namelist():
+            if not name.endswith(".png"):
+                continue
+            if not train and test_data not in name:
+                continue
+            print(name)
+            data = fp.read(name)
+            img = cv2.imdecode(np.frombuffer(data, np.uint8), 3)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).transpose((2, 0, 1))
+            images.append(img)
+    logger.info('Getting image data done.')
+    r.close()
+    return images
+
+
+class LapSRNDataSource(DataSource):
     '''
     Get data directly from Set dataset from Internet.
     '''
-    pass
+    
+    def _get_data(self, position):
+        image = self._images[position]
+        return image, None
 
-def data_iterator_set():
-    '''
-    '''
-    return data_iterator(SetDataSource(), batch_size=1)
+    def __init__(self, train=True, shuffle=True, test_data="Set5"):
+        super(LapSRNDataSource, self).__init__()
+        self._images = load_lapsrn(train=train, test_data=test_data)
+        self._size = len(self._images)
+        self._variables = ('x', )
+        self.rng = np.random.RandomState(313)
+        self.reset()
 
-"""
-Urban100
-"""
-def load_set(dataset="urban100"):
-    pass
-
-class UrbanDataSource(DataSource):
-    '''
-    Get data directly from Urban dataset from Internet.
-    '''
-    pass
-
-def data_iterator_urban():
-    '''
-    '''
-    return data_iterator(UrbanDataSource(), batch_size=1)
+    def reset(self):
+        if self._shuffle:
+            self._indexes = self.rng.permutation(self._size)
+        else:
+            self._indexes = np.arange(self._size)
+        super(LapSRNDataSource, self).reset()
 
 
-"""
-Manga
-"""
-def load_set():
-    pass
+def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128, 
+                         train=True, shuffle=True, rng=None):
+    img_paths = [img_paths] if type(img_paths) != list else img_paths
+    imgs = []
+    for img_path in img_paths:
+        imgs += glob.glob("{}/*.png".format(img_path))
 
-class MangaDataSource(DataSource):
-    '''
-    Get data directly from Manga dataset from Internet.
-    '''
-    pass
+    def load_func_train(i):
+        img = cv2.imread(imgs[i])
 
-def data_iterator_manga():
-    '''
-    '''
-    return data_iterator(MangaDataSource(), batch_size=1)
+        # Resize in [0.5 1.0]  #TODO: this is really need?
+        h, w, c = img.shape
+        if h < ih or w < iw:
+            img = cv2.resize(img, (ih, iw))
+        a = np.random.uniform(0.5, 1.0)
+        h, w = int(h*a), int(w*a)
+        if h > ih or w > iw:
+            img = cv2.resize(img, (h, w))
+        
+        # To RGB-(c, h, w) array
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).transpose((2, 0, 1))
+
+        # Crop
+        c, h, w = img.shape
+        if h > ih and w > iw:
+            rh = np.random.choice(np.arange(h - ih), size=1)[0]
+            rw = np.random.choice(np.arange(w - iw), size=1)[0]
+            img = img[:, rh:rh+ih, rw:rw+iw]
+
+        # Rotate in [0, 90, 180, 270]
+        k = np.random.choice([0, 90, 180, 270], size=1)
+        img = np.rot90(img, k=k, axes=(1, 2))
+
+        # Flip
+        if np.random.randint(2):
+            img = img[:, :, ::-1]
+
+        return img, None
+
+    def load_func_test(i):
+        assert batch_size == 1
+        img = cv2.imread(imgs[i])
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).transpose((2, 0, 1))
+        return img, None            
+
+    return data_iterator_simple(
+        load_func_train, len(imgs), batch_size, shuffle=shuffle, rng=rng, with_file_cache=False)
 
 
 if __name__ == '__main__':
-    # Kodak
-    di = data_iterator_kodak()
-    img = di.next()
-
-    # BSDS300
-    di = data_iterator_bsds(dataset="bsds300")
-    img = di.next()
-
-    # BSDS500
-    di = data_iterator_bsds(dataset="bsds500")
-    img = di.next()
-    
+    # LapSRN
+    img_paths = ["/home/kzky/nnabla_data/BSD200", 
+                 "/home/kzky/nnabla_data/General100", 
+                 "/home/kzky/nnabla_data/T90"]
+    batch_size = 4
+    train = True
+    test_data = "Set5"
+    di = data_iterator_lapsrn(img_paths, batch_size=batch_size, train=train)
+    data = di.next()[0]
+    print(data.shape)
