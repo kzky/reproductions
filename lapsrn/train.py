@@ -71,13 +71,15 @@ def train(args):
         if i in args.decay_at:
             solver.set_learning_rate(solver.learning_rate() * 0.5)
         
-        # Monitor
+        # Monitor and save
         monitor_loss.add(i, loss.d)
         monitor_time.add(i)
-        if i % 10000 == 0:
+        if i % args.save_interval == 0:
             for s in range(args.S):
                 monitor_image_lr_list[s].add(x_LRs[s].d.copy())
             monitor_image_hr.add(x_HR.d.copy())
+            nn.save_paramters("{}/param_{}.h5".format(args.moitor_path, i))
+            
 
 def main():
     args = get_args()
