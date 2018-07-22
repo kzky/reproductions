@@ -27,12 +27,13 @@ def train(args):
         x_LR = F.average_pooling(x_LRs[-1], (2, 2))
         x_LRs.append(x_LR)
     x_LRs = x_LRs[:-1][::-1]
-    x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D, args.skip_type)
+    x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D, args.skip_type, args.use_bn)
     loss = reduce(lambda x, y: x + y, 
                   [F.mean(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs, x_SRs)])
 
     # Solver
-    solver = S.Momentum(args.lr)
+    #solver = S.Momentum(args.lr, 0.9)
+    solver = S.Adam(args.lr)
     solver.set_parameters(nn.get_parameters())
     
     # Monitor
@@ -62,7 +63,8 @@ def train(args):
     img_paths = ["/home/kzky/nnabla_data/BSD200", 
                  "/home/kzky/nnabla_data/General100", 
                  "/home/kzky/nnabla_data/T90"]
-    di = data_iterator_lapsrn(img_paths, batch_size=args.batch_size, train=args.train, shuffle=True)
+    di = data_iterator_lapsrn(img_paths, batch_size=args.batch_size, 
+                              train=args.train, shuffle=True)
     
     # Train loop
     for i in range(args.max_epoch):
@@ -70,6 +72,7 @@ def train(args):
         solver.zero_grad()
         loss.forward(clear_no_need_grad=True)
         loss.backward(clear_buffer=True)
+        solver.weight_decay(args.decay_rate)
         solver.update()
 
         if i in args.decay_at:

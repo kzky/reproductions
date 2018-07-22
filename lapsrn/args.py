@@ -63,10 +63,12 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000,
                         help="Monitor path.")
     parser.add_argument("--model-load-path", type=str,
                         help="Model load path to a h5 file used in generation and validation.")
-    parser.add_argument("--lr", type=float, default=1 * 1e-3,
+    parser.add_argument("--lr", type=float, default=1e-5,
                         help="Learning rate for generator")
     parser.add_argument("--decay-at", "-D", type=int, nargs='+', default=[50000, 100000],
                         help="Decay-at `iteration` for learning rate.")
+    parser.add_argument("--decay-rate", type=float, default=1e-4, 
+                        help="Decay rate")
     parser.add_argument("--train-data-path", "-T", type=str, default="",
                         help='Path to training data')
     parser.add_argument("--val-dataset", "-V", type=str, default="kodak",

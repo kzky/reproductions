@@ -65,6 +65,7 @@ def lapsrn(x, maps=64, S=3, R=8, D=5, skip_type="ss", bn=False, test=False):
     for s in range(S):
         u_feb, r = feature_extractor(u_feb, maps, R=R, D=D, 
                                      skip_type=skip_type, bn=bn, test=test, name="shared")
+        #TODO: weight has to be initialized by bilinear kernel.
         u_irb = upsample(u_irb, 3, name="shared") + r
         u_irbs.append(u_irb)
     return u_irbs
