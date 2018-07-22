@@ -31,14 +31,14 @@ def get_args(batch_size=16, ih=256, iw=256, n_replica=4, max_iter=625000, save_i
                         help="Context.")
     parser.add_argument("--type-config", "-t", type=str, default='float',
                         help='Type of computation. e.g. "float", "half".')
-    parser.add_argument("--batch-size", "-b", type=int, default=batch_size,
+    parser.add_argument("--batch-size-per-replica", "-b", type=int, default=batch_size,
                         help="Batch size.")
+    parser.add_argument("--n-replica", type=int, default=n_replica,
+                        help="Number of replicas of an image.")
     parser.add_argument("--ih", type=int, default=ih,
                         help="Image height.")
     parser.add_argument("--iw", type=int, default=iw,
                         help="Image width.")
-    parser.add_argument("--n-replica", type=int, default=n_replica,
-                        help="Number of replicas of an image.")
     parser.add_argument("--max-iter", "-i", type=int, default=max_iter,
                         help="Max iterations.")
     parser.add_argument("--net", type=str, default="RED30",
@@ -54,8 +54,8 @@ def get_args(batch_size=16, ih=256, iw=256, n_replica=4, max_iter=625000, save_i
                         help="Noise level")
     parser.add_argument("--use-clean", action='store_true',
                         help="Use clean target.")
-    parser.add_argument("--use-two-noises", action='store_true',
-                        help="Use different noise as noisy target.")
+    # parser.add_argument("--use-two-noises", action='store_true',
+    #                     help="Use different noise as noisy target.")
     parser.add_argument("--save-interval", type=int, default=3125,
                         help="Interval for saving models.")
     parser.add_argument("--monitor-path", type=str, default="./result/example_0",
