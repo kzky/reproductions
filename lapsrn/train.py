@@ -10,9 +10,9 @@ from nnabla.monitor import Monitor, MonitorSeries, MonitorTimeElapsed, MonitorIm
 from nnabla.ext_utils import get_extension_context
 import nnabla.utils.save as save
 
-from datasets import data_iterator_imagenet
+from datasets import data_iterator_lapsrn
 from args import get_args, save_args
-from models import get_loss
+from models import get_loss, lapsrn
 
 def train(args):
     # Context
@@ -23,10 +23,10 @@ def train(args):
     # Model
     x_HR = nn.Variable([args.batch_size, 3, args.ih, args.iw])
     x_LRs = [x_HR]
-    for s in range(args.S):
-        x_LR = F.average_pooling(x_LRs[-1], (2**s, 2**s))
+    for _ in range(args.S):
+        x_LR = F.average_pooling(x_LRs[-1], (2, 2))
         x_LRs.append(x_LR)
-    x_LRs = x_LRs[:0:-1]
+    x_LRs = x_LRs[:-1][::-1]
     x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D, args.skip_type)
     loss = reduce(lambda x, y: x + y, 
                   [F.mean(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs, x_SRs)])
@@ -62,14 +62,15 @@ def train(args):
     img_paths = ["/home/kzky/nnabla_data/BSD200", 
                  "/home/kzky/nnabla_data/General100", 
                  "/home/kzky/nnabla_data/T90"]
-    di = data_iterator_lapsrn(img_paths, batch_size=batch_size, train=train, shuffle=True)
+    di = data_iterator_lapsrn(img_paths, batch_size=args.batch_size, train=args.train, shuffle=True)
     
     # Train loop
     for i in range(args.max_epoch):
         x_HR.d = di.next()[0]
         solver.zero_grad()
         loss.forward(clear_no_need_grad=True)
-        solver.backward(clear_buffer=True)
+        loss.backward(clear_buffer=True)
+        solver.update()
 
         if i in args.decay_at:
             solver.set_learning_rate(solver.learning_rate() * 0.5)
@@ -79,9 +80,9 @@ def train(args):
         monitor_time.add(i)
         if i % args.save_interval == 0:
             for s in range(args.S):
-                monitor_image_lr_list[s].add(x_LRs[s].d.copy())
-            monitor_image_hr.add(x_HR.d.copy())
-            nn.save_paramters("{}/param_{}.h5".format(args.moitor_path, i))
+                monitor_image_lr_list[s].add(i, x_LRs[s].d.copy())
+            monitor_image_hr.add(i, x_HR.d.copy())
+            nn.save_parameters("{}/param_{}.h5".format(args.monitor_path, i))
             
 
 def main():

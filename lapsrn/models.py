@@ -70,7 +70,7 @@ def lapsrn(x, maps=64, S=3, R=8, D=5, skip_type="ss", bn=False, test=False):
     return u_irbs
 
 def loss_charbonnier(x, y, eps=1e-3):
-    lossv = F.pow_scalar((y - x) ** 2 + eps ** 2, )
+    lossv = F.pow_scalar(F.squared_error(x, y) + eps ** 2, 0.5)
     return lossv
 
 
@@ -78,12 +78,12 @@ def get_loss(loss):
     if loss == "charbonnier":
         loss_func = loss_charbonnier
     elif loss == "l2":
-        loss_func = F.squared_loss
+        loss_func = F.squared_error
     elif loss == "l1":
-        loss_func = F.absolute_loss
+        loss_func = F.absolute_error
     else:
-        raise ValueError("Loss is not supported.")
-    return loss
+        raise ValueError("Loss ({}) is not supported.".format(loss))
+    return loss_func
 
 if __name__ == '__main__':
     x_l = nn.Variable([4, 3, 16, 16])

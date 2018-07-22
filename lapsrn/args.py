@@ -13,7 +13,8 @@
 # limitations under the License.
 
 
-def get_args(batch_size=16, ih=256, iw=256, max_iter=468750, save_interval=3125):
+def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000, 
+             S=3, R=8, D=5, maps=64):
     """
     Get command line arguments.
 
@@ -33,21 +34,25 @@ def get_args(batch_size=16, ih=256, iw=256, max_iter=468750, save_interval=3125)
                         help='Type of computation. e.g. "float", "half".')
     parser.add_argument("--batch-size", "-b", type=int, default=batch_size,
                         help="Batch size.")
+    parser.add_argument("--train", type=bool, default=True,
+                        help="Train mode")
     parser.add_argument("--ih", type=int, default=ih,
                         help="Image height.")
     parser.add_argument("--iw", type=int, default=iw,
                         help="Image width.")
     parser.add_argument("--max-epoch", "-e", type=int, default=max_iter,
                         help="Max iterations.")
-    parser.add_argument("--S", type=int, default=iw,
+    parser.add_argument("--S", type=int, default=S,
                         help="Super resolution number.")
-    parser.add_argument("--R", type=int, default=iw,
+    parser.add_argument("--R", type=int, default=R,
                         help="Recursive number.")
-    parser.add_argument("--D", type=int, default=iw,
+    parser.add_argument("--D", type=int, default=D,
                         help="Depth for recursive block.")
+    parser.add_argument("--maps", type=int, default=maps,
+                        help="Number of maps")
     parser.add_argument("--skip-type", type=str, default="ss",
                         help="Skip type")
-    parser.add_argument("--loss", type=str, default="l2",
+    parser.add_argument("--loss", type=str, default="charbonnier",
                         choices=["charbonnier", "l2", "l1"],
                         help="Loss")
     parser.add_argument("--use-bn", action='store_true',
@@ -60,7 +65,7 @@ def get_args(batch_size=16, ih=256, iw=256, max_iter=468750, save_interval=3125)
                         help="Model load path to a h5 file used in generation and validation.")
     parser.add_argument("--lr", type=float, default=1 * 1e-3,
                         help="Learning rate for generator")
-    parser.add_argument("--decay-at", "-D", type=int, nargs='+', default=[50000, 100000, 150000],
+    parser.add_argument("--decay-at", "-D", type=int, nargs='+', default=[50000, 100000],
                         help="Decay-at `iteration` for learning rate.")
     parser.add_argument("--train-data-path", "-T", type=str, default="",
                         help='Path to training data')

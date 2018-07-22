@@ -193,7 +193,7 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
             img = cv2.resize(img, (ih, iw))
         a = np.random.uniform(0.5, 1.0)
         h, w = int(h*a), int(w*a)
-        if h > ih or w > iw:
+        if h > ih and w > iw:
             img = cv2.resize(img, (h, w))
         
         # To RGB-(c, h, w) array
@@ -235,5 +235,7 @@ if __name__ == '__main__':
     train = True
     test_data = "Set5"
     di = data_iterator_lapsrn(img_paths, batch_size=batch_size, train=train)
+    data = di.next()[0]
+    data = di.next()[0]
     data = di.next()[0]
     print(data.shape)
