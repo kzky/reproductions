@@ -13,6 +13,7 @@ import nnabla.utils.save as save
 from datasets import data_iterator_lapsrn
 from args import get_args, save_args
 from models import get_loss, lapsrn
+from helpers import get_solver
 
 def train(args):
     # Context
@@ -32,8 +33,7 @@ def train(args):
                   [F.mean(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs, x_SRs)])
 
     # Solver
-    #solver = S.Momentum(args.lr, 0.9)
-    solver = S.Adam(args.lr)
+    solver = get_solver(args.solver)(args.lr)
     solver.set_parameters(nn.get_parameters())
     
     # Monitor

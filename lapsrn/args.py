@@ -63,6 +63,8 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000,
                         help="Monitor path.")
     parser.add_argument("--model-load-path", type=str,
                         help="Model load path to a h5 file used in generation and validation.")
+    parser.add_argument("--solver", type=str, default="Momentum", 
+                        help="Solver")
     parser.add_argument("--lr", type=float, default=1e-5,
                         help="Learning rate for generator")
     parser.add_argument("--decay-at", "-D", type=int, nargs='+', default=[50000, 100000],

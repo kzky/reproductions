@@ -46,3 +46,10 @@ class MonitorImageTileWithName(MonitorImageTile):
 def psnr(x, y, max_=255):
     mse = np.mean((x - y) ** 2)
     return 10 * np.log10(max_ ** 2 / mse)
+
+def get_solver(solver):
+    if solver == "Adam":
+        return S.Adam
+
+    if solver == "Momentum":
+        return S.Momentum
