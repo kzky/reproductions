@@ -41,9 +41,9 @@ def get_args(batch_size=16, ih=256, iw=256, n_replica=4, max_iter=625000, save_i
                         help="Image width.")
     parser.add_argument("--max-iter", "-i", type=int, default=max_iter,
                         help="Max iterations.")
-    parser.add_argument("--net", type=str, default="RED30",
-                        choices=["RED30", "unet"],
-                        help="RED30 or unet")
+    parser.add_argument("--net", type=str, default="red30",
+                        choices=["red30", "unet"],
+                        help="red30 or unet")
     parser.add_argument("--loss", type=str, default="l2",
                         choices=["l2", "l1", "l0"],
                         help="Loss")

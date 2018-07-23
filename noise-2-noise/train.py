@@ -23,7 +23,7 @@ def train(args):
     nn.set_default_context(ctx)
 
     # Model
-    if args.net == "RED30":
+    if args.net == "red30":
         net = REDNetwork(layers=30, step_size=2)
     elif args.net == "unet":
         net = Unet()
