@@ -11,10 +11,30 @@ from nnabla.parameter import get_parameter_or_create
 from nnabla.ext_utils import get_extension_context
 from nnabla.parametric_functions import parametric_function_api
 
-from nnabla.initializer import (
-    calc_uniform_lim_glorot,
-    ConstantInitializer, NormalInitializer, UniformInitializer)
+import nnabla.initializer as I
 
+class BilinearUpsampleInitiazlier(I.BaseInitializer):
+
+    def __init__(self, imap=3, omap=3, kernel=(4, 4)):
+        assert kernel[0] == kernel[1]
+
+        k = kernel[0]
+        f = (k + 1) // 2
+        if k % 2 == 1:
+            c = f - 1
+        else:
+            c = f - 0.5
+        og = np.ogrid[:k, :k]
+        k = (1 - abs(og[0] - c) / f) * (1 - abs(og[1] - c) / f)
+        
+        self.w_init = np.zeros((imap, omap) + kernel).astype(np.float32)
+        self.w_init[:imap, :omap, :, :] = k
+
+
+    def __call__(self, ):
+        return self.w_init
+
+BSI = BilinearUpsampleInitiazlier
 
 def rblock(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
            r=0, D=5, bn=False, test=False, name=None):
@@ -29,7 +49,7 @@ def rblock(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
     return h + x
 
 
-def upsample(x, maps=64, kernel=(4, 4), pad=(1, 1), stride=(2, 2), name=None):
+def upsample(x, maps=64, kernel=(4, 4), pad=(1, 1), stride=(2, 2), initializer=None, name=None):
     with nn.parameter_scope("upsample-{}".format(name)):
         return PF.deconvolution(x, maps, kernel, pad, stride)
 
@@ -66,7 +86,7 @@ def lapsrn(x, maps=64, S=3, R=8, D=5, skip_type="ss", bn=False, test=False):
         u_feb, r = feature_extractor(u_feb, maps, R=R, D=D, 
                                      skip_type=skip_type, bn=bn, test=test, name="shared")
         #TODO: weight has to be initialized by bilinear kernel.
-        u_irb = upsample(u_irb, 3, name="shared") + r
+        u_irb = upsample(u_irb, 3, initializer=BSI(), name="shared") + r
         u_irbs.append(u_irb)
     return u_irbs
 
