@@ -15,6 +15,8 @@ from args import get_args, save_args
 from models import get_loss, lapsrn
 from helpers import get_solver
 
+import cv2
+
 def train(args):
     # Context
     extension_module = args.context
@@ -24,14 +26,13 @@ def train(args):
     # Model
     x_HR = nn.Variable([args.batch_size, 3, args.ih, args.iw])
     x_LRs = [x_HR]
-    for _ in range(args.S):
-        #TODO: use bicubic downsampling.
-        x_LR = F.average_pooling(x_LRs[-1], (2, 2))
+    for s in range(args.S):
+        x_LR = nn.Variable([args.batch_size, 3, args.ih // (2 ** (s+1)), args.iw // (2 ** (s+1))])
         x_LRs.append(x_LR)
-    x_LRs = x_LRs[:-1][::-1]
+    x_LRs = x_LRs[::-1]
     x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D, args.skip_type, args.use_bn)
     loss = reduce(lambda x, y: x + y, 
-                  [F.mean(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs, x_SRs)])
+                  [F.mean(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs[1:], x_SRs)])
 
     # Solver
     solver = get_solver(args.solver)(args.lr)
@@ -46,7 +47,7 @@ def train(args):
         return x
     monitor = Monitor(args.monitor_path)
     monitor_loss = MonitorSeries("Reconstruction Loss", monitor, interval=10)
-    monitor_time = MonitorTimeElapsed("Training Time per Resolution", monitor, interval=10)
+    monitor_time = MonitorTimeElapsed("Training Time", monitor, interval=10)
     monitor_image_lr_list = []
     for s in range(args.S):
         monitor_image_lr = MonitorImageTile("Image Tile Train LR",
@@ -69,7 +70,17 @@ def train(args):
     
     # Train loop
     for i in range(args.max_epoch):
-        x_HR.d = di.next()[0]
+        x_data = di.next()[0]
+        x_HR.d = x_data
+        x_data_s = x_data
+        for x_LR in x_LRs[:-1][::-1]:
+            b, c, h, w = x_data_s.shape
+            x_data_s = x_data_s.transpose(0, 2, 3, 1)
+            x_data_s = np.asarray([cv2.resize(x, (h // 2, w // 2), interpolation=cv2.INTER_CUBIC) \
+                                   for x in x_data_s])
+            x_data_s = x_data_s.transpose(0, 3, 1, 2)
+            x_LR.d = x_data_s
+            
         solver.zero_grad()
         loss.forward(clear_no_need_grad=True)
         loss.backward(clear_buffer=True)
