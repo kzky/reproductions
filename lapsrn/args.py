@@ -73,11 +73,10 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000,
                         help="Decay rate")
     parser.add_argument("--train-data-path", "-T", type=str, default="",
                         help='Path to training data')
-    parser.add_argument("--val-dataset", "-V", type=str, default="kodak",
-                        choices=["kodak", "bsds300", "bsds500"],
+    parser.add_argument("--valid-data-path", "-V", type=str, default="",
                         help='Validation data to be used')
     #TODO: add SSIM, IFC
-    parser.add_argument("--validation-metric", type=str, default="psnr",
+    parser.add_argument("--valid-metric", type=str, default="psnr",
                         choices=["psnr"],
                         help="Validation metric for reconstruction.")
     args = parser.parse_args()
@@ -85,13 +84,13 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000,
     return args
 
 
-def save_args(args):
+def save_args(args, mode="train"):
     from nnabla import logger
     import os
     if not os.path.exists(args.monitor_path):
         os.makedirs(args.monitor_path)
 
-    path = "{}/Arguments.txt".format(args.monitor_path)
+    path = "{}/Arguments-{}.txt".format(args.monitor_path, mode)
     logger.info("Arguments are saved to {}.".format(path))
     with open(path, "w") as fp:
         for k, v in sorted(vars(args).items()):

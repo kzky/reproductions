@@ -25,6 +25,7 @@ def train(args):
     x_HR = nn.Variable([args.batch_size, 3, args.ih, args.iw])
     x_LRs = [x_HR]
     for _ in range(args.S):
+        #TODO: use bicubic downsampling.
         x_LR = F.average_pooling(x_LRs[-1], (2, 2))
         x_LRs.append(x_LR)
     x_LRs = x_LRs[:-1][::-1]
@@ -63,8 +64,8 @@ def train(args):
     img_paths = ["/home/kzky/nnabla_data/BSD200", 
                  "/home/kzky/nnabla_data/General100", 
                  "/home/kzky/nnabla_data/T90"]
-    di = data_iterator_lapsrn(img_paths, batch_size=args.batch_size, 
-                              train=args.train, shuffle=True)
+    #TODO: should normalize?
+    di = data_iterator_lapsrn(img_paths, batch_size=args.batch_size, shuffle=True)
     
     # Train loop
     for i in range(args.max_epoch):
@@ -90,7 +91,7 @@ def train(args):
 
 def main():
     args = get_args()
-    save_args(args)
+    save_args(args, "train")
 
     train(args)
 

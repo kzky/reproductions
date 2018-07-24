@@ -12,11 +12,10 @@ from nnabla.ext_utils import get_extension_context
 import nnabla.utils.save as save
 
 
-from helpers import apply_noise, psnr
-from datasets import KodakDataSource, BSDSDataSource, SetDataSource
+from helpers import psnr
 from args import get_args, save_args
-from models import REDNetwork, Unet, get_loss
-
+from models import lapsrn
+from datasets import data_iterator_lapsrn
 
 def evaluate(args):
     # Context
@@ -25,27 +24,10 @@ def evaluate(args):
 
     # Model
     nn.load_parameters(args.model_load_path)
-    #TODO
-
 
     # Data iterator
-    if args.val_dataset == "kodak":
-        ds = KodakDataSource()
-        di = data_iterator(ds, batch_size=1)
-    elif args.val_dataset == "bsds300":
-        ds = BSDSDataSource("bsds300")
-        di = data_iterator(ds, batch_size=1)
-    elif args.val_dataset == "bsds500":
-        ds = BSDSDataSource("bsds500")
-        di = data_iterator(ds, batch_size=1)
-    elif args.val_dataset == "set5":
-        ds = BSDSDataSource("set5")
-        di = data_iterator(ds, batch_size=1)
-    elif args.val_dataset == "set14":
-        ds = BSDSDataSource("set14")
-        di = data_iterator(ds, batch_size=1)
-    else:
-        raise ValueError("{} is not supported.".format(args.val_dataset))
+    img_paths = args.valid_data_path
+    di = data_iterator_lapsrn(img_paths, batch_size=1, train=False, shuffle=False)
 
     # Monitor
     def normalize_method(x):
@@ -55,51 +37,64 @@ def evaluate(args):
         x[min_idx] = 0
         return x
     monitor = Monitor(args.monitor_path)
-    monitor_loss = MonitorSeries("{} Evaluation Metric {}".format(args.val_dataset, 
-                                                                  args.noise_dist), 
-                                 monitor, interval=1)
-    monitor_image_test_clean = MonitorImage("{} Image Test {} Clean".format(args.val_dataset, 
-                                                                            args.noise_dist), 
-                                            monitor,
-                                            num_images=1, 
-                                            normalize_method=normalize_method, 
-                                            interval=1)
-    monitor_image_test_noisy = MonitorImage("{} Image Test {} Noisy".format(args.val_dataset,
-                                                                            args.noise_dist), 
-                                            monitor,
-                                            num_images=1, 
-                                            normalize_method=normalize_method, 
-                                            interval=1)
-    monitor_image_test_recon = MonitorImage("{} Image Test {} Recon".format(args.val_dataset,
-                                                                            args.noise_dist), 
-                                            monitor,
-                                            num_images=1, 
-                                            normalize_method=normalize_method, 
-                                            interval=1)
+    valid_data_name = args.valid_data_path.rstrip("/").split("/")[-1]
+    monitor_metric = MonitorSeries("Evaluation Metric {} {}".format(args.valid_metric, 
+                                                                    valid_data_name), 
+                                   monitor, interval=1)
+    monitor_image_lr = MonitorImage("Image Test LR {}".format(valid_data_name),
+                                    monitor,
+                                    num_images=1, 
+                                    normalize_method=normalize_method, 
+                                    interval=1)
+    monitor_image_hr = MonitorImage("Image Test HR {}".format(valid_data_name),
+                                    monitor,
+                                    num_images=1, 
+                                    normalize_method=normalize_method, 
+                                    interval=1)
+    monitor_image_sr_list = []
+    for s in range(args.S):
+        monitor_image_sr = MonitorImage("Image Test SR x{} {}".format(2 **(s + 1), valid_data_name),
+                                        monitor,
+                                        num_images=1, 
+                                        normalize_method=normalize_method, 
+                                        interval=1)
+        monitor_image_sr_list.append(monitor_image_sr)
 
     # Evaluate
-    for i in range(ds.size):
+    for i in range(di.size):
         # Read data
         x_data = di.next()[0]  # DI return as tupple
         
         # Create model
-        x = nn.Variable([1, 3, x_data.shape[2], x_data.shape[3]])
-        x.persistent = True
-        x_noise = nn.Variable([1, 3, x_data.shape[2], x_data.shape[3]])
-        x_noise.persistent = True
-        x_recon = net(x_noise)
-        x_recon.persistent = True
-        x.d = x_data
-        x_noise.d = apply_noise(x_data, args.noise_level, distribution=args.noise_dist, fix=True)
+        x_HR = nn.Variable([1, 3, x_data.shape[2], x_data.shape[3]])
+        x_LRs = [x_HR]
+        for _ in range(args.S):
+            x_LR = F.average_pooling(x_LRs[-1], (2, 2))
+            x_LRs.append(x_LR)
+        x_LR = x_LRs[-1]
+        x_LRs = x_LRs[:-1][::-1]
+        x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D, args.skip_type, 
+                       args.use_bn, test=False)
+        for x_SR in x_SRs:
+            x_SR.persistent = True 
+        x_SR = x_SRs[-1]
 
-        # Forward (denoise)
-        x_recon.forward(clear_buffer=True)
+        # Feed data
+        x_HR.d = x_data
 
+        # Forward
+        x_SR.forward(clear_buffer=True)
+        
         # Log
-        monitor_loss.add(i, psnr(x_recon.d, x_data))
-        monitor_image_test_clean.add(i, x_data)
-        monitor_image_test_noisy.add(i, x_noise.d)
-        monitor_image_test_recon.add(i, x_recon.d)
+        try:
+            #todo: how to?
+            monitor_metric.add(i, psnr(x_HR.d, x_SR.d))
+        except:
+            nn.logger.warn("{}-th image could not down-sampled well".format(i))
+        monitor_image_lr.add(i, x_LR.d.copy())
+        monitor_image_hr.add(i, x_HR.d.copy())
+        for k, x_SR in enumerate(x_SRs):
+            monitor_image_sr_list[k].add(i, x_SR.d.copy())
 
         # Clear memory since the input is varaible size.
         import nnabla_ext.cuda
@@ -108,7 +103,7 @@ def evaluate(args):
 
 def main():
     args = get_args()
-    save_args(args)
+    save_args(args, "eval")
 
     evaluate(args)
 

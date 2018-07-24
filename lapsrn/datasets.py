@@ -222,8 +222,13 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).transpose((2, 0, 1))
         return img, None            
 
+    if train:
+        load_func = load_func_train
+    else:
+        load_func = load_func_test
+    
     return data_iterator_simple(
-        load_func_train, len(imgs), batch_size, shuffle=shuffle, rng=rng, with_file_cache=False)
+        load_func, len(imgs), batch_size, shuffle=shuffle, rng=rng, with_file_cache=False)
 
 
 if __name__ == '__main__':

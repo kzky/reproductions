@@ -34,7 +34,13 @@ class BilinearUpsampleInitiazlier(I.BaseInitializer):
     def __call__(self, ):
         return self.w_init
 
-BSI = BilinearUpsampleInitiazlier
+BUI = BilinearUpsampleInitiazlier
+
+def convolution(x, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name=None):
+    std = I.calc_normal_std_he_forward(x.shape[1], maps, kernel)
+    initizlier = I.NormalInitializer(std)
+    return PF.convolution(x, maps, kernel, pad, stride, name=name)
+
 
 def rblock(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
            r=0, D=5, bn=False, test=False, name=None):
@@ -43,20 +49,24 @@ def rblock(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
         with nn.parameter_scope("recursive-block-{}-{}".format(d, name)):
             # LeakyRelu -> Conv -> (BN)
             h = F.leaky_relu(h, 0.2)
-            h = PF.convolution(h, maps, kernel, pad, stride)
+            h = convolution(h, maps, kernel, pad, stride)
+            #TODO: BN can be shared? since in SR feature distributions are similar?
             h = h if not bn \
                 else PF.batch_normalization(h, batch_stat=not test, name="bn-{}".format(r))
     return h + x
 
 
 def upsample(x, maps=64, kernel=(4, 4), pad=(1, 1), stride=(2, 2), initializer=None, name=None):
+    if not initializer:
+        std = I.calc_normal_std_he_forward(x.shape[1], maps, kernel)
+        initizlier = I.NormalInitializer(std)
     with nn.parameter_scope("upsample-{}".format(name)):
         return PF.deconvolution(x, maps, kernel, pad, stride)
 
 
 def residue(x, maps=3, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name=None):
     with nn.parameter_scope("residue-{}".format(name)):
-        return PF.convolution(x, maps, kernel, pad, stride)
+        return convolution(x, maps, kernel, pad, stride)
 
 
 def feature_extractor(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
@@ -81,12 +91,12 @@ def feature_extractor(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
 def lapsrn(x, maps=64, S=3, R=8, D=5, skip_type="ss", bn=False, test=False):
     u_irbs = []
     u_irb = x
-    u_feb = PF.convolution(x, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name="first-conv")
+    u_feb = convolution(x, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name="first-conv")
     for s in range(S):
         u_feb, r = feature_extractor(u_feb, maps, R=R, D=D, 
                                      skip_type=skip_type, bn=bn, test=test, name="shared")
         #TODO: weight has to be initialized by bilinear kernel.
-        u_irb = upsample(u_irb, 3, initializer=BSI(), name="shared") + r
+        u_irb = upsample(u_irb, 3, initializer=BUI(), name="shared") + r
         u_irbs.append(u_irb)
     return u_irbs
 
