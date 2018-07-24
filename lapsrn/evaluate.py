@@ -11,11 +11,25 @@ from nnabla.monitor import Monitor, MonitorSeries, MonitorTimeElapsed, MonitorIm
 from nnabla.ext_utils import get_extension_context
 import nnabla.utils.save as save
 
+import cv2
 
-from helpers import psnr
+from helpers import psnr, downsample
 from args import get_args, save_args
 from models import lapsrn
 from datasets import data_iterator_lapsrn
+
+
+def resize(x, s):
+    b, c, h, w = x.shape
+    x = x.reshape(c, h, w)
+    x = x.transpose(1, 2, 0)
+    x = cv2.resize(x, (h * 2 ** s, w * 2 ** s), interpolation=cv2.INTER_CUBIC)
+    x = x.transpose(2, 0, 1)
+    c, h, w = x.shape
+    x = x.reshape(b, c, h, w)
+
+    return x
+    
 
 def evaluate(args):
     # Context
@@ -64,23 +78,29 @@ def evaluate(args):
     for i in range(di.size):
         # Read data
         x_data = di.next()[0]  # DI return as tupple
-        
+
         # Create model
         x_HR = nn.Variable([1, 3, x_data.shape[2], x_data.shape[3]])
         x_LRs = [x_HR]
-        for _ in range(args.S):
-            x_LR = F.average_pooling(x_LRs[-1], (2, 2))
+        x_LRs = [x_HR]
+        _, _, ih, iw = x_data.shape
+        for s in range(args.S):
+            x_LR = nn.Variable([1, 3, ih // (2 ** (s+1)), iw // (2 ** (s+1))])
             x_LRs.append(x_LR)
-        x_LR = x_LRs[-1]
-        x_LRs = x_LRs[:-1][::-1]
+        x_LRs = x_LRs[::-1]
         x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D, args.skip_type, 
                        args.use_bn, test=False)
         for x_SR in x_SRs:
-            x_SR.persistent = True 
+            x_SR.persistent = True
+        x_LR.persistent = True
         x_SR = x_SRs[-1]
 
         # Feed data
         x_HR.d = x_data
+        x_data_s = x_data
+        for x_LR in x_LRs[:-1][::-1]:
+            x_data_s = downsample(x_data_s)
+            x_LR.d = x_data_s
 
         # Forward
         x_SR.forward(clear_buffer=True)
@@ -91,7 +111,7 @@ def evaluate(args):
             monitor_metric.add(i, psnr(x_HR.d, x_SR.d))
         except:
             nn.logger.warn("{}-th image could not down-sampled well".format(i))
-        monitor_image_lr.add(i, x_LR.d.copy())
+        monitor_image_lr.add(i, resize(x_LR.d.copy(), args.S))
         monitor_image_hr.add(i, x_HR.d.copy())
         for k, x_SR in enumerate(x_SRs):
             monitor_image_sr_list[k].add(i, x_SR.d.copy())

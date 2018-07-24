@@ -13,9 +13,10 @@ import nnabla.utils.save as save
 from datasets import data_iterator_lapsrn
 from args import get_args, save_args
 from models import get_loss, lapsrn
-from helpers import get_solver
+from helpers import get_solver, downsample
 
 import cv2
+
 
 def train(args):
     # Context
@@ -74,11 +75,7 @@ def train(args):
         x_HR.d = x_data
         x_data_s = x_data
         for x_LR in x_LRs[:-1][::-1]:
-            b, c, h, w = x_data_s.shape
-            x_data_s = x_data_s.transpose(0, 2, 3, 1)
-            x_data_s = np.asarray([cv2.resize(x, (h // 2, w // 2), interpolation=cv2.INTER_CUBIC) \
-                                   for x in x_data_s])
-            x_data_s = x_data_s.transpose(0, 3, 1, 2)
+            x_data_s = downsample(x_data_s)
             x_LR.d = x_data_s
             
         solver.zero_grad()
