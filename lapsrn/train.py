@@ -29,6 +29,7 @@ def train(args):
     x_LRs = [x_HR]
     for s in range(args.S):
         x_LR = nn.Variable([args.batch_size, 3, args.ih // (2 ** (s+1)), args.iw // (2 ** (s+1))])
+        x_LR.persistent = True
         x_LRs.append(x_LR)
     x_LRs = x_LRs[::-1]
     x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D, args.skip_type, args.use_bn)
@@ -51,7 +52,7 @@ def train(args):
     monitor_time = MonitorTimeElapsed("Training Time", monitor, interval=10)
     monitor_image_lr_list = []
     for s in range(args.S):
-        monitor_image_lr = MonitorImageTile("Image Tile Train LR",
+        monitor_image_lr = MonitorImageTile("Image Tile Train {} LR".format(2**(s+1)),
                                             monitor,
                                             num_images=4, 
                                             normalize_method=normalize_method, 
@@ -95,7 +96,7 @@ def train(args):
                 monitor_image_lr_list[s].add(i, x_LRs[s].d.copy())
             monitor_image_hr.add(i, x_HR.d.copy())
             nn.save_parameters("{}/param_{}.h5".format(args.monitor_path, i))
-            
+        exit(0)
 
 def main():
     args = get_args()
