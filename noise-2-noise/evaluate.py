@@ -24,10 +24,12 @@ def evaluate(args):
     nn.set_default_context(ctx)
 
     # Model
-    if args.net == "RED":
+    if args.net == "red30":
         net = REDNetwork(layers=30, step_size=2)
     elif args.net == "unet":
         net = Unet()
+    else:
+        raise ValueError("Network({}) is not supported.".format(args.net))
     nn.load_parameters(args.model_load_path)
 
 
