@@ -33,6 +33,8 @@ def train(args):
         x_LRs.append(x_LR)
     x_LRs = x_LRs[::-1]
     x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D, args.skip_type, args.use_bn)
+    for s in range(args.S):
+        x_SRs[s].persistent = True
     loss = reduce(lambda x, y: x + y, 
                   [F.mean(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs[1:], x_SRs)])
 
@@ -94,8 +96,15 @@ def train(args):
         if i % args.save_interval == 0:
             for s in range(args.S):
                 monitor_image_lr_list[s].add(i, x_LRs[s].d.copy())
+                monitor_image_sr_list[s].add(i, x_SRs[s].d.copy())
             monitor_image_hr.add(i, x_HR.d.copy())
             nn.save_parameters("{}/param_{}.h5".format(args.monitor_path, i))
+
+    for s in range(args.S):
+        monitor_image_lr_list[s].add(i, x_LRs[s].d.copy())
+        monitor_image_sr_list[s].add(i, x_SRs[s].d.copy())
+    monitor_image_hr.add(i, x_HR.d.copy())
+    nn.save_parameters("{}/param_{}.h5".format(args.monitor_path, i))
 
 
 def main():
