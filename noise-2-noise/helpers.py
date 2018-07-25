@@ -135,7 +135,7 @@ def apply_noise(x, n_replica, noise_level, distribution="gaussian", test=False):
         x_noise = x * n
         #target = create_noisy_target(x_noise - x * p)
         #target = create_noisy_target(x_noise)
-        target = create_noisy_target(x_noise * p)
+        target = create_noisy_target(x_noise - x_noise * p)
         x_noise, target, n = np.concatenate(x_noise), np.concatenate(target), np.concatenate(n)
         return x_noise, target, n
     elif distribution == "impulse":
