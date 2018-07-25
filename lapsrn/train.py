@@ -96,7 +96,7 @@ def train(args):
                 monitor_image_lr_list[s].add(i, x_LRs[s].d.copy())
             monitor_image_hr.add(i, x_HR.d.copy())
             nn.save_parameters("{}/param_{}.h5".format(args.monitor_path, i))
-        exit(0)
+
 
 def main():
     args = get_args()
