@@ -23,7 +23,7 @@ def resize(x, s):
     b, c, h, w = x.shape
     x = x.reshape(c, h, w)
     x = x.transpose(1, 2, 0)
-    x = cv2.resize(x, (h * 2 ** s, w * 2 ** s), interpolation=cv2.INTER_CUBIC)
+    x = cv2.resize(x, (w * 2 ** s, h * 2 ** s), interpolation=cv2.INTER_CUBIC)
     x = x.transpose(2, 0, 1)
     c, h, w = x.shape
     x = x.reshape(b, c, h, w)

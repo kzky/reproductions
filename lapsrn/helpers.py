@@ -58,7 +58,7 @@ def get_solver(solver):
 def downsample(x_data_s):
     b, c, h, w = x_data_s.shape
     x_data_s = x_data_s.transpose(0, 2, 3, 1)
-    x_data_s = np.asarray([cv2.resize(x, (h // 2, w // 2), interpolation=cv2.INTER_CUBIC) \
+    x_data_s = np.asarray([cv2.resize(x, (w // 2, h // 2), interpolation=cv2.INTER_CUBIC) \
                            for x in x_data_s])
     x_data_s = x_data_s.transpose(0, 3, 1, 2)
     return x_data_s
