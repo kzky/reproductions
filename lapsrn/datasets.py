@@ -190,11 +190,11 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
         # Resize in [0.5 1.0]  #TODO: this is really need?
         h, w, c = img.shape
         if h < ih or w < iw:
-            img = cv2.resize(img, (ih, iw))
+            img = cv2.resize(img, (iw, ih), interpolation=cv2.INTER_CUBIC)
         a = np.random.uniform(0.5, 1.0)
         h, w = int(h*a), int(w*a)
         if h > ih and w > iw:
-            img = cv2.resize(img, (h, w))
+            img = cv2.resize(img, (w, h), interpolation=cv2.INTER_CUBIC)
         
         # To RGB-(c, h, w) array
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).transpose((2, 0, 1))

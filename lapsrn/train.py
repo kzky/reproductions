@@ -53,6 +53,7 @@ def train(args):
     monitor_loss = MonitorSeries("Reconstruction Loss", monitor, interval=10)
     monitor_time = MonitorTimeElapsed("Training Time", monitor, interval=10)
     monitor_image_lr_list = []
+    monitor_image_sr_list = []
     for s in range(args.S):
         monitor_image_lr = MonitorImageTile("Image Tile Train {} LR".format(2**(s+1)),
                                             monitor,
@@ -60,6 +61,13 @@ def train(args):
                                             normalize_method=normalize_method, 
                                             interval=1)
         monitor_image_lr_list.append(monitor_image_lr)
+        monitor_image_sr = MonitorImageTile("Image Tile Train {} SR".format(2**(s+1)),
+                                            monitor,
+                                            num_images=4, 
+                                            normalize_method=normalize_method, 
+                                            interval=1)
+        monitor_image_sr_list.append(monitor_image_sr)
+
     monitor_image_hr = MonitorImageTile("Image Tile Train HR",
                                         monitor,
                                         num_images=4,
