@@ -42,11 +42,11 @@ def convolution(x, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name=None):
     return PF.convolution(x, maps, kernel, pad, stride, name=name, with_bias=False)
 
 
-def rblock(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
+def block(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
            r=0, D=5, bn=False, test=False, name=None):
     h = x
     for d in range(D):
-        with nn.parameter_scope("recursive-block-{}-{}".format(d, name)):
+        with nn.parameter_scope("block-{}-{}".format(d, name)):
             # LeakyRelu -> Conv -> (BN)
             h = F.leaky_relu(h, 0.2)
             h = convolution(h, maps, kernel, pad, stride)
@@ -76,7 +76,7 @@ def feature_extractor(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
     with nn.parameter_scope("feature-extractor-{}".format(name)):
         # {Relu -> Conv -> (BN)} x R -> upsample -> conv
         for r in range(R):
-            h = rblock(h, maps, kernel, pad, stride, r=r, D=D, bn=bn, test=test, name="shared")
+            h = block(h, maps, kernel, pad, stride, r=r, D=D, bn=bn, test=test, name="shared")
             if skip_type == "ss":
                 h = h + x
             elif skip_type == "ds":
