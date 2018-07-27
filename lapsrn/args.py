@@ -57,6 +57,8 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000,
                         help="Loss")
     parser.add_argument("--use-bn", action='store_true',
                         help='Use batch norm')
+    parser.add_argument("--use-shared", action='store_true',
+                        help='Use shared parameters')
     parser.add_argument("--save-interval", type=int, default=10000,
                         help="Interval for saving models.")
     parser.add_argument("--monitor-path", type=str, default="./result/example_0",

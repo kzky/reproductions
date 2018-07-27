@@ -87,9 +87,9 @@ def evaluate(args):
         for s in range(args.S):
             x_LR = nn.Variable([1, 3, ih // (2 ** (s+1)), iw // (2 ** (s+1))])
             x_LRs.append(x_LR)
-        x_LRs = x_LRs[::-1]
+        x_LRs = x_LRs[::-1]  # [N, ..., 1] -> [1, ..., N]
         x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D, args.skip_type, 
-                       args.use_bn, test=False)
+                       args.use_bn, test=False, args.use_shared)
         for x_SR in x_SRs:
             x_SR.persistent = True
         x_LR.persistent = True
@@ -98,7 +98,7 @@ def evaluate(args):
         # Feed data
         x_HR.d = x_data
         x_data_s = x_data
-        for x_LR in x_LRs[:-1][::-1]:
+        for x_LR in x_LRs[:-1][::-1]:  # [N-1, ..., 1]
             x_data_s = downsample(x_data_s)
             x_LR.d = x_data_s
 

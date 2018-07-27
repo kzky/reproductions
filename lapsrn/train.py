@@ -32,7 +32,8 @@ def train(args):
         x_LR.persistent = True
         x_LRs.append(x_LR)
     x_LRs = x_LRs[::-1]
-    x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D, args.skip_type, args.use_bn)
+    x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D, args.skip_type, 
+                   args.use_bn, shared=args.use_shared)
     for s in range(args.S):
         x_SRs[s].persistent = True
     loss = reduce(lambda x, y: x + y, 

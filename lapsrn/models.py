@@ -46,7 +46,8 @@ def block(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
            r=0, D=5, bn=False, test=False, name=None):
     h = x
     for d in range(D):
-        with nn.parameter_scope("block-{}-{}".format(d, name)):
+        rname = "shared" if name == "shared" else str(r)
+        with nn.parameter_scope("block-{}-{}-{}".format(name, rname, d)):
             # LeakyRelu -> Conv -> (BN)
             h = F.leaky_relu(h, 0.2)
             h = convolution(h, maps, kernel, pad, stride)
@@ -56,7 +57,8 @@ def block(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
     return h + x
 
 
-def upsample(x, maps=64, kernel=(4, 4), pad=(1, 1), stride=(2, 2), initializer=None, name=None):
+def upsample(x, maps=64, kernel=(4, 4), pad=(1, 1), stride=(2, 2), 
+             initializer=None, name=None):
     if not initializer:
         std = I.calc_normal_std_he_forward(x.shape[1], maps, kernel)
         initizlier = I.NormalInitializer(std)
@@ -76,7 +78,8 @@ def feature_extractor(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
     with nn.parameter_scope("feature-extractor-{}".format(name)):
         # {Relu -> Conv -> (BN)} x R -> upsample -> conv
         for r in range(R):
-            h = block(h, maps, kernel, pad, stride, r=r, D=D, bn=bn, test=test, name="shared")
+            h = block(h, maps, kernel, pad, stride, r=r, D=D, bn=bn, test=test, 
+                      name=name)
             if skip_type == "ss":
                 h = h + x
             elif skip_type == "ds":
@@ -84,19 +87,21 @@ def feature_extractor(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
                 s = h
             elif skip_type == "ns":
                 h = h
-        u = upsample(h, maps, name="shared")
-        r = residue(u, 3, kernel, pad, stride, name="shared")
+        u = upsample(h, maps, name=name)
+        r = residue(u, 3, kernel, pad, stride, name=name)
     return u, r
 
-def lapsrn(x, maps=64, S=3, R=8, D=5, skip_type="ss", bn=False, test=False):
+def lapsrn(x, maps=64, S=3, R=8, D=5, skip_type="ss", 
+           bn=False, test=False, shared=False):
     u_irbs = []
     u_irb = x
     u_feb = convolution(x, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name="first-conv")
     for s in range(S):
+        name = "shared" if shared else str(s)
         u_feb, r = feature_extractor(u_feb, maps, R=R, D=D, 
-                                     skip_type=skip_type, bn=bn, test=test, name="shared")
-        #TODO: weight has to be initialized by bilinear kernel.
-        u_irb = upsample(u_irb, 3, initializer=BUI(), name="shared") + r
+                                     skip_type=skip_type, bn=bn, test=test, 
+                                     name=name)
+        u_irb = upsample(u_irb, 3, initializer=BUI(), name=name) + r
         u_irbs.append(u_irb)
     return u_irbs
 
@@ -117,8 +122,19 @@ def get_loss(loss):
     return loss_func
 
 if __name__ == '__main__':
+    # Shared
     x_l = nn.Variable([4, 3, 16, 16])
-    x_h = lapsrn(x_l, 64)
+    x_h = lapsrn(x_l, 64, shared=True)
+    print(x_h)
+
+    for n, v in nn.get_parameters().items():
+        print(n, v.shape)
+    nn.clear_parameters()
+    
+
+    # Unshared
+    x_l = nn.Variable([4, 3, 16, 16])
+    x_h = lapsrn(x_l, 64, shared=False)
     print(x_h)
 
     for n, v in nn.get_parameters().items():
