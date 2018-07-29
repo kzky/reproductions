@@ -18,6 +18,9 @@ from helpers import get_solver, downsample
 import cv2
 
 
+#TODO:
+# LR decay more and use sum reduction
+
 def train(args):
     # Context
     extension_module = args.context
@@ -33,11 +36,13 @@ def train(args):
         x_LRs.append(x_LR)
     x_LRs = x_LRs[::-1]
     x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D, args.skip_type, 
-                   args.use_bn, shared=args.use_shared)
+                   args.use_bn, share_type=args.share_type)
     for s in range(args.S):
         x_SRs[s].persistent = True
+    # loss = reduce(lambda x, y: x + y, 
+    #               [F.mean(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs[1:], x_SRs)])
     loss = reduce(lambda x, y: x + y, 
-                  [F.mean(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs[1:], x_SRs)])
+                  [F.sum(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs[1:], x_SRs)])
 
     # Solver
     solver = get_solver(args.solver)(args.lr)
@@ -82,14 +87,12 @@ def train(args):
     di = data_iterator_lapsrn(img_paths, batch_size=args.batch_size, shuffle=True)
     
     # Train loop
-    for i in range(args.max_epoch):
+    for i in range(args.max_iter):
         x_data = di.next()[0]
         x_HR.d = x_data
-        x_data_s = x_data
-        for x_LR in x_LRs[:-1][::-1]:
-            x_data_s = downsample(x_data_s)
-            x_LR.d = x_data_s
-            
+        for s, x_LR in enumerate(x_LRs[:-1][::-1]):
+            x_LR.d = downsample(x_data, 2 ** (s + 1))
+
         solver.zero_grad()
         loss.forward(clear_no_need_grad=True)
         loss.backward(clear_buffer=True)
@@ -97,7 +100,7 @@ def train(args):
         solver.update()
 
         if i in args.decay_at:
-            solver.set_learning_rate(solver.learning_rate() * 0.5)
+            solver.set_learning_rate(solver.learning_rate() * 0.1)
         
         # Monitor and save
         monitor_loss.add(i, loss.d)

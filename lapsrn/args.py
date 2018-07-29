@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000, 
+def get_args(batch_size=16, ih=128, iw=128, max_iter=100000, save_interval=1000, 
              S=3, R=8, D=5, maps=64):
     """
     Get command line arguments.
@@ -40,8 +40,8 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000,
                         help="Image height.")
     parser.add_argument("--iw", type=int, default=iw,
                         help="Image width.")
-    parser.add_argument("--max-epoch", "-e", type=int, default=max_iter,
-                        help="Max iterations.")
+    parser.add_argument("--max-iter", type=int, default=max_iter,
+                        help="Max iterations")
     parser.add_argument("--S", type=int, default=S,
                         help="Super resolution number.")
     parser.add_argument("--R", type=int, default=R,
@@ -57,8 +57,9 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000,
                         help="Loss")
     parser.add_argument("--use-bn", action='store_true',
                         help='Use batch norm')
-    parser.add_argument("--use-shared", action='store_true',
-                        help='Use shared parameters')
+    parser.add_argument("--share-type", default="across-pyramid", 
+                        choices=["across-pyramid", "within-pyramid"], 
+                        help='Share type')
     parser.add_argument("--save-interval", type=int, default=10000,
                         help="Interval for saving models.")
     parser.add_argument("--monitor-path", type=str, default="./result/example_0",
@@ -69,7 +70,10 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000,
                         help="Solver")
     parser.add_argument("--lr", type=float, default=1e-5,
                         help="Learning rate for generator")
-    parser.add_argument("--decay-at", "-D", type=int, nargs='+', default=[50000, 100000],
+    
+    parser.add_argument("--decay-at", "-D", type=int, nargs='+', 
+                        default=[10000, 20000, 30000, 40000, 50000, 
+                                 60000, 70000, 80000, 90000, 100000],
                         help="Decay-at `iteration` for learning rate.")
     parser.add_argument("--decay-rate", type=float, default=1e-4, 
                         help="Decay rate")

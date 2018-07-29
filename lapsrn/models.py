@@ -46,12 +46,14 @@ def block(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
            r=0, D=5, bn=False, test=False, name=None):
     h = x
     for d in range(D):
-        rname = "shared" if name == "shared" else str(r)
-        with nn.parameter_scope("block-{}-{}-{}".format(name, rname, d)):
+        if name == "across-pyramid":
+            scopename = "block-{}-{}".format(r, d)
+        else:
+            scopename = "block-{}".format(d)
+        with nn.parameter_scope(scopename):
             # LeakyRelu -> Conv -> (BN)
             h = F.leaky_relu(h, 0.2)
             h = convolution(h, maps, kernel, pad, stride)
-            #TODO: BN can be shared? since in SR feature distributions are similar?
             h = h if not bn \
                 else PF.batch_normalization(h, batch_stat=not test, name="bn-{}".format(r))
     return h + x
@@ -92,12 +94,12 @@ def feature_extractor(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
     return u, r
 
 def lapsrn(x, maps=64, S=3, R=8, D=5, skip_type="ss", 
-           bn=False, test=False, shared=False):
+           bn=False, test=False, share_type="across-pyramid"):
     u_irbs = []
     u_irb = x
     u_feb = convolution(x, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name="first-conv")
     for s in range(S):
-        name = "shared" if shared else str(s)
+        name = share_type if share_type == "across-pyramid" else str(s)
         u_feb, r = feature_extractor(u_feb, maps, R=R, D=D, 
                                      skip_type=skip_type, bn=bn, test=test, 
                                      name=name)
@@ -122,9 +124,9 @@ def get_loss(loss):
     return loss_func
 
 if __name__ == '__main__':
-    # Shared
+    # Across pyramid
     x_l = nn.Variable([4, 3, 16, 16])
-    x_h = lapsrn(x_l, 64, shared=True)
+    x_h = lapsrn(x_l, 64, share_type="across-pyramid")
     print(x_h)
 
     for n, v in nn.get_parameters().items():
@@ -132,9 +134,9 @@ if __name__ == '__main__':
     nn.clear_parameters()
     
 
-    # Unshared
+    # Within pyramid
     x_l = nn.Variable([4, 3, 16, 16])
-    x_h = lapsrn(x_l, 64, shared=False)
+    x_h = lapsrn(x_l, 64, share_type="within-pyramid")
     print(x_h)
 
     for n, v in nn.get_parameters().items():
