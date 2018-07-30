@@ -15,7 +15,7 @@ import nnabla.initializer as I
 
 class BilinearUpsampleInitiazlier(I.BaseInitializer):
 
-    def __init__(self, imap=3, omap=3, kernel=(4, 4)):
+    def __init__(self, imap=64, omap=1, kernel=(4, 4)):
         assert kernel[0] == kernel[1]
 
         k = kernel[0]
@@ -25,10 +25,10 @@ class BilinearUpsampleInitiazlier(I.BaseInitializer):
         else:
             c = f - 0.5
         og = np.ogrid[:k, :k]
-        k = (1 - abs(og[0] - c) / f) * (1 - abs(og[1] - c) / f)
+        k = (1 - abs(og[0] - c) // f) * (1 - abs(og[1] - c) // f)
         
-        self.w_init = np.zeros((imap, omap) + kernel).astype(np.float32)
-        self.w_init[:imap, :omap, :, :] = k
+        self.w_init = np.zeros((omap, imap) + kernel).astype(np.float32)
+        self.w_init[:omap, :imap, :, :] = k
 
 
     def __call__(self, ):
@@ -89,8 +89,8 @@ def feature_extractor(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
                 s = h
             elif skip_type == "ns":
                 h = h
-        u = upsample(h, maps, name=name)
-        r = residue(u, 3, kernel, pad, stride, name=name)
+        u = upsample(h, maps, name=name, initializer=BUI(h.shape[1], 1))
+        r = residue(u, 1, kernel, pad, stride, name=name)
     return u, r
 
 def lapsrn(x, maps=64, S=3, R=8, D=5, skip_type="ss", 
@@ -103,7 +103,7 @@ def lapsrn(x, maps=64, S=3, R=8, D=5, skip_type="ss",
         u_feb, r = feature_extractor(u_feb, maps, R=R, D=D, 
                                      skip_type=skip_type, bn=bn, test=test, 
                                      name=name)
-        u_irb = upsample(u_irb, 3, initializer=BUI(), name=name) + r
+        u_irb = upsample(u_irb, 1, initializer=BUI(u_feb.shape[1], 1), name=name) + r
         u_irbs.append(u_irb)
     return u_irbs
 
