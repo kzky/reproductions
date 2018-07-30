@@ -184,43 +184,49 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
     for img_path in img_paths:
         imgs += glob.glob("{}/*.png".format(img_path))
 
+
     def load_func_train(i):
         img = cv2.imread(imgs[i])
 
-        # Resize in [0.5 1.0]  #TODO: this is really need?
+        # To YCbCr
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2YCR_CB)
+
+        # Resize in [0.5 1.0]
         h, w, c = img.shape
         if h < ih or w < iw:
             img = cv2.resize(img, (iw, ih), interpolation=cv2.INTER_CUBIC)
-        # a = np.random.uniform(0.5, 1.0)
-        # h, w = int(h*a), int(w*a)
-        # if h > ih and w > iw:
-        #     img = cv2.resize(img, (w, h), interpolation=cv2.INTER_CUBIC)
+        a = np.random.uniform(0.5, 1.0)
+        h, w = int(h*a), int(w*a)
+        if h > ih and w > iw:
+            img = cv2.resize(img, (w, h), interpolation=cv2.INTER_CUBIC)
         
-        # To RGB-(c, h, w) array
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).transpose((2, 0, 1))
 
         # Crop
-        c, h, w = img.shape
+        h, w, c = img.shape
         if h > ih and w > iw:
             rh = np.random.choice(np.arange(h - ih), size=1)[0]
             rw = np.random.choice(np.arange(w - iw), size=1)[0]
-            img = img[:, rh:rh+ih, rw:rw+iw]
+            img = img[rh:rh+ih, rw:rw+iw, :]
 
         # Rotate in [0, 90, 180, 270]
         k = np.random.choice([0, 90, 180, 270], size=1)
-        img = np.rot90(img, k=k, axes=(1, 2))
+        img = np.rot90(img, k=k, axes=(0, 1)) if k in [0, 90, 180] else img
 
-        # Flip
+        # Flip horizontally
         if np.random.randint(2):
-            img = img[:, :, ::-1]
+            img = img[:, ::-1, :]
 
-        return img, None
+        img = img.transpose(2, 0, 1)
+        return img[0, :, :], img[1, :, :], img[2, :, :]
+
 
     def load_func_test(i):
         assert batch_size == 1
         img = cv2.imread(imgs[i])
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).transpose((2, 0, 1))
-        return img, None            
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2YCR_CB)
+        img = img.transpose(2, 0, 1)
+        return img[0, :, :], img[1, :, :], img[2, :, :]
+
 
     if train:
         load_func = load_func_train
