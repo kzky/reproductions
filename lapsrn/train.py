@@ -95,7 +95,7 @@ def train(args):
         solver.update()
 
         if i in args.decay_at:
-            solver.set_learning_rate(solver.learning_rate() * 0.1)
+            solver.set_learning_rate(solver.learning_rate() * 0.5)
         
         # Monitor and save
         monitor_loss.add(i, loss.d)
