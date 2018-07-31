@@ -32,7 +32,7 @@ def train(args):
     # generator loss
     z = F.randn(0, 1.0, [args.batch_size, args.latent])
     y_fake = nn.Variable([args.batch_size], need_grad=False)
-    x_fake = generator(z, y_fake, maps=args.maps, sn=args.not_sn)
+    x_fake = generator(z, y_fake, maps=args.maps, sn=args.not_sn).apply(persistent=True)
     d_fake = discriminator(x_fake, y_fake, maps=args.maps // 16, sn=args.not_sn)
     loss_gen = F.mean(gan_loss(d_fake))
     # discriminator loss
@@ -91,6 +91,8 @@ def train(args):
         x_fake.need_grad = True  # need for generator backward
         solver_gen.zero_grad()
         for _ in range(args.accum_grad):
+            _, y_data = di_train.next()
+            y_real.d = y_data.flatten()
             y_fake.d = generate_random_class(args.n_classes, args.batch_size)
             loss_gen.forward(clear_no_need_grad=True)
             loss_gen.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
@@ -99,10 +101,10 @@ def train(args):
             solver_gen.update()
         
 
-        # Synchronize by averaging the weights over devices using allreduce
-        if i % args.sync_weight_every_itr == 0:
-            weights = [x.data for x in nn.get_parameters().values()]
-            comm.all_reduce(weights, division=True, inplace=True)
+        # # Synchronize by averaging the weights over devices using allreduce
+        # if i % args.sync_weight_every_itr == 0:
+        #     weights = [x.data for x in nn.get_parameters().values()]
+        #     comm.all_reduce(weights, division=True, inplace=True)
 
         # Save model and image
         if i % args.save_interval == 0 and comm.rank == 0:
