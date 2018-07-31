@@ -56,6 +56,13 @@ def get_solver(solver):
         return S.Momentum
 
 
+def upsample(x_data_s, s):
+    b, h, w, c = x_data_s.shape
+    x_data_s = np.asarray([cv2.resize(x, (w * s, h * s), interpolation=cv2.INTER_CUBIC) \
+                           for x in x_data_s])
+    return x_data_s
+
+
 def downsample(x_data_s, s):
     b, h, w, c = x_data_s.shape
     x_data_s = np.asarray([cv2.resize(x, (w // s, h // s), interpolation=cv2.INTER_CUBIC) \

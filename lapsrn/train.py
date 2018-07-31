@@ -13,7 +13,7 @@ import nnabla.utils.save as save
 from datasets import data_iterator_lapsrn
 from args import get_args, save_args
 from models import get_loss, lapsrn
-from helpers import get_solver, downsample, split, to_BCHW, to_BHWC, normalize, ycrcb_to_rgb
+from helpers import get_solver, upsample, downsample, split, to_BCHW, to_BHWC, normalize, ycrcb_to_rgb
 
 import cv2
 
@@ -89,7 +89,8 @@ def train(args):
             x_LR_y = normalize(x_LR_y)
             x_LR.d = x_LR_y
             x_LR_d = downsample(x_data, 2 ** (s + 1))
-        ycrcb = ycrcb[::-1][1:]
+        #ycrcb = ycrcb[::-1][1:]
+        ycrcb = ycrcb[-1]
 
         # Zerograd, forward, backward, weight-decay, update
         solver.zero_grad()
@@ -107,7 +108,9 @@ def train(args):
         monitor_time.add(i)
         if i % args.save_interval == 0:
             for s in range(args.S):
-                _, cr, cb = ycrcb[s]
+                _, cr, cb = ycrcb
+                cr = upsample(cr, 2 ** (s + 1))[..., np.newaxis]
+                cb = upsample(cb, 2 ** (s + 1))[..., np.newaxis]
                 x_lr = ycrcb_to_rgb(to_BHWC(x_LRs[s+1].d.copy()) * 255.0, cr, cb)
                 x_sr = ycrcb_to_rgb(to_BHWC(x_SRs[s].d.copy()) * 255.0, cr, cb)
                 monitor_image_lr_list[s].add(i, x_lr)
@@ -118,7 +121,9 @@ def train(args):
     monitor_loss.add(i, loss.d)
     monitor_time.add(i)
     for s in range(args.S):
-        _, cr, cb = ycrcb[s]
+        _, cr, cb = ycrcb
+        cr = upsample(cr, 2 ** (s + 1))[..., np.newaxis]
+        cb = upsample(cb, 2 ** (s + 1))[..., np.newaxis]
         x_lr = ycrcb_to_rgb(to_BHWC(x_LRs[s+1].d.copy()) * 255.0, cr, cb)
         x_sr = ycrcb_to_rgb(to_BHWC(x_SRs[s].d.copy()) * 255.0, cr, cb)
         monitor_image_lr_list[s].add(i, x_lr)
