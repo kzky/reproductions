@@ -48,7 +48,7 @@ def block(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
     for d in range(D):
         if name == "across-pyramid":
             scopename = "block-{}-{}".format(r, d)
-        else:
+        else:  # within-pyramid
             scopename = "block-{}".format(d)
         with nn.parameter_scope(scopename):
             # LeakyRelu -> Conv -> (BN)
@@ -93,6 +93,7 @@ def feature_extractor(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
         r = residue(u, 1, kernel, pad, stride, name=name)
     return u, r
 
+
 def lapsrn(x, maps=64, S=3, R=8, D=5, skip_type="ss", 
            bn=False, test=False, share_type="across-pyramid"):
     u_irbs = []
@@ -106,6 +107,7 @@ def lapsrn(x, maps=64, S=3, R=8, D=5, skip_type="ss",
         u_irb = upsample(u_irb, 1, initializer=BUI(u_feb.shape[1], 1), name=name) + r
         u_irbs.append(u_irb)
     return u_irbs
+
 
 def loss_charbonnier(x, y, eps=1e-3):
     lossv = F.pow_scalar(F.squared_error(x, y) + eps ** 2, 0.5)

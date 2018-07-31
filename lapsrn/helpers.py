@@ -55,11 +55,42 @@ def get_solver(solver):
     if solver == "Momentum":
         return S.Momentum
 
+
 def downsample(x_data_s, s):
-    b, c, h, w = x_data_s.shape
-    x_data_s = x_data_s.transpose(0, 2, 3, 1)
+    b, h, w, c = x_data_s.shape
     x_data_s = np.asarray([cv2.resize(x, (w // s, h // s), interpolation=cv2.INTER_CUBIC) \
                            for x in x_data_s])
-    x_data_s = x_data_s.transpose(0, 3, 1, 2)
     return x_data_s
+
+
+def split(x):
+    b, h, w, c = x.shape
+    y = []
+    for i in range(c):
+        y.append(x[:, :, :, i].reshape(b, h, w, 1))
+    return y
+
+
+def to_BCHW(x):
+    # B, H, W, C -> B, C, H, W
+    return x.transpose(0, 3, 1, 2)
+
+
+def to_BHWC(x):
+    # B, C, H, W -> B, H, W, C
+    return x.transpose(0, 2, 3, 1)
+
+
+def normalize(x, de=255.0):
+    return x / de
+
+
+def ycrcb_to_rgb(y, cr, cb):
+    imgs = []
+    imgs_ = np.concatenate([y, cb, cr], axis=3)
+    for img in imgs_:
+        img = cv2.cvtColor(img, cv2.COLOR_YCrCb2RGB)
+        imgs.append(img)
+    return np.concatenate(imgs, axis=0)
+
 

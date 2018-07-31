@@ -152,6 +152,7 @@ def load_lapsrn(train=True, test_data="Set5"):
     return images
 
 
+#TODO: use this?
 class LapSRNDataSource(DataSource):
     '''
     Get data directly from Set dataset from Internet.
@@ -200,7 +201,6 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
         if h > ih and w > iw:
             img = cv2.resize(img, (w, h), interpolation=cv2.INTER_CUBIC)
         
-
         # Crop
         h, w, c = img.shape
         if h > ih and w > iw:
@@ -210,22 +210,20 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
 
         # Rotate in [0, 90, 180, 270]
         k = np.random.choice([0, 90, 180, 270], size=1)
-        img = np.rot90(img, k=k, axes=(0, 1)) if k in [0, 90, 180] else img
+        img = np.rot90(img, k=k, axes=(0, 1)) if k in [90, 180, 270] else img
 
         # Flip horizontally
         if np.random.randint(2):
             img = img[:, ::-1, :]
 
-        img = img.transpose(2, 0, 1)
-        return img[0, :, :], img[1, :, :], img[2, :, :]
+        return img, None
 
 
     def load_func_test(i):
         assert batch_size == 1
         img = cv2.imread(imgs[i])
         img = cv2.cvtColor(img, cv2.COLOR_BGR2YCR_CB)
-        img = img.transpose(2, 0, 1)
-        return img[0, :, :], img[1, :, :], img[2, :, :]
+        return img, None
 
 
     if train:
