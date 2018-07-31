@@ -216,6 +216,7 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
         if np.random.randint(2):
             img = img[:, ::-1, :]
 
+        # img(YCrCb): [1, H, W, C]
         return img, None
 
 
@@ -223,6 +224,7 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
         assert batch_size == 1
         img = cv2.imread(imgs[i])
         img = cv2.cvtColor(img, cv2.COLOR_BGR2YCR_CB)
+        # img(YCrCb): [1, H, W, C]
         return img, None
 
 

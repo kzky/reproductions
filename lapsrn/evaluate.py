@@ -13,7 +13,9 @@ import nnabla.utils.save as save
 
 import cv2
 
-from helpers import psnr, downsample
+from helpers import (get_solver, upsample, downsample, 
+                     split, to_BCHW, to_BHWC, normalize, ycrcb_to_rgb, 
+                     normalize_method)
 from args import get_args, save_args
 from models import lapsrn
 from datasets import data_iterator_lapsrn
@@ -44,12 +46,6 @@ def evaluate(args):
     di = data_iterator_lapsrn(img_paths, batch_size=1, train=False, shuffle=False)
 
     # Monitor
-    def normalize_method(x):
-        max_idx = np.where(x > 255)
-        min_idx = np.where(x < 0)
-        x[max_idx] = 255
-        x[min_idx] = 0
-        return x
     monitor = Monitor(args.monitor_path)
     valid_data_name = args.valid_data_path.rstrip("/").split("/")[-1]
     monitor_metric = MonitorSeries("Evaluation Metric {} {}".format(args.valid_metric, 
@@ -78,27 +74,34 @@ def evaluate(args):
     for i in range(di.size):
         # Read data
         x_data = di.next()[0]  # DI return as tupple
+        b, h, w, c = x_data.shape
 
         # Create model
-        x_HR = nn.Variable([1, 3, x_data.shape[2], x_data.shape[3]])
+        x_HR = nn.Variable([1, 1, h, w])
         x_LRs = [x_HR]
-        x_LRs = [x_HR]
-        _, _, ih, iw = x_data.shape
         for s in range(args.S):
-            x_LR = nn.Variable([1, 3, ih // (2 ** (s+1)), iw // (2 ** (s+1))])
+            x_LR = nn.Variable([1, 1, h // (2 ** (s+1)), w // (2 ** (s+1))])
+            x_LR.persistent = True
             x_LRs.append(x_LR)
-        x_LRs = x_LRs[::-1]  # [N, ..., 1] -> [1, ..., N]
+        x_LRs = x_LRs[::-1]  # [x_LR0, x_LR1, ..., x_HR]
         x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D, args.skip_type, 
-                       args.use_bn, test=False, share_type=args.share_type)
-        for x_SR in x_SRs:
-            x_SR.persistent = True
-        x_LR.persistent = True
+                       args.use_bn, share_type=args.share_type)
+        for s in range(args.S):
+            x_SRs[s].persistent = True
         x_SR = x_SRs[-1]
 
         # Feed data
-        x_HR.d = x_data
-        for s, x_LR in enumerate(x_LRs[:-1][::-1]):  # [N-1, ..., 1]
-            x_LR.d = downsample(x_data, 2 ** (s + 1))
+        ycrcb = []
+        x_LR_d = x_data  # B, H, W, C
+        for s, x_LR in enumerate(x_LRs[::-1]):  # [x_HR, ..., x_LR1, x_LR0]
+            x_LR_y, x_LR_cr, x_LR_cb = split(x_LR_d)            
+            ycrcb.append([x_LR_y, x_LR_cr, x_LR_cb])
+            x_LR_y = to_BCHW(x_LR_y)
+            x_LR_y = normalize(x_LR_y)
+            x_LR.d = x_LR_y
+            x_LR_d = downsample(x_data, 2 ** (s + 1))
+            break
+        ycrcb = ycrcb[-1]
 
         # Forward
         x_SR.forward(clear_buffer=True)
@@ -106,13 +109,31 @@ def evaluate(args):
         # Log
         try:
             #todo: how to?
+            #todo: only y of YCrCB?
+            print(np.min(x_HR.d), np.max(x_HR.d))
+            print(np.min(x_SR.d), np.max(x_SR.d))
             monitor_metric.add(i, psnr(x_HR.d, x_SR.d))
         except:
             nn.logger.warn("{}-th image could not down-sampled well".format(i))
-        monitor_image_lr.add(i, resize(x_LR.d.copy(), args.S))
-        monitor_image_hr.add(i, x_HR.d.copy())
-        for k, x_SR in enumerate(x_SRs):
-            monitor_image_sr_list[k].add(i, x_SR.d.copy())
+        
+        x_lr = upsample(to_BHWC(x_LR.d.copy()), 2 ** args.S)[..., np.newaxis]
+        x_hr = to_BHWC(x_HR.d.copy())
+        _, cr, cb = ycrcb
+        cr = upsample(cr, 2 ** args.S)[..., np.newaxis]
+        cb = upsample(cb, 2 ** args.S)[..., np.newaxis]
+        print(np.min(x_lr), np.max(x_lr))
+        print(np.min(cr), np.max(cr))
+        print(np.min(cb), np.max(cb))
+        x_lr[x_lr > 1.0] = 1.0
+        x_lr[x_lr < 0.0] = 0.0
+        monitor_image_lr.add(i, to_BCHW(ycrcb_to_rgb(x_lr * 255.0, cr, cb)))
+        monitor_image_hr.add(i, to_BCHW(ycrcb_to_rgb(x_hr * 255.0, cr, cb)))
+        for s, x_SR in enumerate(x_SRs):
+            _, cr, cb = ycrcb
+            cr = upsample(cr, 2 ** (s + 1))[..., np.newaxis]
+            cb = upsample(cb, 2 ** (s + 1))[..., np.newaxis]
+            x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_SRs[s].d.copy()) * 255.0, cr, cb))
+            monitor_image_sr_list[s].add(i, x_sr)
 
         # Clear memory since the input is varaible size.
         import nnabla_ext.cuda

@@ -13,9 +13,14 @@ import nnabla.utils.save as save
 from datasets import data_iterator_lapsrn
 from args import get_args, save_args
 from models import get_loss, lapsrn
-from helpers import get_solver, upsample, downsample, split, to_BCHW, to_BHWC, normalize, ycrcb_to_rgb
+from helpers import (get_solver, upsample, downsample, 
+                     split, to_BCHW, to_BHWC, normalize, ycrcb_to_rgb, 
+                     normalize_method)
 
 import cv2
+
+
+#TODO: Use PIL, cv2 convert is not consistent with intention.
 
 
 def train(args):
@@ -44,13 +49,6 @@ def train(args):
     solver.set_parameters(nn.get_parameters())
     
     # Monitor
-    def normalize_method(x, mul=255.0):
-        x *= mul
-        max_idx = np.where(x > 255)
-        min_idx = np.where(x < 0)
-        x[max_idx] = 255
-        x[min_idx] = 0
-        return x
     monitor = Monitor(args.monitor_path)
     monitor_loss = MonitorSeries("Reconstruction Loss", monitor, interval=10)
     monitor_time = MonitorTimeElapsed("Training Time", monitor, interval=10)
@@ -86,10 +84,14 @@ def train(args):
             x_LR_y, x_LR_cr, x_LR_cb = split(x_LR_d)            
             ycrcb.append([x_LR_y, x_LR_cr, x_LR_cb])
             x_LR_y = to_BCHW(x_LR_y)
+            #print(np.min(x_LR_y), np.max(x_LR_y))
             x_LR_y = normalize(x_LR_y)
+            #print(np.min(x_LR_y), np.max(x_LR_y))
             x_LR.d = x_LR_y
+            #TODO: after downsampling, the range does not fit in [0, 255], why?
+            #print(s, np.min(x_data[:, :, :, 0]), np.max(x_data[:, :, :, 0]))
             x_LR_d = downsample(x_data, 2 ** (s + 1))
-        #ycrcb = ycrcb[::-1][1:]
+            #print(s, np.min(x_LR_d[:, :, :, 0]), np.max(x_LR_d[:, :, :, 0]))
         ycrcb = ycrcb[-1]
 
         # Zerograd, forward, backward, weight-decay, update
@@ -111,8 +113,8 @@ def train(args):
                 _, cr, cb = ycrcb
                 cr = upsample(cr, 2 ** (s + 1))[..., np.newaxis]
                 cb = upsample(cb, 2 ** (s + 1))[..., np.newaxis]
-                x_lr = ycrcb_to_rgb(to_BHWC(x_LRs[s+1].d.copy()) * 255.0, cr, cb)
-                x_sr = ycrcb_to_rgb(to_BHWC(x_SRs[s].d.copy()) * 255.0, cr, cb)
+                x_lr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_LRs[s+1].d.copy()) * 255.0, cr, cb))
+                x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_SRs[s].d.copy()) * 255.0, cr, cb))
                 monitor_image_lr_list[s].add(i, x_lr)
                 monitor_image_sr_list[s].add(i, x_sr)
             nn.save_parameters("{}/param_{}.h5".format(args.monitor_path, i))
@@ -124,8 +126,8 @@ def train(args):
         _, cr, cb = ycrcb
         cr = upsample(cr, 2 ** (s + 1))[..., np.newaxis]
         cb = upsample(cb, 2 ** (s + 1))[..., np.newaxis]
-        x_lr = ycrcb_to_rgb(to_BHWC(x_LRs[s+1].d.copy()) * 255.0, cr, cb)
-        x_sr = ycrcb_to_rgb(to_BHWC(x_SRs[s].d.copy()) * 255.0, cr, cb)
+        x_lr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_LRs[s+1].d.copy()) * 255.0, cr, cb))
+        x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_SRs[s].d.copy()) * 255.0, cr, cb))
         monitor_image_lr_list[s].add(i, x_lr)
         monitor_image_sr_list[s].add(i, x_sr)
     nn.save_parameters("{}/param_{}.h5".format(args.monitor_path, i))

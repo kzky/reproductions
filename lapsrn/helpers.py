@@ -56,6 +56,14 @@ def get_solver(solver):
         return S.Momentum
 
 
+def normalize_method(x):
+    max_idx = np.where(x > 255)
+    min_idx = np.where(x < 0)
+    x[max_idx] = 255
+    x[min_idx] = 0
+    return x
+
+
 def upsample(x_data_s, s):
     b, h, w, c = x_data_s.shape
     x_data_s = np.asarray([cv2.resize(x, (w * s, h * s), interpolation=cv2.INTER_CUBIC) \
@@ -94,10 +102,10 @@ def normalize(x, de=255.0):
 
 def ycrcb_to_rgb(y, cr, cb):
     imgs = []
-    imgs_ = np.concatenate([y, cb, cr], axis=3)
+    imgs_ = np.concatenate([y, cr, cb], axis=3)
     for img in imgs_:
         img = cv2.cvtColor(img, cv2.COLOR_YCrCb2RGB)
         imgs.append(img)
-    return np.concatenate(imgs, axis=0)
+    return np.asarray(imgs)
 
 
