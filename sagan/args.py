@@ -57,7 +57,7 @@ def get_args(batch_size=16, accum_grad=4, image_size=128, n_classes=1000, max_it
                         help="Inception model load path to a h5 file used in validation.")
     parser.add_argument("--lrg", type=float, default=1 * 1e-4,
                         help="Learning rate for generator")
-    parser.add_argument("--lrd", type=float, default=4 * 1e-4,
+    parser.add_argument("--lrd", type=float, default=5 * 1e-4,
                         help="Learning rate for discriminator")
     parser.add_argument("--beta1", type=float, default=0.0,
                         help="Beta1 of Adam solver.")
@@ -73,7 +73,7 @@ def get_args(batch_size=16, accum_grad=4, image_size=128, n_classes=1000, max_it
                         choices=["IS", "FID"],
                         help="Validation metric for SAGAN; IS or FID, FID is the default.")
     parser.add_argument("--sync-weight-every-itr",
-                        type=int, default=1,
+                        type=int, default=10,
                         help="Sync weights every specified iteration. NCCL uses the ring all reduce, so gradients in each device are not exactly same. When it is accumulated in the weights, the weight values in each device diverge.")
 
     args = parser.parse_args()

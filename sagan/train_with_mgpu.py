@@ -11,7 +11,7 @@ import nnabla.utils.save as save
 from nnabla.ext_utils import get_extension_context
 from args import get_args, save_args
 
-from helpers import MonitorImageTileWithName
+from helpers import MonitorImageTileWithName, generate_random_class
 from models import generator, discriminator, gan_loss
 from imagenet_data import data_iterator_imagenet
 
@@ -27,23 +27,23 @@ def train(args):
     ctx.device_id = str(device_id)
     nn.set_default_context(ctx)
 
-    # Model
-    np.random.seed(412)
+    # Model (not use test mode when training either generator and discrimiantor)
+    np.random.seed(412)  # workaround to start with the same weights in the distributed system.
+    # generator loss
     z = F.randn(0, 1.0, [args.batch_size, args.latent])
-    y = nn.Variable([args.batch_size], need_grad=False)
+    y_fake = nn.Variable([args.batch_size], need_grad=False)
+    x_fake = generator(z, y_fake, maps=args.maps, sn=args.not_sn)
+    d_fake = discriminator(x_fake, y_fake, maps=args.maps // 16, sn=args.not_sn)
+    loss_gen = F.mean(gan_loss(d_fake))
+    # discriminator loss
+    y_real = nn.Variable([args.batch_size], need_grad=False)
     x_real = nn.Variable([args.batch_size, 3, args.image_size, args.image_size], need_grad=False)
     x_augm = F.flip(x_real, (2, ))
-    x_fake = generator(z, y, maps=args.maps, sn=args.not_sn)
-    x_fake.persistent = True
-    d_fake = discriminator(x_fake, y, sn=args.not_sn)
-    d_real = discriminator(x_augm, y, sn=args.not_sn)
-    loss_gen = F.mean(gan_loss(d_fake))
+    d_real = discriminator(x_augm, y_real, maps=args.maps // 16, sn=args.not_sn)
     loss_dis = F.mean(gan_loss(d_fake, d_real))
-    
+    # generator with fixed value for test
     z_test = nn.Variable.from_numpy_array(np.random.randn(args.batch_size, args.latent))
-    y_test = nn.Variable.from_numpy_array(np.random.choice(np.arange(args.n_classes),
-                                                           args.batch_size,
-                                                           replace=False))
+    y_test = nn.Variable.from_numpy_array(generate_random_class(args.n_classes, args.batch_size))
     x_test = generator(z_test, y_test, maps=args.maps, test=True, sn=args.not_sn)
     
     # Solver
@@ -54,7 +54,7 @@ def train(args):
     with nn.parameter_scope("discriminator"):
         solver_dis.set_parameters(nn.get_parameters())
 
-    # Monitor
+        # Monitor
     if comm.rank == 0:
         monitor = Monitor(args.monitor_path)
         monitor_loss_gen = MonitorSeries("Generator Loss", monitor, interval=10)
@@ -73,30 +73,32 @@ def train(args):
     # Train loop
     normalize_method = lambda x: (x - 127.5) / 127.5
     for i in range(args.max_iter):
-        # Feed data
-        x_data, y_data = di_train.next()
-        x_real.d, y.d = normalize_method(x_data), y_data.flatten()
-        
-        # Train genrator
-        x_fake.need_grad = True  # need for generator backward
-        solver_gen.zero_grad()
-        for _ in range(args.accum_grad):
-            loss_gen.forward(clear_no_need_grad=True)
-            loss_gen.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
-        with nn.parameter_scope("generator"):
-            comm.all_reduce([v.grad for v in nn.get_parameters().values()])
-        solver_gen.update()
         
         # Train discriminator
         x_fake.need_grad = False  # no need for discriminator backward
         solver_dis.zero_grad()
         for _ in range(args.accum_grad):
+            x_data, y_data = di_train.next()
+            x_real.d, y_real.d = normalize_method(x_data), y_data.flatten()
+            y_fake.d = generate_random_class(args.n_classes, args.batch_size)
             loss_dis.forward(clear_no_need_grad=True)
             loss_dis.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
         with nn.parameter_scope("discriminator"):
             comm.all_reduce([v.grad for v in nn.get_parameters().values()])
         solver_dis.update()
+
+        # Train genrator
+        x_fake.need_grad = True  # need for generator backward
+        solver_gen.zero_grad()
+        for _ in range(args.accum_grad):
+            y_fake.d = generate_random_class(args.n_classes, args.batch_size)
+            loss_gen.forward(clear_no_need_grad=True)
+            loss_gen.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
+        with nn.parameter_scope("generator"):
+            comm.all_reduce([v.grad for v in nn.get_parameters().values()])
+            solver_gen.update()
         
+
         # Synchronize by averaging the weights over devices using allreduce
         if i % args.sync_weight_every_itr == 0:
             weights = [x.data for x in nn.get_parameters().values()]

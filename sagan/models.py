@@ -57,8 +57,8 @@ def spectral_normalization_for_affine(w, itr=1, eps=1e-12, input_axis=1, test=Fa
     if test:
         return W_sn
 
-    d0 = np.prod(w.shape[0:input_axis])  # In
-    d1 = np.prod(w.shape[input_axis:])   # Out
+    d0 = np.prod(w.shape[0:-1])  # In
+    d1 = np.prod(w.shape[-1])   # Out
     u0 = get_parameter_or_create("singular-vector", [d1], NormalInitializer(), False)
     u = F.reshape(u0, [d1, 1])
     # Power method
@@ -183,8 +183,7 @@ def affine(inp, n_outmaps,
     w = get_parameter_or_create(
         "W", [int(np.prod(inp.shape[base_axis:]))] + n_outmaps,
         w_init, not fix_parameters)
-    input_axis = len(inp.shape) - base_axis
-    w_sn = spectral_normalization_for_affine(w, itr=itr, input_axis=input_axis, test=test) if sn else w
+    w_sn = spectral_normalization_for_affine(w, itr=itr, test=test) if sn else w
     b = None
     if with_bias:
         b = get_parameter_or_create(
@@ -209,8 +208,10 @@ def embed(inp, n_inputs, n_features, itr=1, fix_parameters=False, sn=True, test=
     Returns:
         ~nnabla.Variable: Output with shape :math:`(I_0, ..., I_N, W_1, ..., W_M)`
     """
+
+    l, u = calc_uniform_lim_glorot(n_inputs, n_features)
     w = get_parameter_or_create("W", [n_inputs, n_features],
-                                UniformInitializer((-np.sqrt(3.), np.sqrt(3))), not fix_parameters)
+                                UniformInitializer((l, u)), not fix_parameters)
     w_sn = spectral_normalization_for_affine(w, itr=itr, test=test) if sn else w
     return F.embed(inp, w_sn)
     
@@ -349,6 +350,7 @@ def resblock_d(h, y, scopename,
 
 def generator(z, y, scopename="generator", 
               maps=1024, n_classes=1000, s=4, test=False, sn=True):
+    
     with nn.parameter_scope(scopename):
         # Affine
         h = affine(z, maps * s * s, with_bias=False, sn=sn, test=test)
@@ -382,10 +384,11 @@ def discriminator(x, y, scopename="discriminator",
         # Last affine
         h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
         h = F.leaky_relu(h, 0.2)
-        h = F.reshape(h, (h.shape[0], -1))
+        h = F.average_pooling(h, h.shape[2:])
         o0 = affine(h, 1, sn=sn, test=test)
         # Project discriminator
         e = embed(y, n_classes, h.shape[1], name="projection", sn=sn, test=test)
+        h = F.reshape(h, h.shape[0:2], inplace=False)
         o1 = F.sum(h * e, axis=1, keepdims=True)
     return o0 + o1
 

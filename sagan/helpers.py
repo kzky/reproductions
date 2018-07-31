@@ -41,3 +41,9 @@ class MonitorImageTileWithName(MonitorImageTile):
         tile = tile_images(data)
         path = os.path.join(self.save_dir, '{}.png'.format(name))
         imsave(path, tile)
+
+def generate_random_class(n_classes, batch_size):
+    return np.random.choice(np.arange(n_classes),
+                            batch_size,
+                            replace=False)
+    
