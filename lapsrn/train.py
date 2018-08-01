@@ -20,9 +20,6 @@ from helpers import (get_solver, upsample, downsample,
 import cv2
 
 
-#TODO: Use PIL, cv2 convert is not consistent with intention.
-
-
 def train(args):
     # Context
     extension_module = args.context
@@ -84,14 +81,9 @@ def train(args):
             x_LR_y, x_LR_cr, x_LR_cb = split(x_LR_d)            
             ycrcb.append([x_LR_y, x_LR_cr, x_LR_cb])
             x_LR_y = to_BCHW(x_LR_y)
-            #print(np.min(x_LR_y), np.max(x_LR_y))
             x_LR_y = normalize(x_LR_y)
-            #print(np.min(x_LR_y), np.max(x_LR_y))
             x_LR.d = x_LR_y
-            #TODO: after downsampling, the range does not fit in [0, 255], why?
-            #print(s, np.min(x_data[:, :, :, 0]), np.max(x_data[:, :, :, 0]))
             x_LR_d = downsample(x_data, 2 ** (s + 1))
-            #print(s, np.min(x_LR_d[:, :, :, 0]), np.max(x_LR_d[:, :, :, 0]))
         ycrcb = ycrcb[-1]
 
         # Zerograd, forward, backward, weight-decay, update
@@ -111,8 +103,8 @@ def train(args):
         if i % args.save_interval == 0:
             for s in range(args.S):
                 _, cr, cb = ycrcb
-                cr = upsample(cr, 2 ** (s + 1))[..., np.newaxis]
-                cb = upsample(cb, 2 ** (s + 1))[..., np.newaxis]
+                cr = upsample(cr, 2 ** (s + 1))
+                cb = upsample(cb, 2 ** (s + 1))
                 x_lr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_LRs[s+1].d.copy()) * 255.0, cr, cb))
                 x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_SRs[s].d.copy()) * 255.0, cr, cb))
                 monitor_image_lr_list[s].add(i, x_lr)
@@ -124,8 +116,8 @@ def train(args):
     monitor_time.add(i)
     for s in range(args.S):
         _, cr, cb = ycrcb
-        cr = upsample(cr, 2 ** (s + 1))[..., np.newaxis]
-        cb = upsample(cb, 2 ** (s + 1))[..., np.newaxis]
+        cr = upsample(cr, 2 ** (s + 1))
+        cb = upsample(cb, 2 ** (s + 1))
         x_lr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_LRs[s+1].d.copy()) * 255.0, cr, cb))
         x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_SRs[s].d.copy()) * 255.0, cr, cb))
         monitor_image_lr_list[s].add(i, x_lr)

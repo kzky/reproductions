@@ -67,14 +67,16 @@ def normalize_method(x):
 def upsample(x_data_s, s):
     b, h, w, c = x_data_s.shape
     x_data_s = np.asarray([cv2.resize(x, (w * s, h * s), interpolation=cv2.INTER_CUBIC) \
-                           for x in x_data_s])
+                           for x in x_data_s.astype(np.uint8)])
+    if len(x_data_s) != 4:
+        return x_data_s[..., np.newaxis]
     return x_data_s
 
 
 def downsample(x_data_s, s):
     b, h, w, c = x_data_s.shape
     x_data_s = np.asarray([cv2.resize(x, (w // s, h // s), interpolation=cv2.INTER_CUBIC) \
-                           for x in x_data_s])
+                           for x in x_data_s.astype(np.uint8)])
     return x_data_s
 
 

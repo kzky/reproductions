@@ -73,7 +73,7 @@ def evaluate(args):
     # Evaluate
     for i in range(di.size):
         # Read data
-        x_data = di.next()[0]  # DI return as tupple
+        x_data = di.next()[0]
         b, h, w, c = x_data.shape
 
         # Create model
@@ -100,7 +100,7 @@ def evaluate(args):
             x_LR_y = normalize(x_LR_y)
             x_LR.d = x_LR_y
             x_LR_d = downsample(x_data, 2 ** (s + 1))
-            break
+
         ycrcb = ycrcb[-1]
 
         # Forward
@@ -110,28 +110,23 @@ def evaluate(args):
         try:
             #todo: how to?
             #todo: only y of YCrCB?
-            print(np.min(x_HR.d), np.max(x_HR.d))
-            print(np.min(x_SR.d), np.max(x_SR.d))
             monitor_metric.add(i, psnr(x_HR.d, x_SR.d))
         except:
             nn.logger.warn("{}-th image could not down-sampled well".format(i))
         
-        x_lr = upsample(to_BHWC(x_LR.d.copy()), 2 ** args.S)[..., np.newaxis]
-        x_hr = to_BHWC(x_HR.d.copy())
+        x_lr = to_BHWC(x_LR.d.copy()) * 255
+        x_lr = x_lr.astype(np.uint8)
+        x_lr = upsample(x_lr, 2 ** args.S)
+        x_hr = to_BHWC(x_HR.d.copy() * 255)
         _, cr, cb = ycrcb
-        cr = upsample(cr, 2 ** args.S)[..., np.newaxis]
-        cb = upsample(cb, 2 ** args.S)[..., np.newaxis]
-        print(np.min(x_lr), np.max(x_lr))
-        print(np.min(cr), np.max(cr))
-        print(np.min(cb), np.max(cb))
-        x_lr[x_lr > 1.0] = 1.0
-        x_lr[x_lr < 0.0] = 0.0
-        monitor_image_lr.add(i, to_BCHW(ycrcb_to_rgb(x_lr * 255.0, cr, cb)))
-        monitor_image_hr.add(i, to_BCHW(ycrcb_to_rgb(x_hr * 255.0, cr, cb)))
+        cr = upsample(cr, 2 ** args.S)
+        cb = upsample(cb, 2 ** args.S)
+        monitor_image_lr.add(i, to_BCHW(ycrcb_to_rgb(x_lr, cr, cb)))
+        monitor_image_hr.add(i, to_BCHW(ycrcb_to_rgb(x_hr, cr, cb)))
         for s, x_SR in enumerate(x_SRs):
             _, cr, cb = ycrcb
-            cr = upsample(cr, 2 ** (s + 1))[..., np.newaxis]
-            cb = upsample(cb, 2 ** (s + 1))[..., np.newaxis]
+            cr = upsample(cr, 2 ** (s + 1))
+            cb = upsample(cb, 2 ** (s + 1))
             x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_SRs[s].d.copy()) * 255.0, cr, cb))
             monitor_image_sr_list[s].add(i, x_sr)
 
