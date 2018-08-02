@@ -74,6 +74,7 @@ def evaluate(args):
     for i in range(di.size):
         # Read data
         x_data = di.next()[0]
+        print(x_data.dtype)
         b, h, w, c = x_data.shape
 
         # Create model
@@ -127,7 +128,7 @@ def evaluate(args):
             _, cr, cb = ycrcb
             cr = upsample(cr, 2 ** (s + 1))
             cb = upsample(cb, 2 ** (s + 1))
-            x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_SRs[s].d.copy()) * 255.0, cr, cb))
+            x_sr = to_BCHW(ycrcb_to_rgb((to_BHWC(x_SRs[s].d.copy()) * 255.0), cr, cb))
             monitor_image_sr_list[s].add(i, x_sr)
 
         # Clear memory since the input is varaible size.

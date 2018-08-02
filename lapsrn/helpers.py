@@ -105,7 +105,7 @@ def normalize(x, de=255.0):
 def ycrcb_to_rgb(y, cr, cb):
     imgs = []
     imgs_ = np.concatenate([y, cr, cb], axis=3)
-    for img in imgs_:
+    for img in imgs_.astype(np.uint8):
         img = cv2.cvtColor(img, cv2.COLOR_YCrCb2RGB)
         imgs.append(img)
     return np.asarray(imgs)
