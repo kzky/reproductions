@@ -325,14 +325,14 @@ def resblock_d(h, y, scopename,
         # BN -> LeakyRelu -> Conv
         with nn.parameter_scope("conv1"):
             h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
-            h = F.relu(h)
+            h = F.leaky_relu(h, 0.2)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=False, sn=sn, test=test)
         
         # BN -> LeakyRelu -> Conv -> Downsample
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
-            h = F.relu(h, True)
+            h = F.leaky_relu(h, 0.2)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=False, sn=sn, test=test)
             if downsample:
@@ -383,8 +383,8 @@ def discriminator(x, y, scopename="discriminator",
         h = resblock_d(h, y, "block-6", n_classes, maps * 16, test=test, sn=sn)
         # Last affine
         h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
-        h = F.relu(h, True)
-        h = F.average_pooling(h, h.shape[2:])
+        h = F.leaky_relu(h, 0.2)
+        #h = F.average_pooling(h, h.shape[2:])
         o0 = affine(h, 1, sn=sn, test=test)
         # Project discriminator
         e = embed(y, n_classes, h.shape[1], name="projection", sn=sn, test=test)
@@ -396,8 +396,9 @@ def discriminator(x, y, scopename="discriminator",
 def gan_loss(d_x_fake, d_x_real=None):
     """Hinge loss"""
     if d_x_real is None:
-        return -d_x_fake
-    return F.maximum_scalar(1 - d_x_real, 0.0) + F.maximum_scalar(1 + d_x_fake, 0.0)
+        return -F.mean(d_x_fake)
+    #return F.maximum_scalar(1 - d_x_real, 0.0) + F.maximum_scalar(1 + d_x_fake, 0.0)
+    return F.mean(F.relu(1 - d_x_real)) + F.mean(F.relu(1 + d_x_fake))
     
     
 if __name__ == '__main__':
