@@ -388,7 +388,6 @@ def discriminator(x, y, scopename="discriminator",
         o0 = affine(h, 1, sn=sn, test=test)
         # Project discriminator
         e = embed(y, n_classes, h.shape[1], name="projection", sn=sn, test=test)
-        print(h.shape)
         h = F.reshape(h, h.shape[0:2], inplace=False)
         o1 = F.sum(h * e, axis=1, keepdims=True)
     return o0 + o1
