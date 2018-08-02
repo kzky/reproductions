@@ -73,7 +73,21 @@ def train(args):
     # Train loop
     normalize_method = lambda x: (x - 127.5) / 127.5
     for i in range(args.max_iter):
+
+        # Train genrator
+        x_fake.need_grad = True  # need for generator backward
+        solver_gen.zero_grad()
+        for _ in range(args.accum_grad):
+            _, y_data = di_train.next()
+            y_real.d = y_data.flatten()
+            y_fake.d = generate_random_class(args.n_classes, args.batch_size)
+            loss_gen.forward(clear_no_need_grad=True)
+            loss_gen.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
+        with nn.parameter_scope("generator"):
+            comm.all_reduce([v.grad for v in nn.get_parameters().values()])
+        solver_gen.update()
         
+
         # Train discriminator
         x_fake.need_grad = False  # no need for discriminator backward
         solver_dis.zero_grad()
@@ -87,19 +101,6 @@ def train(args):
             comm.all_reduce([v.grad for v in nn.get_parameters().values()])
         solver_dis.update()
 
-        # Train genrator
-        x_fake.need_grad = True  # need for generator backward
-        solver_gen.zero_grad()
-        for _ in range(args.accum_grad):
-            _, y_data = di_train.next()
-            y_real.d = y_data.flatten()
-            y_fake.d = generate_random_class(args.n_classes, args.batch_size)
-            loss_gen.forward(clear_no_need_grad=True)
-            loss_gen.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
-        with nn.parameter_scope("generator"):
-            comm.all_reduce([v.grad for v in nn.get_parameters().values()])
-            solver_gen.update()
-        
 
         # # Synchronize by averaging the weights over devices using allreduce
         # if i % args.sync_weight_every_itr == 0:
