@@ -43,8 +43,20 @@ screen -Sdm "adam-25" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-
 
 
 screen -Sdm "momentum-26" bash -c "python train.py -d 0 -b 64 --solver Momentum --lr 1e-5 --monitor-path result/example_26 --share-type across-pyramid"
-screen -Sdm "momentum-27" bash -c "python train.py -d 1 -b 64 --solver Momentum --lr 1e-5 --monitor-path result/example_27 --share-type within-pyramid"
+#screen -Sdm "momentum-27" bash -c "python train.py -d 1 -b 64 --solver Momentum --lr 1e-5 --monitor-path result/example_27 --share-type within-pyramid"
 
 
 screen -Sdm "adam-28" bash -c "python train.py -d 1 -b 32 --solver Adam --lr 1e-4 --monitor-path result/example_28 --use-bn --decay-rate 0 --share-type across-pyramid"
-screen -Sdm "adam-29" bash -c "python train.py -d 2 -b 32 --solver Adam --lr 1e-4 --monitor-path result/example_29 --use-bn --decay-rate 0 --share-type within-pyramid"
+#screen -Sdm "adam-29" bash -c "python train.py -d 2 -b 32 --solver Adam --lr 1e-4 --monitor-path result/example_29 --use-bn --decay-rate 0 --share-type within-pyramid"
+
+
+screen -Sdm "adam-30" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-5 --monitor-path result/example_30 --decay-rate 0 --share-type across-pyramid"
+screen -Sdm "adam-31" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-5 --monitor-path result/example_31 --decay-rate 0 --share-type within-pyramid"
+
+
+#screen -Sdm "adam-32" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-3 --monitor-path result/example_32 --decay-rate 0 --share-type across-pyramid"
+screen -Sdm "adam-33" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-3 --monitor-path result/example_33 --decay-rate 0 --share-type within-pyramid --skip-type ns"
+
+
+#screen -Sdm "adam-34" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-3 --monitor-path result/example_34 --decay-rate 0 --share-type across-pyramid --R 4"
+screen -Sdm "adam-35" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-3 --monitor-path result/example_35 --decay-rate 0 --share-type within-pyramid --R 4"
