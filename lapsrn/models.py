@@ -127,7 +127,7 @@ def get_loss(loss):
 
 if __name__ == '__main__':
     # Across pyramid
-    x_l = nn.Variable([4, 3, 16, 16])
+    x_l = nn.Variable([4, 1, 16, 16])
     x_h = lapsrn(x_l, 64, share_type="across-pyramid")
     print(x_h)
 
@@ -137,7 +137,7 @@ if __name__ == '__main__':
     
 
     # Within pyramid
-    x_l = nn.Variable([4, 3, 16, 16])
+    x_l = nn.Variable([4, 1, 16, 16])
     x_h = lapsrn(x_l, 64, share_type="within-pyramid")
     print(x_h)
 
