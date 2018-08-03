@@ -44,30 +44,49 @@ class MonitorImageTileWithName(MonitorImageTile):
 
 
 def generate_gaussian_noise(shape, noise_level, test=False):
-    size = np.prod(shape)
     if test:
         std = noise_level
-        noise = np.random.normal(0, std, size).reshape(shape)
+        size = np.prod(shape)
+        noise = np.random.poisson(std, size).reshape(shape)
+        noise = noise
     else:
-        std = np.random.uniform(1, noise_level, size=size)
-        noise = np.random.normal(0, std, size).reshape(shape)
-    return noise
-
+        b, r, c, h, w = shape
+        noises = []
+        stds = []
+        for _ in range(b):  # Batch
+            std = np.random.uniform(0, noise_level, size=1)
+            noises_ = []
+            for _ in range(r):  # Replica
+                size = np.prod(c * h * w)
+                noise = np.random.poisson(std, size).reshape((c, h, w))
+                noises_.append(noise)
+            noises.append(np.asarray(noises_))
+            stds.append(np.broadcast_to(std, (b, c, h, w)))
+    return np.asarray(noises)
 
 def generate_poisson_noise(shape, noise_level, test=False):
     """
     Noise is minus with lambda for adding minus noise
     """
-    size = np.prod(shape)
     if test:
-        lambda_ = noise_level
+        lambda_ = int(noise_level)
+        size = np.prod(shape)
         noise = np.random.poisson(lambda_, size).reshape(shape)
-        noise = noise - lambda_
+        noise = noise
     else:
-        lambda_ = np.random.uniform(1, noise_level, size=size)
-        noise = np.random.poisson(lambda_, size).reshape(shape)
-        noise = noise - lambda_.reshape(shape)
-    return noise
+        b, r, c, h, w = shape
+        noises = []
+        lambdas_ = []
+        for _ in range(b):  # Batch
+            lambda_ = np.random.uniform(0, int(noise_level), size=1)
+            noises_ = []
+            for _ in range(r):  # Replica
+                size = np.prod(c * h * w)
+                noise = np.random.poisson(lambda_, size).reshape((c, h, w))
+                noises_.append(noise)
+            noises.append(np.asarray(noises_))
+            lambdas_.append(np.broadcast_to(lambda_, (b, c, h, w)))
+    return np.asarray(noises), np.asarray(lambdas_)
 
 
 def generate_bernoulli_noise(shape, noise_level=0.95, test=False):
@@ -124,9 +143,9 @@ def apply_noise(x, n_replica, noise_level, distribution="gaussian", test=False):
         x_noise, target = np.concatenate(x_noise), np.concatenate(target)
         return x_noise, target, None
     elif distribution == "poisson":
-        n = generate_poisson_noise(x.shape, noise_level, test)
+        n, lambda_ = generate_poisson_noise(x.shape, noise_level, test)
         x_noise = x + n
-        target = create_noisy_target(x_noise)
+        target = create_noisy_target(x_noise - lambda_)
         x_noise, target = np.concatenate(x_noise), np.concatenate(target)
         return x_noise, target, None
     elif distribution == "bernoulli":
