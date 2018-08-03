@@ -84,7 +84,7 @@ def train(args):
             x_LR_y = normalize(x_LR_y)
             x_LR.d = x_LR_y
             x_LR_d = downsample(x_data, 2 ** (s + 1))
-        ycrcb = ycrcb[-1]
+        ycrcb = ycrcb[-2]
 
         # Zerograd, forward, backward, weight-decay, update
         solver.zero_grad()
@@ -103,8 +103,8 @@ def train(args):
         if i % args.save_interval == 0:
             for s in range(args.S):
                 _, cr, cb = ycrcb
-                cr = upsample(cr, 2 ** (s + 1))
-                cb = upsample(cb, 2 ** (s + 1))
+                cr = upsample(cr, 2 ** s)
+                cb = upsample(cb, 2 ** s)
                 x_lr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_LRs[s+1].d.copy()) * 255.0, cr, cb))
                 x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_SRs[s].d.copy()) * 255.0, cr, cb))
                 monitor_image_lr_list[s].add(i, x_lr)
