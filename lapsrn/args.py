@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000, 
+def get_args(batch_size=16, ih=128, iw=128, max_iter=100000, save_interval=1000, 
              S=3, R=8, D=5, maps=64):
     """
     Get command line arguments.
@@ -51,6 +51,7 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000,
     parser.add_argument("--maps", type=int, default=maps,
                         help="Number of maps")
     parser.add_argument("--skip-type", type=str, default="ss",
+                        choices=["ss", "ds", "ns"], 
                         help="Skip type")
     parser.add_argument("--loss", type=str, default="charbonnier",
                         choices=["charbonnier", "l2", "l1"],
@@ -72,7 +73,8 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000,
                         help="Learning rate for generator")
     
     parser.add_argument("--decay-at", "-D", type=int, nargs='+', 
-                        default=[50000, 100000],
+                        default=[10000, 20000, 30000, 40000, 50000, 
+                                 60000, 70000, 80000, 90000, 100000],
                         help="Decay-at `iteration` for learning rate.")
     parser.add_argument("--decay-rate", type=float, default=1e-4, 
                         help="Decay rate")
