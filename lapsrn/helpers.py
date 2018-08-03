@@ -57,25 +57,38 @@ def get_solver(solver):
 
 
 def normalize_method(x):
-    max_idx = np.where(x > 255)
-    min_idx = np.where(x < 0)
-    x[max_idx] = 255
-    x[min_idx] = 0
-    return x
+    # max_idx = np.where(x > 255)
+    # min_idx = np.where(x < 0)
+    # x[max_idx] = 255
+    # x[min_idx] = 0
+    M = np.max(x)
+    m = np.min(x)
+    v = 255.0 * (x - m) / (M - m)
+    return v
+
+
+def resize(x_data_s, h, w):
+    x_data_s = np.asarray([cv2.resize(x, (w, h), interpolation=cv2.INTER_CUBIC) \
+                           for x in x_data_s.astype(np.uint8)])
+    if len(x_data_s.shape) == 3:
+        return x_data_s[..., np.newaxis]
+    return x_data_s
 
 
 def upsample(x_data_s, s):
     b, h, w, c = x_data_s.shape
     x_data_s = np.asarray([cv2.resize(x, (w * s, h * s), interpolation=cv2.INTER_CUBIC) \
                            for x in x_data_s.astype(np.uint8)])
-    if len(x_data_s) != 4:
+    if len(x_data_s.shape) == 3:
         return x_data_s[..., np.newaxis]
     return x_data_s
 
 
 def downsample(x_data_s, s):
     b, h, w, c = x_data_s.shape
-    x_data_s = np.asarray([cv2.resize(x, (w // s, h // s), interpolation=cv2.INTER_CUBIC) \
+    sh = h // s
+    sw = w // s
+    x_data_s = np.asarray([cv2.resize(x, (sw, sh), interpolation=cv2.INTER_CUBIC) \
                            for x in x_data_s.astype(np.uint8)])
     return x_data_s
 
@@ -100,6 +113,10 @@ def to_BHWC(x):
 
 def normalize(x, de=255.0):
     return x / de
+
+
+def denormalize(x, de=255.0):
+    return x * de
 
 
 def ycrcb_to_rgb(y, cr, cb):
