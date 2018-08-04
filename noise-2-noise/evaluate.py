@@ -116,7 +116,7 @@ def evaluate(args):
 
 def main():
     args = get_args()
-    save_args(args)
+    save_args(args, "eval")
 
     evaluate(args)
 
