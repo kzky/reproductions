@@ -47,7 +47,7 @@ def generate_gaussian_noise(shape, noise_level, test=False):
     if test:
         std = noise_level
         size = np.prod(shape)
-        noise = np.random.poisson(std, size).reshape(shape)
+        noise = np.random.normal(0, std, size).reshape(shape)
         noise = noise
         return noise
     else:
@@ -60,7 +60,7 @@ def generate_gaussian_noise(shape, noise_level, test=False):
             noises_ = []
             for _ in range(r):  # Replica
                 size = np.prod(c * h * w)
-                noise = np.random.poisson(std, size).reshape((c, h, w))
+                noise = np.random.normal(0, std, size).reshape((c, h, w))
                 noises_.append(noise)
             noises.append(np.asarray(noises_))
             stds.append(np.broadcast_to(std, (b, c, h, w)))
@@ -96,6 +96,7 @@ def generate_poisson_noise(shape, noise_level, test=False):
 def generate_bernoulli_noise(shape, noise_level=0.95, test=False):
     if test:
         p = np.random.uniform(0, noise_level, size=1)
+        size = np.prod(shape)
         noise = np.random.binomial(1, p, size=size).reshape(shape)
         noise = noise
         return noise, p
@@ -120,6 +121,7 @@ def generate_bernoulli_noise(shape, noise_level=0.95, test=False):
 def generate_impulse_noise(shape, noise_level=0.95, test=False):
     if test:
         p = np.random.uniform(0, noise_level, size=1)
+        size = np.prod(shape)
         m = np.random.binomial(1, p, size=size).reshape(shape)
         v = np.random.choice(np.arange(255), size=size, replace=True).reshape(shape)
         return m, v, p
