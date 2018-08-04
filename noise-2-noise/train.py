@@ -53,21 +53,21 @@ def train(args):
     monitor = Monitor(args.monitor_path)
     monitor_loss = MonitorSeries("Reconstruction Loss", monitor, interval=10)
     monitor_time = MonitorTimeElapsed("Training Time", monitor, interval=10)
-    monitor_image_train_clean = MonitorImageTile("Image Tile Train Clean",
-                                                 monitor,
-                                                 num_images=4, 
-                                                 normalize_method=normalize_method, 
-                                                 interval=1)
-    monitor_image_train_noisy = MonitorImageTile("Image Tile Train Noisy",
-                                                 monitor,
-                                                 num_images=4,
-                                                 normalize_method=normalize_method, 
-                                                 interval=1)
-    monitor_image_train_recon = MonitorImageTile("Image Tile Train Recon",
-                                                 monitor,
-                                                 num_images=4,
-                                                 normalize_method=normalize_method, 
-                                                 interval=1)
+    monitor_image_clean = MonitorImageTile("Image Tile Train Clean",
+                                           monitor,
+                                           num_images=1, 
+                                           normalize_method=normalize_method, 
+                                           interval=1)
+    monitor_image_noisy = MonitorImageTile("Image Tile Train Noisy",
+                                           monitor,
+                                           num_images=1,
+                                           normalize_method=normalize_method, 
+                                           interval=1)
+    monitor_image_recon = MonitorImageTile("Image Tile Train Recon",
+                                           monitor,
+                                           num_images=1,
+                                           normalize_method=normalize_method, 
+                                           interval=1)
     # DataIterator
     rng = np.random.RandomState(410)
     di = data_iterator_imagenet(args.train_data_path, args.batch_size_per_replica, rng=rng)
@@ -85,7 +85,7 @@ def train(args):
                                                     distribution=args.noise_dist)
 
         # Forward, backward, and update
-        scale = noise **2 if args.noise_dist == "bernoulli" else np.ones(x_recon.shape)
+        scale = noise if args.noise_dist == "bernoulli" else np.ones(x_recon.shape)
         mask.d = scale
         loss.forward(clear_no_need_grad=True)
         solver.zero_grad()
@@ -93,7 +93,7 @@ def train(args):
         solver.update()
 
         # Schedule LR
-        #lr_scheduler(loss.d)
+        lr_scheduler(loss.d)
 
         # Update gamma if L0 loss is used
         gamma.d = gamma.d * (1.0 - 1.0 * i / args.max_iter) if args.loss == "l0" else 2.0
@@ -101,9 +101,9 @@ def train(args):
         # Save model and images
         if i % args.save_interval == 0:
             nn.save_parameters("{}/param_{}.h5".format(args.monitor_path, i))
-            monitor_image_train_clean.add(i, x_data)
-            monitor_image_train_noisy.add(i, x_noise.d)
-            monitor_image_train_recon.add(i, x_recon.d)
+            monitor_image_clean.add(i, x_data)
+            monitor_image_noisy.add(i, x_noise.d)
+            monitor_image_recon.add(i, x_recon.d)
         
         # Monitor
         monitor_loss.add(i, loss.d)
