@@ -49,11 +49,13 @@ def generate_gaussian_noise(shape, noise_level, test=False):
         size = np.prod(shape)
         noise = np.random.poisson(std, size).reshape(shape)
         noise = noise
+        return noise
     else:
         b, r, c, h, w = shape
         noises = []
         stds = []
         for _ in range(b):  # Batch
+            # assumption: noise level is the same for all replica (R x C x H x W)
             std = np.random.uniform(0, noise_level, size=1)
             noises_ = []
             for _ in range(r):  # Replica
@@ -62,7 +64,7 @@ def generate_gaussian_noise(shape, noise_level, test=False):
                 noises_.append(noise)
             noises.append(np.asarray(noises_))
             stds.append(np.broadcast_to(std, (b, c, h, w)))
-    return np.asarray(noises)
+        return np.asarray(noises)
 
 def generate_poisson_noise(shape, noise_level, test=False):
     """
@@ -73,11 +75,13 @@ def generate_poisson_noise(shape, noise_level, test=False):
         size = np.prod(shape)
         noise = np.random.poisson(lambda_, size).reshape(shape)
         noise = noise
+        return noise, lambda_
     else:
         b, r, c, h, w = shape
         noises = []
         lambdas_ = []
         for _ in range(b):  # Batch
+            # assumption: noise level is the same for all replica (R x C x H x W)
             lambda_ = np.random.uniform(0, int(noise_level), size=1)
             noises_ = []
             for _ in range(r):  # Replica
@@ -86,45 +90,69 @@ def generate_poisson_noise(shape, noise_level, test=False):
                 noises_.append(noise)
             noises.append(np.asarray(noises_))
             lambdas_.append(np.broadcast_to(lambda_, (b, c, h, w)))
-    return np.asarray(noises), np.asarray(lambdas_)
+        return np.asarray(noises), np.asarray(lambdas_)
 
 
 def generate_bernoulli_noise(shape, noise_level=0.95, test=False):
-    size = np.prod(shape)
     if test:
         p = np.random.uniform(0, noise_level, size=1)
         noise = np.random.binomial(1, p, size=size).reshape(shape)
         noise = noise
+        return noise, p
     else:
-        p = np.random.uniform(0, noise_level, size=size)
-        noise = np.random.binomial(1, p, size=size).reshape(shape)
-        noise = noise
-        p = p.reshape(shape)
-    return noise, p
+        b, r, c, h, w = shape
+        noises = []
+        ps = []
+        lambdas_ = []
+        for _ in range(b):  # Batch
+            # assumption: noise level is the same for all replica (R x C x H x W)
+            noises_ = []
+            p = np.random.uniform(0, noise_level, size=1)
+            ps.append(p)
+            for _ in range(r):  # Replica
+                size = np.prod(c * h * w)
+                noise = np.random.binomial(1, p, size=size).reshape((c, h, w))
+                noises_.append(noise)
+            noises.append(np.asarray(noises_))
+        return np.asarray(noises), np.asarray(ps).reshape((b, 1, 1, 1, 1))
 
 
 def generate_impulse_noise(shape, noise_level=0.95, test=False):
-    size = np.prod(shape)
     if test:
         p = np.random.uniform(0, noise_level, size=1)
         m = np.random.binomial(1, p, size=size).reshape(shape)
         v = np.random.choice(np.arange(255), size=size, replace=True).reshape(shape)
+        return m, v, p
     else:
-        p = np.random.uniform(0, noise_level, size=size)
-        m = np.random.binomial(1, p, size=size).reshape(shape)
-        v = np.random.choice(np.arange(255), size=size, replace=True).reshape(shape)
-        p = p.reshape(shape)
-    return m, v, p
+        b, r, c, h, w = shape
+        ms = []
+        vs = []
+        ps = []
+        for _ in range(b):  # Batch
+            # assumption: noise level is the same for all replica (R x C x H x W)
+            noises_ = []
+            ms_ = []
+            vs_ = []
+            p = np.random.uniform(0, noise_level, size=1)
+            ps.append(p)            
+            for _ in range(r):  # Replica
+                size = np.prod(c * h * w)
+                m = np.random.binomial(1, p, size=size).reshape((c, h, w))
+                v = np.random.choice(np.arange(255), size=size, replace=True).reshape((c, h, w))
+                ms_.append(m)
+                vs_.append(v)
+            ms.append(np.asarray(ms_))
+            vs.append(np.asarray(vs_))
+        return np.asarray(ms), np.asarray(vs), np.asarray(ps).reshape((b, 1, 1, 1, 1))
 
 
-def create_noisy_target(x_noise):
+def mean_replicas(x_noise):
     # x_noise: (B, R, C, H, W)
-    x_noisy_target = []
+    mean_replicas = []
     for x in x_noise:
         target = np.broadcast_to(np.mean(x, axis=(0, )), x.shape)
-        x_noisy_target.append(target)
-    #return np.asarray(x_noisy_target)
-    return x_noise - np.asarray(x_noisy_target)
+        mean_replicas.append(target)
+    return np.asarray(mean_replicas)
 
 
 def apply_noise(x, n_replica, noise_level, distribution="gaussian", test=False):
@@ -139,30 +167,26 @@ def apply_noise(x, n_replica, noise_level, distribution="gaussian", test=False):
     if distribution == "gaussian":
         n = generate_gaussian_noise(x.shape, noise_level, test)
         x_noise = x + n
-        target = create_noisy_target(x_noise)
+        target = mean_replicas(x_noise)
         x_noise, target = np.concatenate(x_noise), np.concatenate(target)
         return x_noise, target, None
     elif distribution == "poisson":
         n, lambda_ = generate_poisson_noise(x.shape, noise_level, test)
         x_noise = x + n
-        target = create_noisy_target(x_noise - lambda_)
+        target = mean_replicas(x_noise) - lambda_
         x_noise, target = np.concatenate(x_noise), np.concatenate(target)
         return x_noise, target, None
     elif distribution == "bernoulli":
-        #TODO: wrong about how to create target noisy target
         n, p = generate_bernoulli_noise(x.shape, noise_level, test)
         x_noise = x * n
-        #target = create_noisy_target(x_noise - x * p)
-        #target = create_noisy_target(x_noise)
-        target = create_noisy_target(x_noise - x_noise * p)
+        target = mean_replicas(x_noise) / p
         x_noise, target, n = np.concatenate(x_noise), np.concatenate(target), np.concatenate(n)
         return x_noise, target, n
     elif distribution == "impulse":
         #TODO: how to create mask is wrong
         m, v, p = generate_impulse_noise(x.shape, noise_level, test)
         x_noise = (x - v) * m + v
-        #target = create_noisy_target(x_noise - ((x - v) * p + v))
-        target = create_noisy_target(x_noise)
+        target = (mean_replicas(x_noise) - v * (1 - p)) / p
         x_noise, target = np.concatenate(x_noise), np.concatenate(target)
         return x_noise, target, None
     elif distribution == "text":
