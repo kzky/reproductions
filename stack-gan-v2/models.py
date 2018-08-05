@@ -53,6 +53,17 @@ def conditional_augmentation(e, name="conditional-augmentation"):
     return h
 
 
+def joint_conv(x, ce, test=False, name="joint-conv"):
+    b, c, s0, s1 = x.shape
+    b, d, _, _ = ce.shape
+    with nn.parameter_scope(name):
+        ce = F.broadcast(ce, [b, d, s0, s1])
+        h = F.concatenate(*[x, ce], axis=1)
+        h = PF.convolution(h, c, kernel=(3, 3), pad=(1, 1), with_bias=False, name="joint-conv")
+        h = PF.batch_normalization(h, batch_stat=not test, name="joining-bn")
+        h = F.relu(h, True)
+    return h
+
 def first_convblock(z, ce, maps=1024, test=False, name="first-convblock"):
     b, d, _, _ = ce.shape
     with nn.parameter_scope(name):
@@ -74,12 +85,8 @@ def stage_convblock(x, ce, test=False, name="stage-convblock"):
     b, c, s0, s1 = x.shape
     b, d, _, _ = ce.shape
     with nn.parameter_scope(name):
-        # Joinining
-        ce = F.broadcast(ce, [b, d, s0, s1])
-        h = F.concatenate(*[x, ce], axis=1)
-        h = PF.convolution(h, c, kernel=(3, 3), pad=(1, 1), with_bias=False, name="joining-conv")
-        h = PF.batch_normalization(h, batch_stat=not test, name="joining-bn")
-        h = F.relu(h, True)
+        # Joint-conv
+        h = joint_conv(x, ce, name="joint-conv")
         # Resblock
         h = resblock(h, test=test, name="resblock-1")
         h = resblock(h, test=test, name="resblock-2")
