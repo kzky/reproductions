@@ -25,7 +25,7 @@ def to_RGB(x, name="to-RGB"):
 def convblock(x, maps, act="relu", test=False, name="convblock"):
     b, c, s0, s1 = x.shape
     with nn.parameter_scope(name):
-        h = PF.convolution(h, maps, kernel=(3, 3), pad=(1, 1), with_bias=False)
+        h = PF.convolution(x, maps, kernel=(3, 3), pad=(1, 1), with_bias=False)
         h = PF.batch_normalization(h, batch_stat=not test)
         h = F.relu(h, True) if act == "relu" else F.leaky_relu(h, 0.2)
     return h
@@ -70,8 +70,8 @@ def joint_convblock(x, ce, test=False, name="joint-conv"):
     with nn.parameter_scope(name):
         ce = F.broadcast(ce, [b, d, s0, s1])
         h = F.concatenate(*[x, ce], axis=1)
-        h = PF.convolution(h, c, kernel=(3, 3), pad=(1, 1), with_bias=False, name="joint-conv")
-        h = PF.batch_normalization(h, batch_stat=not test, name="joining-bn")
+        h = PF.convolution(h, c, kernel=(3, 3), pad=(1, 1), with_bias=False)
+        h = PF.batch_normalization(h, batch_stat=not test)
         h = F.relu(h, True)
     return h
 
@@ -94,7 +94,7 @@ def first_convblock(z, ce, maps=64 * 16, test=False, name="first-convblock"):
     return h
 
 
-def stage_convblock(x, ce, test=False, name="stage-convblock"):
+def stage_convblock(x, ce, test=False, name="stage-x"):
     b, c, s0, s1 = x.shape
     b, d, _, _ = ce.shape
     with nn.parameter_scope(name):
@@ -108,13 +108,13 @@ def stage_convblock(x, ce, test=False, name="stage-convblock"):
     return h
 
 
-def generator(z, ce, test=False, name="generator"):
+def generator(z, ce, maps=64 * 16, test=False, name="generator"):
     # Multi-stage generation
-    h = first_convblock(z, ce)
+    h = first_convblock(z, ce, maps=maps, test=test)
     img0 = to_RGB(h, name="to-RGB-0")  # 64x64
-    h = stage_convblock(h, ce, test, name="stage-convblock-1")
+    h = stage_convblock(h, ce, test, name="stage-1")
     img1 = to_RGB(h, name="to-RGB-1")  # 128x128
-    h = stage_convblock(h, ce, test, name="stage-convblock-2")
+    h = stage_convblock(h, ce, test, name="stage-2")
     img2 = to_RGB(h, name="to-RGB-2")  # 256x256
     return [img0, img1, img2]  
     
@@ -135,16 +135,17 @@ def downblocks(x, maps, itr=3, test=False):
     return h
 
 
-def discriminator(x, ce, maps=64, itr=3, test=False, name="discrimiator-X"):
-    b, d, _, _ = ce.shape
-    b, c, s0, s1 = x.shape
+def discriminator(x, ce, maps=64, itr=3, test=False, name="discrimiator-x"):
     with nn.parameter_scope(name):
         # down sampling
         h = downblocks(x, maps, itr=itr)
-        # conv
+        # convs
         if itr > 3:
-            c = h.shape[1] // (2 ** (itr - 3))
-            h = convblock(h, c , act="lealky_relu", test=test)
+            c = h.shape[1]
+            for i in range(itr - 3):
+                c = c // 2
+                h = convblock(h, c , act="leaky_relu", test=test, name="conv-{}".format(i))
+
         # joining
         h = joint_convblock(h, ce, test=test, name="joint-convblock")
         # last conv
@@ -159,6 +160,8 @@ if __name__ == '__main__':
     z = F.randn(0, 1, shape=[b, c])
     w = nn.Variable.from_numpy_array(np.random.choice(np.arange(n_words), b, replace=True))
     e = PF.embed(w, n_words, c)
+    maps = 64
+    factor = 16
     test = False
     
     # Conditional embedding
@@ -166,15 +169,16 @@ if __name__ == '__main__':
     ce = F.identity(F.reshape(ce, (b, c, 1, 1)))
     
     # Generator
-    imgs = generator(z, ce, test)
+    imgs = generator(z, ce, maps * factor, test)
     for img in imgs:
         print(img)
 
     # Discriminators
     d_fakes = []
     for i, img in enumerate(imgs):
-        d_fake = discriminator(img, ce, i + 3, name="discriminator-{}".format((i + 1) * 64))
+        d_fake = discriminator(img, ce, itr=i + 3, name="discriminator-{}".format(64 * 2 ** i))
         print(d_fake)
         d_fakes.append(d_fake)
     
-                               
+    # for n, v in nn.get_parameters().items():
+    #     print(n, v.shape)
