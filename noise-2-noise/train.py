@@ -68,6 +68,11 @@ def train(args):
                                            num_images=1,
                                            normalize_method=normalize_method, 
                                            interval=1)
+    monitor_image_target = MonitorImageTile("Image Tile Train Target",
+                                           monitor,
+                                           num_images=1,
+                                           normalize_method=normalize_method, 
+                                           interval=1)
     # DataIterator
     rng = np.random.RandomState(410)
     di = data_iterator_imagenet(args.train_data_path, args.batch_size_per_replica, rng=rng)
@@ -102,8 +107,10 @@ def train(args):
         if i % args.save_interval == 0:
             nn.save_parameters("{}/param_{}.h5".format(args.monitor_path, i))
             monitor_image_clean.add(i, x_data)
-            monitor_image_noisy.add(i, x_noise.d)
+        
             monitor_image_recon.add(i, x_recon.d)
+        monitor_image_noisy.add(i, x_noise.d)
+        monitor_image_target.add(i, x_noise_t.d)
         
         # Monitor
         monitor_loss.add(i, loss.d)

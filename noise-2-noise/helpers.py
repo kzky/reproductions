@@ -111,8 +111,8 @@ def generate_bernoulli_noise(shape, noise_level=0.95, test=False):
             p = np.random.uniform(0, noise_level, size=1)
             ps.append(p)
             for _ in range(r):  # Replica
-                size = np.prod(c * h * w)
-                noise = np.random.binomial(1, p, size=size).reshape((c, h, w))
+                size = np.prod(h * w)  # use same mask for all channels
+                noise = np.random.binomial(1, p, size=size).reshape((1, h, w))
                 noises_.append(noise)
             noises.append(np.asarray(noises_))
         return np.asarray(noises), np.asarray(ps).reshape((b, 1, 1, 1, 1))
@@ -138,11 +138,9 @@ def generate_impulse_noise(shape, noise_level=0.95, test=False):
             p = np.random.uniform(0, noise_level, size=1)
             ps.append(p)            
             for _ in range(r):  # Replica
-                size = np.prod(c * h * w)
-                m = np.random.binomial(1, p, size=size).reshape((c, h, w))
-                v = np.random.choice(np.arange(255), size=size, replace=True).reshape((c, h, w))
-                ms_.append(m)
-                vs_.append(v)
+                size = np.prod(h * w)  # use same mask for all channels
+                m = np.random.binomial(1, p, size=size).reshape((1, h, w))
+                v = np.random.choice(np.arange(255), size=size, replace=True).reshape((1, h, w))
             ms.append(np.asarray(ms_))
             vs.append(np.asarray(vs_))
         return np.asarray(ms), np.asarray(vs), np.asarray(ps).reshape((b, 1, 1, 1, 1))
@@ -180,15 +178,16 @@ def apply_noise(x, n_replica, noise_level, distribution="gaussian", test=False):
         return x_noise, target, None
     elif distribution == "bernoulli":
         n, p = generate_bernoulli_noise(x.shape, noise_level, test)
+        print(n.shape, p.shape)
         x_noise = x * n
-        target = mean_replicas(x_noise) / p
+        mean = mean_replicas(x_noise)
+        target = np.clip(mean_replicas(x_noise) / p, 0.0, 255.0)
         x_noise, target, n = np.concatenate(x_noise), np.concatenate(target), np.concatenate(n)
         return x_noise, target, n
     elif distribution == "impulse":
-        #TODO: how to create mask is wrong
         m, v, p = generate_impulse_noise(x.shape, noise_level, test)
         x_noise = (x - v) * m + v
-        target = (mean_replicas(x_noise) - v * (1 - p)) / p
+        target = np.clip((mean_replicas(x_noise) - v * (1 - p)) / p, 0.0, 255.0)
         x_noise, target = np.concatenate(x_noise), np.concatenate(target)
         return x_noise, target, None
     elif distribution == "text":
