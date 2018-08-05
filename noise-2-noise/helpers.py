@@ -169,13 +169,13 @@ def apply_noise(x, n_replica, noise_level, distribution="gaussian", test=False):
     if distribution == "gaussian":
         n = generate_gaussian_noise(x.shape, noise_level, test)
         x_noise = x + n
-        target = mean_replicas(x_noise)
+        target = np.clip(mean_replicas(x_noise), 0.0, 255.0)
         x_noise, target = np.concatenate(x_noise), np.concatenate(target)
         return x_noise, target, None
     elif distribution == "poisson":
         n, lambda_ = generate_poisson_noise(x.shape, noise_level, test)
         x_noise = x + n
-        target = mean_replicas(x_noise) - lambda_
+        target = np.clip(mean_replicas(x_noise) - lambda_, 0.0, 255.0)
         x_noise, target = np.concatenate(x_noise), np.concatenate(target)
         return x_noise, target, None
     elif distribution == "bernoulli":
