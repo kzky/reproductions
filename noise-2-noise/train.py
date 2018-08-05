@@ -107,10 +107,9 @@ def train(args):
         if i % args.save_interval == 0:
             nn.save_parameters("{}/param_{}.h5".format(args.monitor_path, i))
             monitor_image_clean.add(i, x_data)
-        
+            monitor_image_noisy.add(i, x_noise.d)
             monitor_image_recon.add(i, x_recon.d)
-        monitor_image_noisy.add(i, x_noise.d)
-        monitor_image_target.add(i, x_noise_t.d)
+            monitor_image_target.add(i, x_noise_t.d)
         
         # Monitor
         monitor_loss.add(i, loss.d)

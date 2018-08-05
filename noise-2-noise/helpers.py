@@ -141,6 +141,8 @@ def generate_impulse_noise(shape, noise_level=0.95, test=False):
                 size = np.prod(h * w)  # use same mask for all channels
                 m = np.random.binomial(1, p, size=size).reshape((1, h, w))
                 v = np.random.choice(np.arange(255), size=size, replace=True).reshape((1, h, w))
+                ms_.append(m)
+                vs_.append(v)
             ms.append(np.asarray(ms_))
             vs.append(np.asarray(vs_))
         return np.asarray(ms), np.asarray(vs), np.asarray(ps).reshape((b, 1, 1, 1, 1))
@@ -178,7 +180,6 @@ def apply_noise(x, n_replica, noise_level, distribution="gaussian", test=False):
         return x_noise, target, None
     elif distribution == "bernoulli":
         n, p = generate_bernoulli_noise(x.shape, noise_level, test)
-        print(n.shape, p.shape)
         x_noise = x * n
         mean = mean_replicas(x_noise)
         target = np.clip(mean_replicas(x_noise) / p, 0.0, 255.0)
