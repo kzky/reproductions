@@ -10,5 +10,5 @@ screen -Sdm "unet-impulse" bash -c "python train.py -d 2 -c cudnn -b 1 --max-ite
 
 
 # RED30
-screen -Sdm "red30-gaussian" bash -c "python train.py -d 2 -c cudnn -b 4 --max-iter 156250 --save-interval 15625 --monitor-path ./result/red30_gaussian --train-data-path /data/datasets/imagenet/val_data/tmpdir/ --net red30 --noise-dist gaussian --noise-level 50"
+screen -Sdm "red30-gaussian" bash -c "python train.py -d 2 -c cudnn -b 1 --max-iter 156250 --save-interval 15625 --monitor-path ./result/red30_gaussian_2 --train-data-path /data/datasets/imagenet/val_data/tmpdir/ --net red30 --noise-dist gaussian --noise-level 50"
 
