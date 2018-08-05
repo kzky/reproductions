@@ -153,6 +153,12 @@ def discriminator(x, ce, maps=64, itr=3, test=False, name="discrimiator-x"):
     return h
 
 
+def gan_loss(d_fake, d_real=None):
+    if d_real is not None:
+        return F.mean(F.log(1.0 - F.sigmoid(d_fake)))
+    return - F.mean(F.log(F.sigmoid(d_real))) - F.mean(F.log(1.0 - F.sigmoid(d_fake)))
+
+
 if __name__ == '__main__':
     # Input
     b, c = 32, 128
