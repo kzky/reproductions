@@ -186,5 +186,5 @@ if __name__ == '__main__':
         print(d_fake)
         d_fakes.append(d_fake)
     
-    # for n, v in nn.get_parameters().items():
-    #     print(n, v.shape)
+    for n, v in nn.get_parameters().items():
+        print(n, v.shape)
