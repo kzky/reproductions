@@ -78,7 +78,7 @@ def train(args):
         ycrcb = []
         x_LR_d = x_data  # B, H, W, C
         for s, x_LR in enumerate(x_LRs[::-1]):  # [x_HR, ..., x_LR1, x_LR0]
-            x_LR_y, x_LR_cr, x_LR_cb = split(x_LR_d)            
+            x_LR_y, x_LR_cr, x_LR_cb = split(x_LR_d)           
             ycrcb.append([x_LR_y, x_LR_cr, x_LR_cb])
             x_LR_y = to_BCHW(x_LR_y)
             x_LR_y = normalize(x_LR_y)
@@ -95,7 +95,7 @@ def train(args):
 
         # LR decay
         if i in args.decay_at:
-            solver.set_learning_rate(solver.learning_rate() * 0.5)
+            solver.set_learning_rate(solver.learning_rate() * 0.1)
         
         # Monitor and save
         monitor_loss.add(i, loss.d)
