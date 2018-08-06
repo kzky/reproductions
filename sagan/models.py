@@ -350,7 +350,7 @@ def resblock_d(h, y, scopename,
 
 def generator(z, y, scopename="generator", 
               maps=1024, n_classes=1000, s=4, test=False, sn=True):
-    
+    sn = False
     with nn.parameter_scope(scopename):
         # Affine
         h = affine(z, maps * s * s, with_bias=False, sn=sn, test=test)
@@ -359,7 +359,7 @@ def generator(z, y, scopename="generator",
         h = resblock_g(h, y, "block-1", n_classes, maps, test=test, sn=sn)
         h = resblock_g(h, y, "block-2", n_classes, maps // 2, test=test, sn=sn)
         h = resblock_g(h, y, "block-3", n_classes, maps // 4, test=test, sn=sn)
-        h = attnblock(h, sn=sn, test=test)
+        #h = attnblock(h, sn=sn, test=test)
         h = resblock_g(h, y, "block-4", n_classes, maps // 8, test=test, sn=sn)
         h = resblock_g(h, y, "block-5", n_classes, maps // 16, test=test, sn=sn)
         # Last convoltion
