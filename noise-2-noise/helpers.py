@@ -89,7 +89,7 @@ def generate_poisson_noise(shape, noise_level, test=False):
                 noise = np.random.poisson(lambda_, size).reshape((c, h, w))
                 noises_.append(noise)
             noises.append(np.asarray(noises_))
-            lambdas_.append(np.broadcast_to(lambda_, (b, c, h, w)))
+            lambdas_.append(np.broadcast_to(lambda_, (r, c, h, w)))
         return np.asarray(noises), np.asarray(lambdas_)
 
 
@@ -181,7 +181,6 @@ def apply_noise(x, n_replica, noise_level, distribution="gaussian", test=False):
     elif distribution == "bernoulli":
         n, p = generate_bernoulli_noise(x.shape, noise_level, test)
         x_noise = x * n
-        mean = mean_replicas(x_noise)
         target = np.clip(mean_replicas(x_noise) / p, 0.0, 255.0)
         x_noise, target, n = np.concatenate(x_noise), np.concatenate(target), np.concatenate(n)
         return x_noise, target, n
