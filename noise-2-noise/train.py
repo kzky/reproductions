@@ -82,8 +82,8 @@ def train(args):
         # Data feed
         x_data, _ = di.next()
         if args.use_clean:
-            x_clean.d = np.concatenate(
-                [np.broadcast_to(x, (args.n_replica, ) + x.shape[1:]) for x in x_data])
+            assert args.n_replica == 1
+            x_clean.d = x_data
         x_noise.d, x_noise_t.d, noise = apply_noise(x_data, 
                                                     args.n_replica,
                                                     args.noise_level, 
