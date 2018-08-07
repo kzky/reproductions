@@ -157,10 +157,21 @@ def mean_replicas(x_noise):
     return np.asarray(mean_replicas)
 
 
+def replicate_one_corrupted_sample(x_noisy_target):
+    b, r, c, h, w = x_noisy_target.shape
+    replicas = []
+    for x in x_noisy_target:
+        #x: (R, C, H, W)
+        x = np.broadcast_to(x[0].reshape(1, c, h, w), (r, c, h, w))
+        replicas.append(x)
+    return np.asarray(x)
+        
+
 def apply_noise(x, n_replica, noise_level, distribution="gaussian", test=False):
     # B, C, H, W
     shape = x.shape
     b, c, h, w = shape
+    r = n_replica
     # B, R, C, H, W
     x = np.asarray(
         [np.broadcast_to(x_.reshape(1, c, h, w), (n_replica,) +  x.shape[1:]) for x_ in x])
@@ -168,28 +179,29 @@ def apply_noise(x, n_replica, noise_level, distribution="gaussian", test=False):
     #TODO: change how to take the expectation according to loss?
     if distribution == "gaussian":
         n = generate_gaussian_noise(x.shape, noise_level, test)
-        x_noise = x + n
-        target = np.clip(mean_replicas(x_noise), 0.0, 255.0)
-        x_noise, target = np.concatenate(x_noise), np.concatenate(target)
-        return x_noise, target, None
+        x_noisy_target = np.clip(x + n, 0., 255.0)
+        x_noise = replicate_one_corrupted_sample(x_noisy_target)
+        shape = (b * r, c, h, w)
+        return x_noise.reshape(shape), x_noisy_target.reshape(shape), None
     elif distribution == "poisson":
         n, lambda_ = generate_poisson_noise(x.shape, noise_level, test)
-        x_noise = x + n
-        target = np.clip(mean_replicas(x_noise) - lambda_, 0.0, 255.0)
-        x_noise, target = np.concatenate(x_noise), np.concatenate(target)
-        return x_noise, target, None
+        x_noisy_target = np.clip(x + n, 0., 255.0)
+        x_noise = replicate_one_corrupted_sample(x_noisy_target)
+        shape = (b * r, c, h, w)
+        return x_noise.reshape(shape), x_noisy_target.reshape(shape), None
     elif distribution == "bernoulli":
         n, p = generate_bernoulli_noise(x.shape, noise_level, test)
-        x_noise = x * n
-        target = np.clip(mean_replicas(x_noise) / p, 0.0, 255.0)
-        x_noise, target, n = np.concatenate(x_noise), np.concatenate(target), np.concatenate(n)
-        return x_noise, target, n
+        x_noisy_target = np.clip(x * n, 0., 255.0)
+        x_noise = replicate_one_corrupted_sample(x_noisy_target)
+        shape = (b * r, c, h, w)
+        return x_noise.reshape(shape), x_noisy_target.reshape(shape), \
+            np.broadcast_to(n, (b, r, c, h, w)).reshape(shape)
     elif distribution == "impulse":
         m, v, p = generate_impulse_noise(x.shape, noise_level, test)
-        x_noise = (x - v) * m + v
-        target = np.clip((mean_replicas(x_noise) - v * (1 - p)) / p, 0.0, 255.0)
-        x_noise, target = np.concatenate(x_noise), np.concatenate(target)
-        return x_noise, target, None
+        x_noisy_target = np.clip((x - v) * m + v, 0., 255.0)
+        x_noise = replicate_one_corrupted_sample(x_noisy_target)
+        shape = (b * r, c, h, w)
+        return x_noise.reshape(shape), x_noisy_target.reshape(shape), None
     elif distribution == "text":
         raise ValueError("distribution = {} is not supported.".format(distribution))
     else:
