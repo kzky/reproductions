@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def get_args(batch_size=16, accum_grad=4, image_size=128, n_classes=1000, max_iter=200000):
+def get_args(batch_size=16, accum_grad=4, image_size=128, n_classes=1000, max_iter=450000):
     """
     Get command line arguments.
 
