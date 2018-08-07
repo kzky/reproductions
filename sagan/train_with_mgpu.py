@@ -85,7 +85,7 @@ def train(args):
         solver_dis.update()
 
         # Train genrator
-        if (i + 1) % args.n_critc == 0:
+        if (i + 1) % args.n_critic == 0:
             x_fake.need_grad = True  # need for generator backward
             solver_gen.zero_grad()
             for _ in range(args.accum_grad):
