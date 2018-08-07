@@ -40,7 +40,7 @@ def convolution(x, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name=None):
     #todo: he_backward is good?
     std = I.calc_normal_std_he_forward(x.shape[1], maps, kernel)
     initizlier = I.NormalInitializer(std)
-    return PF.convolution(x, maps, kernel, pad, stride, name=name, with_bias=False)
+    return PF.convolution(x, maps, kernel, pad, stride, name=name, with_bias=True)
 
 
 def block(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
@@ -66,7 +66,7 @@ def upsample(x, maps=64, kernel=(4, 4), pad=(1, 1), stride=(2, 2),
         std = I.calc_normal_std_he_forward(x.shape[1], maps, kernel)
         initizlier = I.NormalInitializer(std)
     with nn.parameter_scope("upsample-{}".format(name)):
-        return PF.deconvolution(x, maps, kernel, pad, stride, with_bias=False)
+        return PF.deconvolution(x, maps, kernel, pad, stride, with_bias=True)
 
 
 def residue(x, maps=3, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name=None):
