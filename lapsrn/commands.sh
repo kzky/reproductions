@@ -71,3 +71,7 @@ screen -Sdm "adam-38" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-
 screen -Sdm "adam-39" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_39 --decay-rate 0 --share-type within-pyramid --S 2 --R 1 --D 10"
 
 screen -Sdm "adam-40" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_40 --decay-rate 0 --share-type within-pyramid --S 1 --R 1 --D 10"
+
+screen -Sdm "adam-41" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_41 --decay-rate 0 --share-type across-pyramid"
+screen -Sdm "adam-42" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_42 --decay-rate 0 --share-type within-pyramid"
+

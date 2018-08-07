@@ -66,9 +66,9 @@ def train(args):
         monitor_image_sr_list.append(monitor_image_sr)
 
     # DataIterator
-    img_paths = ["/home/kzky/nnabla_data/BSD200", 
+    img_paths = ["/home/kzky/nnabla_data/BSDS200", 
                  "/home/kzky/nnabla_data/General100", 
-                 "/home/kzky/nnabla_data/T90"]
+                 "/home/kzky/nnabla_data/T91"]
     di = data_iterator_lapsrn(img_paths, batch_size=args.batch_size, shuffle=True)
     
     # Train loop
