@@ -37,9 +37,13 @@ def evaluate(args):
     # Monitor
     monitor = Monitor(args.monitor_path)
     valid_data_name = args.valid_data_path.rstrip("/").split("/")[-1]
-    monitor_metric = MonitorSeries("Evaluation Metric {} {}".format(args.valid_metric, 
-                                                                    valid_data_name), 
-                                   monitor, interval=1)
+    monitor_psnr_sr_list = []
+    monitor_psnr_lr = MonitorSeries("Evaluation Metric PSNR Bicubic-{} {}".format(2 ** args.S, valid_data_name), 
+                                    monitor, interval=1)
+    for s in range(args.S):
+        monitor_psnr_sr = MonitorSeries("Evaluation Metric PSNR SR-{} {}".format(2 ** (s + 1), valid_data_name), 
+                                        monitor, interval=1)
+        monitor_psnr_sr_list.append(monitor_psnr_sr)
     monitor_image_lr = MonitorImage("Image Test LR {}".format(valid_data_name),
                                     monitor,
                                     num_images=1, 
@@ -69,6 +73,7 @@ def evaluate(args):
             w_ = w + 2 ** args.S - w % (2 ** args.S)
             x_data = resize(x_data, h_, w_)
             b, h, w, c = x_data.shape
+            nn.logger.warn("Input shape is coerced to (h, w, c)=({})".format(h, w, c))
 
         # Create model
         x_HR = nn.Variable([1, 1, h, w])
@@ -87,43 +92,42 @@ def evaluate(args):
         x_SR = x_SRs[-1]
 
         # Feed data
-        ycrcb = []
+        ycrcbs = []
         x_LR_d = x_data  # B, H, W, C
         for s, x_LR in enumerate(x_LRs[::-1]):  # [x_HR, ..., x_LR1, x_LR0]
             x_LR_y, x_LR_cr, x_LR_cb = split(x_LR_d)            
-            ycrcb.append([x_LR_y, x_LR_cr, x_LR_cb])
+            ycrcbs.append([x_LR_y, x_LR_cr, x_LR_cb])
             x_LR_y = to_BCHW(x_LR_y)
             x_LR_y = normalize(x_LR_y)
             x_LR.d = x_LR_y
             x_LR_d = downsample(x_data, 2 ** (s + 1))
-        ycrcb = ycrcb[-2]
+        ycrcb = ycrcbs[-2]
 
         # Forward
         x_SR.forward(clear_buffer=True)
-                
-        # Log
-        try:
-            x_hr = normalize_method(denormalize(x_HR.d))
-            x_sr = normalize_method(denormalize(np.clip(x_SR.d, 0.0, 1.0)))
-            monitor_metric.add(i, psnr(x_hr, x_sr))
-        except:
-            nn.logger.warn("{}-th image could not down-sampled well".format(i))
-        
-        x_lr = to_BHWC(x_LR.d) * 255
-        x_lr = x_lr.astype(np.uint8)
-        x_lr = upsample(x_lr, 2 ** args.S)
-        x_hr = to_BHWC(x_HR.d * 255)
+
         _, cr, cb = ycrcb
         cr = upsample(cr, 2 ** (args.S-1))
         cb = upsample(cb, 2 ** (args.S-1))
-        monitor_image_lr.add(i, to_BCHW(ycrcb_to_rgb(x_lr, cr, cb)))
-        monitor_image_hr.add(i, to_BCHW(ycrcb_to_rgb(x_hr, cr, cb)))
+        x_lr = denormalize(to_BHWC(x_LR.d))
+        x_lr = x_lr.astype(np.uint8)
+        x_lr = upsample(x_lr, 2 ** args.S)
+        x_lr = to_BCHW(ycrcb_to_rgb(x_lr, cr, cb))
+
+        x_hr = denormalize(to_BHWC(x_HR.d))
+        cr, cb = ycrcbs[0][1], ycrcbs[0][1]
+        x_hr = to_BCHW(ycrcb_to_rgb(x_hr, cr, cb))
+        monitor_image_lr.add(i, x_lr)
+        monitor_image_hr.add(i, x_hr)
+        monitor_psnr_lr.add(i, psnr(x_hr, x_lr))
         for s, x_SR in enumerate(x_SRs):
             _, cr, cb = ycrcb
             cr = upsample(cr, 2 ** s)
             cb = upsample(cb, 2 ** s)
-            x_sr = to_BCHW(ycrcb_to_rgb((to_BHWC(np.clip(x_SRs[s].d, 0.0, 1.0)) * 255.0), cr, cb))
+            x_sr = to_BCHW(ycrcb_to_rgb(denormalize(to_BHWC(np.clip(x_SRs[s].d, 0.0, 1.0))), cr, cb))
             monitor_image_sr_list[s].add(i, x_sr)
+
+        monitor_psnr_sr.add(i, psnr(x_hr, x_sr))
 
         # Clear memory since the input is varaible size.
         import nnabla_ext.cuda

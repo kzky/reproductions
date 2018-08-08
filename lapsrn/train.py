@@ -76,17 +76,16 @@ def train(args):
         # Feed data
         x_data = di.next()[0]
         #print(np.mean(x_data), np.min(x_data), np.max(x_data))
-        ycrcb = []
+        ycrcbs = []
         x_LR_d = x_data  # B, H, W, C
         for s, x_LR in enumerate(x_LRs[::-1]):  # [x_HR, ..., x_LR1, x_LR0]
             x_LR_y, x_LR_cr, x_LR_cb = split(x_LR_d)           
-            ycrcb.append([x_LR_y, x_LR_cr, x_LR_cb])
+            ycrcbs.append([x_LR_y, x_LR_cr, x_LR_cb])
             x_LR_y = to_BCHW(x_LR_y)
             x_LR_y = normalize(x_LR_y)
-            #print(np.min(x_LR_y), np.max(x_LR_y))
             x_LR.d = x_LR_y
             x_LR_d = downsample(x_data, 2 ** (s + 1))
-        ycrcb = ycrcb[-2]
+        ycrcb = ycrcbs[-2]
 
         # Zerograd, forward, backward, weight-decay, update
         solver.zero_grad()
