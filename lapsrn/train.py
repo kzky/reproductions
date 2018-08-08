@@ -108,7 +108,7 @@ def train(args):
                 cr = upsample(cr, 2 ** s)
                 cb = upsample(cb, 2 ** s)
                 x_lr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_LRs[s+1].d) * 255.0, cr, cb))
-                x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(np.clip(x_SRs[s].d, 0.0, 1.0) * 255.0, cr, cb))
+                x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(np.clip(x_SRs[s].d, 0.0, 1.0) * 255.0), cr, cb))
                 monitor_image_lr_list[s].add(i, x_lr)
                 monitor_image_sr_list[s].add(i, x_sr)
             nn.save_parameters("{}/param_{}.h5".format(args.monitor_path, i))
