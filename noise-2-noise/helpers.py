@@ -164,7 +164,7 @@ def replicate_one_corrupted_sample(x_noisy_target):
         #x: (R, C, H, W)
         x = np.broadcast_to(x[0].reshape(1, c, h, w), (r, c, h, w))
         replicas.append(x)
-    return np.asarray(x)
+    return np.asarray(replicas)
         
 
 def apply_noise(x, n_replica, noise_level, distribution="gaussian", test=False):
@@ -185,20 +185,22 @@ def apply_noise(x, n_replica, noise_level, distribution="gaussian", test=False):
         return x_noise.reshape(shape), x_noisy_target.reshape(shape), None
     elif distribution == "poisson":
         n, lambda_ = generate_poisson_noise(x.shape, noise_level, test)
-        x_noisy_target = np.clip(x + n, 0., 255.0)
+        x_noisy_target = np.clip(x + n - lambda_, 0., 255.0)
         x_noise = replicate_one_corrupted_sample(x_noisy_target)
         shape = (b * r, c, h, w)
         return x_noise.reshape(shape), x_noisy_target.reshape(shape), None
     elif distribution == "bernoulli":
         n, p = generate_bernoulli_noise(x.shape, noise_level, test)
-        x_noisy_target = np.clip(x * n, 0., 255.0)
+        xn = x * n
+        x_noisy_target = np.clip(xn - xn * p, 0., 255.0)
         x_noise = replicate_one_corrupted_sample(x_noisy_target)
         shape = (b * r, c, h, w)
         return x_noise.reshape(shape), x_noisy_target.reshape(shape), \
             np.broadcast_to(n, (b, r, c, h, w)).reshape(shape)
     elif distribution == "impulse":
         m, v, p = generate_impulse_noise(x.shape, noise_level, test)
-        x_noisy_target = np.clip((x - v) * m + v, 0., 255.0)
+        xn = v * m + x * (1 - m)
+        x_noisy_target = np.clip(xn - xn * p, 0., 255.0)
         x_noise = replicate_one_corrupted_sample(x_noisy_target)
         shape = (b * r, c, h, w)
         return x_noise.reshape(shape), x_noisy_target.reshape(shape), None
