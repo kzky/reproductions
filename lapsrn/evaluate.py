@@ -99,21 +99,20 @@ def evaluate(args):
         ycrcb = ycrcb[-2]
 
         # Forward
-        #x_SR.forward(clear_buffer=True)
-        x_SR.forward()
-        
+        x_SR.forward(clear_buffer=True)
+                
         # Log
         try:
-            x_hr = normalize_method(denormalize(x_HR.d.copy()))
-            x_sr = normalize_method(denormalize(x_SR.d.copy()))
+            x_hr = normalize_method(denormalize(x_HR.d))
+            x_sr = normalize_method(denormalize(np.clip(x_SR.d, 0.0, 1.0)))
             monitor_metric.add(i, psnr(x_hr, x_sr))
         except:
             nn.logger.warn("{}-th image could not down-sampled well".format(i))
         
-        x_lr = to_BHWC(x_LR.d.copy()) * 255
+        x_lr = to_BHWC(x_LR.d) * 255
         x_lr = x_lr.astype(np.uint8)
         x_lr = upsample(x_lr, 2 ** args.S)
-        x_hr = to_BHWC(x_HR.d.copy() * 255)
+        x_hr = to_BHWC(x_HR.d * 255)
         _, cr, cb = ycrcb
         cr = upsample(cr, 2 ** (args.S-1))
         cb = upsample(cb, 2 ** (args.S-1))
@@ -123,7 +122,7 @@ def evaluate(args):
             _, cr, cb = ycrcb
             cr = upsample(cr, 2 ** s)
             cb = upsample(cb, 2 ** s)
-            x_sr = to_BCHW(ycrcb_to_rgb((to_BHWC(x_SRs[s].d.copy()) * 255.0), cr, cb))
+            x_sr = to_BCHW(ycrcb_to_rgb((to_BHWC(np.clip(x_SRs[s].d, 0.0, 1.0)) * 255.0), cr, cb))
             monitor_image_sr_list[s].add(i, x_sr)
 
         # Clear memory since the input is varaible size.

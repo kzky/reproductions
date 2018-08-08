@@ -75,6 +75,7 @@ def train(args):
     for i in range(args.max_iter):
         # Feed data
         x_data = di.next()[0]
+        #print(np.mean(x_data), np.min(x_data), np.max(x_data))
         ycrcb = []
         x_LR_d = x_data  # B, H, W, C
         for s, x_LR in enumerate(x_LRs[::-1]):  # [x_HR, ..., x_LR1, x_LR0]
@@ -82,6 +83,7 @@ def train(args):
             ycrcb.append([x_LR_y, x_LR_cr, x_LR_cb])
             x_LR_y = to_BCHW(x_LR_y)
             x_LR_y = normalize(x_LR_y)
+            #print(np.min(x_LR_y), np.max(x_LR_y))
             x_LR.d = x_LR_y
             x_LR_d = downsample(x_data, 2 ** (s + 1))
         ycrcb = ycrcb[-2]
@@ -105,8 +107,8 @@ def train(args):
                 _, cr, cb = ycrcb
                 cr = upsample(cr, 2 ** s)
                 cb = upsample(cb, 2 ** s)
-                x_lr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_LRs[s+1].d.copy()) * 255.0, cr, cb))
-                x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_SRs[s].d.copy()) * 255.0, cr, cb))
+                x_lr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_LRs[s+1].d) * 255.0, cr, cb))
+                x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(np.clip(x_SRs[s].d, 0.0, 1.0) * 255.0, cr, cb))
                 monitor_image_lr_list[s].add(i, x_lr)
                 monitor_image_sr_list[s].add(i, x_sr)
             nn.save_parameters("{}/param_{}.h5".format(args.monitor_path, i))
@@ -118,8 +120,8 @@ def train(args):
         _, cr, cb = ycrcb
         cr = upsample(cr, 2 ** (s + 1))
         cb = upsample(cb, 2 ** (s + 1))
-        x_lr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_LRs[s+1].d.copy()) * 255.0, cr, cb))
-        x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_SRs[s].d.copy()) * 255.0, cr, cb))
+        x_lr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_LRs[s+1].d) * 255.0, cr, cb))
+        x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_SRs[s].d) * 255.0, cr, cb))
         monitor_image_lr_list[s].add(i, x_lr)
         monitor_image_sr_list[s].add(i, x_sr)
     nn.save_parameters("{}/param_{}.h5".format(args.monitor_path, i))
