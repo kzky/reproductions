@@ -57,14 +57,7 @@ def get_solver(solver):
 
 
 def normalize_method(x):
-    # max_idx = np.where(x > 255)
-    # min_idx = np.where(x < 0)
-    # x[max_idx] = 255
-    # x[min_idx] = 0
-    M = np.max(x)
-    m = np.min(x)
-    v = 255.0 * (x - m) / (M - m)
-    return v
+    return x
 
 
 def resize(x_data_s, h, w):
@@ -88,7 +81,7 @@ def downsample(x_data_s, s):
     b, h, w, c = x_data_s.shape
     sh = h // s
     sw = w // s
-    x_data_s = np.asarray([cv2.resize(x, (sw, sh), interpolation=cv2.INTER_CUBIC) \
+    x_data_s = np.asarray([cv2.resize(x, (sw, sh)) \
                            for x in x_data_s.astype(np.uint8)])
     return x_data_s
 
@@ -123,7 +116,8 @@ def ycrcb_to_rgb(y, cr, cb):
     imgs = []
     imgs_ = np.concatenate([y, cr, cb], axis=3)
     for img in imgs_.astype(np.uint8):
-        img = cv2.cvtColor(img, cv2.COLOR_YCrCb2RGB)
+        #print(img.dtype, np.min(img), np.max(img))
+        img = cv2.cvtColor(img, cv2.COLOR_YCR_CB2RGB)
         imgs.append(img)
     return np.asarray(imgs)
 
