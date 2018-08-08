@@ -31,14 +31,15 @@ def train(args):
     np.random.seed(412)  # workaround to start with the same weights in the distributed system.
     # generator loss
     z = F.randn(0, 1.0, [args.batch_size, args.latent])
-    y = nn.Variable([args.batch_size], need_grad=False)
-    x_fake = generator(z, y, maps=args.maps, sn=args.not_sn).apply(persistent=True)
-    d_fake = discriminator(x_fake, y, maps=args.maps // 16, sn=args.not_sn)
+    y_fake = nn.Variable([args.batch_size], need_grad=False)
+    x_fake = generator(z, y_fake, maps=args.maps, sn=args.not_sn).apply(persistent=True)
+    d_fake = discriminator(x_fake, y_fake, maps=args.maps // 16, sn=args.not_sn)
     loss_gen = gan_loss(d_fake)
     # discriminator loss
+    y_real = nn.Variable([args.batch_size], need_grad=False)
     x_real = nn.Variable([args.batch_size, 3, args.image_size, args.image_size], need_grad=False)
     x_augm = F.flip(x_real, (2, ))
-    d_real = discriminator(x_augm, y, maps=args.maps // 16, sn=args.not_sn)
+    d_real = discriminator(x_augm, y_real, maps=args.maps // 16, sn=args.not_sn)
     loss_dis = gan_loss(d_fake, d_real)
     # generator with fixed value for test
     z_test = nn.Variable.from_numpy_array(np.random.randn(args.batch_size, args.latent))
@@ -77,7 +78,9 @@ def train(args):
         solver_dis.zero_grad()
         for _ in range(args.accum_grad):
             x_data, y_data = di_train.next()
-            x_real.d, y.d = normalize_method(x_data), y_data.flatten()
+            x_real.d, y_real.d = normalize_method(x_data), y_data.flatten()
+            y_data = generate_random_class(args.n_classes, args.batch_size)
+            y_fake.d = y_data
             loss_dis.forward(clear_no_need_grad=True)
             loss_dis.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
         with nn.parameter_scope("discriminator"):
@@ -90,7 +93,7 @@ def train(args):
             solver_gen.zero_grad()
             for _ in range(args.accum_grad):
                 y_data = generate_random_class(args.n_classes, args.batch_size)
-                y.d = y_data
+                y_fake.d = y_data
                 loss_gen.forward(clear_no_need_grad=True)
                 loss_gen.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
             with nn.parameter_scope("generator"):
