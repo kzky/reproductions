@@ -4,7 +4,7 @@ screen -Sdm "unet-gaussian" bash -c "python train.py -d 3 -c cudnn -b 1 --max-it
 
 screen -Sdm "unet-poisson" bash -c "python train.py -d 3 -c cudnn -b 1 --max-iter 156250 --save-interval 15625 --monitor-path ./result/unet_poisson_4 --train-data-path /data/datasets/imagenet/val_data/tmpdir/ --net unet --noise-dist poisson --noise-level 50 --n-replica 8"
 
-screen -Sdm "unet-bernoulli" bash -c "python train.py -d 3 -c cudnn -b 1 --max-iter 1562500 --save-interval 15625 --monitor-path ./result/unet_bernoulli_4 --train-data-path /data/datasets/imagenet/val_data/tmpdir/ --net unet --noise-dist bernoulli --noise-level 0.95 --n-replica 16"
+screen -Sdm "unet-bernoulli" bash -c "python train.py -d 3 -c cudnn -b 1 --max-iter 156250 --save-interval 15625 --monitor-path ./result/unet_bernoulli_4 --train-data-path /data/datasets/imagenet/val_data/tmpdir/ --net unet --noise-dist bernoulli --noise-level 0.95 --n-replica 16"
 
 screen -Sdm "unet-impulse" bash -c "python train.py -d 3 -c cudnn -b 1 --max-iter 156250 --save-interval 15625 --monitor-path ./result/unet_impulse_4 --train-data-path /data/datasets/imagenet/val_data/tmpdir --net unet --noise-dist impulse --noise-level 0.95 --loss l0 --n-replica 8"
 
