@@ -191,9 +191,8 @@ def apply_noise(x, n_replica, noise_level, distribution="gaussian", test=False):
         return x_noise.reshape(shape), x_noisy_target.reshape(shape), None
     elif distribution == "bernoulli":
         n, p = generate_bernoulli_noise(x.shape, noise_level, test)
-        xn = x * n
-        m = mean_replicas(xn)
-        x_noisy_target = np.clip(m, 0., 255.0)
+        xn = x * n / p
+        x_noisy_target = replicate_one_corrupted_sample(x_noisy_target)
         x_noise = xn
         shape = (b * r, c, h, w)
         return x_noise.reshape(shape), x_noisy_target.reshape(shape), \
