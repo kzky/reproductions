@@ -88,3 +88,8 @@ screen -Sdm "adam-46" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-
 screen -Sdm "adam-47" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_47 --decay-rate 0 --share-type across-pyramid"
 screen -Sdm "adam-48" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_48 --decay-rate 0 --share-type within-pyramid"
 
+
+screen -Sdm "adam-49" bash -c "python train.py -d 1 -b 32 --solver Adam --lr 1e-4 --monitor-path result/example_49 --decay-rate 0 --share-type across-pyramid --maps 128 --S 2"
+screen -Sdm "adam-50" bash -c "python train.py -d 2 -b 32 --solver Adam --lr 1e-4 --monitor-path result/example_50 --decay-rate 0 --share-type within-pyramid --maps 128 --S 2"
+
+
