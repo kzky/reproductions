@@ -67,6 +67,7 @@ def evaluate(args):
     for i in range(di.size):
         # Read data
         x_data = di.next()[0]
+        x_hr = x_data
         b, h, w, c = x_data.shape
         if h % (2 ** args.S) != 0 or w % (2 ** args.S) != 0:
             h_ = h + 2 ** args.S - h % (2 ** args.S)
@@ -101,33 +102,38 @@ def evaluate(args):
             x_LR_y = normalize(x_LR_y)
             x_LR.d = x_LR_y
             x_LR_d = downsample(x_data, 2 ** (s + 1))
-        ycrcb = ycrcbs[-2]
+        ycrcb = ycrcbs[-1]
 
         # Forward
         x_SR.forward(clear_buffer=True)
 
-        _, cr, cb = ycrcb
-        cr = upsample(cr, 2 ** (args.S-1))
-        cb = upsample(cb, 2 ** (args.S-1))
-        x_lr = denormalize(to_BHWC(x_LR.d))
-        x_lr = x_lr.astype(np.uint8)
-        x_lr = upsample(x_lr, 2 ** args.S)
-        x_lr = to_BCHW(ycrcb_to_rgb(x_lr, cr, cb))
-
+        # High Resolution
         x_hr = denormalize(to_BHWC(x_HR.d))
-        cr, cb = ycrcbs[0][1], ycrcbs[0][1]
-        x_hr = to_BCHW(ycrcb_to_rgb(x_hr, cr, cb))
-        monitor_image_lr.add(i, x_lr)
+        y, cr, cb = ycrcbs[0]
+        x_hr = to_BCHW(ycrcb_to_rgb(y, cr, cb))
         monitor_image_hr.add(i, x_hr)
-        monitor_psnr_lr.add(i, psnr(x_hr, x_lr))
+
+        # Low to High Resolution by Bicubic
+        _, cr, cb = ycrcb
+        cr = upsample(cr, 2 ** args.S)
+        cb = upsample(cb, 2 ** args.S)
+        x_lr = denormalize(to_BHWC(x_LR.d))
+        x_lr = upsample(x_lr, 2 ** args.S)
+        x_lr = to_BCHW(ycrcb_to_rgb(x_lr, cb, cr))
+        monitor_image_lr.add(i, x_lr)
+
+        # Low to High Resolution by NN
         for s, x_SR in enumerate(x_SRs):
             _, cr, cb = ycrcb
-            cr = upsample(cr, 2 ** s)
-            cb = upsample(cb, 2 ** s)
-            x_sr = to_BCHW(ycrcb_to_rgb(denormalize(to_BHWC(np.clip(x_SRs[s].d, 0.0, 1.0))), cr, cb))
+            cr = upsample(cr, 2 ** (s + 1))
+            cb = upsample(cb, 2 ** (s + 1))
+            x_sr = to_BCHW(ycrcb_to_rgb(denormalize(to_BHWC(np.clip(x_SR.d, 0.0, 1.0))), cr, cb))
             monitor_image_sr_list[s].add(i, x_sr)
-
+        monitor_psnr_lr.add(i, psnr(x_hr, x_lr))
         monitor_psnr_sr.add(i, psnr(x_hr, x_sr))
+
+        print("Bicubic: {}".format(psnr(x_hr, x_lr)))
+        print("SuperRes: {}".format(psnr(x_hr, x_sr)))
 
         # Clear memory since the input is varaible size.
         import nnabla_ext.cuda
