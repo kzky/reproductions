@@ -119,7 +119,7 @@ def evaluate(args):
         cb = upsample(cb, 2 ** args.S)
         x_lr = denormalize(to_BHWC(x_LR.d))
         x_lr = upsample(x_lr, 2 ** args.S)
-        x_lr = to_BCHW(ycrcb_to_rgb(x_lr, cb, cr))
+        x_lr = to_BCHW(ycrcb_to_rgb(x_lr, cr, cb))
         monitor_image_lr.add(i, x_lr)
 
         # Low to High Resolution by NN
