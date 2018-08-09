@@ -48,6 +48,7 @@ def psnr(x, y, max_=255):
     mse = np.mean((x - y) ** 2)
     return 10 * np.log10(max_ ** 2 / mse)
 
+
 def get_solver(solver):
     if solver == "Adam":
         return S.Adam
@@ -81,7 +82,7 @@ def downsample(x_data_s, s):
     b, h, w, c = x_data_s.shape
     sh = h // s
     sw = w // s
-    x_data_s = np.asarray([cv2.resize(x, (sw, sh)) \
+    x_data_s = np.asarray([cv2.resize(x, (sw, sh), interpolation=cv2.INTER_CUBIC) \
                            for x in x_data_s.astype(np.uint8)])
     return x_data_s
 
