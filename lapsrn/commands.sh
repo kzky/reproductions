@@ -93,3 +93,6 @@ screen -Sdm "adam-49" bash -c "python train.py -d 1 -b 32 --solver Adam --lr 1e-
 screen -Sdm "adam-50" bash -c "python train.py -d 2 -b 32 --solver Adam --lr 1e-4 --monitor-path result/example_50 --decay-rate 0 --share-type within-pyramid --maps 128 --S 2"
 
 
+# From here PIL is used
+screen -Sdm "adam-51" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-3 --monitor-path result/example_51 --decay-rate 0 --share-type across-pyramid --S 2"
+screen -Sdm "adam-52" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-3 --monitor-path result/example_52 --decay-rate 0 --share-type within-pyramid --S 2"
