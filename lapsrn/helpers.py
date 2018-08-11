@@ -3,7 +3,7 @@ from nnabla.contrib.context import extension_context
 from nnabla.monitor import Monitor, MonitorImage, MonitorImageTile, MonitorSeries, tile_images
 from nnabla.utils.data_iterator import data_iterator
 import os
-import cv2
+from PIL import Image
 
 import nnabla as nn
 import nnabla.functions as F
@@ -61,30 +61,33 @@ def normalize_method(x):
     return x
 
 
-def resize(x_data_s, h, w):
-    x_data_s = np.asarray([cv2.resize(x, (w, h), interpolation=cv2.INTER_CUBIC) \
-                           for x in x_data_s.astype(np.uint8)])
-    if len(x_data_s.shape) == 3:
-        return x_data_s[..., np.newaxis]
-    return x_data_s
+def resize(x_data, sh, sw):
+    b, h, w, c = x_data.shape
+    x_data_ = []
+    for x in x_data.astype(np.uint8):
+        x = x.reshape((h, w)) if c == 1 else x.reshape((h, w, c))
+        x = Image.fromarray(x).resize((sh, sw), Image.BICUBIC)
+        x = np.asarray(x)
+        x = x.reshape((sh, sw, c))
+        x_data_.append(x)
+    x_data_ = np.asarray(x_data_)
+    if len(x_data_.shape) == 3:
+        return x_data_[..., np.newaxis]
+    return x_data_
 
 
-def upsample(x_data_s, s):
-    b, h, w, c = x_data_s.shape
-    x_data_s = np.asarray([cv2.resize(x, (w * s, h * s), interpolation=cv2.INTER_CUBIC) \
-                           for x in x_data_s.astype(np.uint8)])
-    if len(x_data_s.shape) == 3:
-        return x_data_s[..., np.newaxis]
-    return x_data_s
+def upsample(x_data, s):
+    b, h, w, c = x_data.shape
+    sh = h * s
+    sw = w * s
+    return resize(x_data, sh, sw)
 
 
-def downsample(x_data_s, s):
-    b, h, w, c = x_data_s.shape
+def downsample(x_data, s):
+    b, h, w, c = x_data.shape
     sh = h // s
     sw = w // s
-    x_data_s = np.asarray([cv2.resize(x, (sw, sh), interpolation=cv2.INTER_CUBIC) \
-                           for x in x_data_s.astype(np.uint8)])
-    return x_data_s
+    return resize(x_data, sh, sw)
 
 
 def split(x):
@@ -113,12 +116,12 @@ def denormalize(x, de=255.0):
     return x * de
 
 
-def ycrcb_to_rgb(y, cr, cb):
+def ycbcr_to_rgb(y, cr, cb):
     imgs = []
     imgs_ = np.concatenate([y, cr, cb], axis=3)
     for img in imgs_.astype(np.uint8):
-        #print(img.dtype, np.min(img), np.max(img))
-        img = cv2.cvtColor(img, cv2.COLOR_YCR_CB2RGB)
+        img = Image.fromarray(img).convert("RGB")
+        img = np.asarray(img)
         imgs.append(img)
     return np.asarray(imgs)
 

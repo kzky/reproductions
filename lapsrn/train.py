@@ -14,11 +14,8 @@ from datasets import data_iterator_lapsrn
 from args import get_args, save_args
 from models import get_loss, lapsrn
 from helpers import (get_solver, upsample, downsample, 
-                     split, to_BCHW, to_BHWC, normalize, ycrcb_to_rgb, 
+                     split, to_BCHW, to_BHWC, normalize, ycbcr_to_rgb, 
                      normalize_method)
-
-import cv2
-
 
 def train(args):
     # Context
@@ -75,17 +72,16 @@ def train(args):
     for i in range(args.max_iter):
         # Feed data
         x_data = di.next()[0]
-        #print(np.mean(x_data), np.min(x_data), np.max(x_data))
-        ycrcbs = []
+        ycbcrs = []
         x_LR_d = x_data  # B, H, W, C
         for s, x_LR in enumerate(x_LRs[::-1]):  # [x_HR, ..., x_LR1, x_LR0]
-            x_LR_y, x_LR_cr, x_LR_cb = split(x_LR_d)           
-            ycrcbs.append([x_LR_y, x_LR_cr, x_LR_cb])
+            x_LR_y, x_LR_cb, x_LR_cr = split(x_LR_d)           
+            ycbcrs.append([x_LR_y, x_LR_cb, x_LR_cr])
             x_LR_y = to_BCHW(x_LR_y)
             x_LR_y = normalize(x_LR_y)
             x_LR.d = x_LR_y
             x_LR_d = downsample(x_data, 2 ** (s + 1))
-        ycrcb = ycrcbs[-2]
+        ycbcr = ycbcrs[-1]
 
         # Zerograd, forward, backward, weight-decay, update
         solver.zero_grad()
@@ -103,11 +99,11 @@ def train(args):
         monitor_time.add(i)
         if i % args.save_interval == 0:
             for s in range(args.S):
-                _, cr, cb = ycrcb
-                cr = upsample(cr, 2 ** s)
-                cb = upsample(cb, 2 ** s)
-                x_lr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_LRs[s+1].d) * 255.0, cr, cb))
-                x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(np.clip(x_SRs[s].d, 0.0, 1.0) * 255.0), cr, cb))
+                _, cb, cr = ycbcr
+                cb = upsample(cb, 2 ** (s + 1))
+                cr = upsample(cr, 2 ** (s + 1))
+                x_lr = to_BCHW(ycbcr_to_rgb(to_BHWC(x_LRs[s+1].d) * 255.0, cb, cr))
+                x_sr = to_BCHW(ycbcr_to_rgb(to_BHWC(np.clip(x_SRs[s].d, 0.0, 1.0) * 255.0), cb, cr))
                 monitor_image_lr_list[s].add(i, x_lr)
                 monitor_image_sr_list[s].add(i, x_sr)
             nn.save_parameters("{}/param_{}.h5".format(args.monitor_path, i))
@@ -116,11 +112,11 @@ def train(args):
     monitor_loss.add(i, loss.d)
     monitor_time.add(i)
     for s in range(args.S):
-        _, cr, cb = ycrcb
-        cr = upsample(cr, 2 ** (s + 1))
+        _, cb, cr = ycbcr
         cb = upsample(cb, 2 ** (s + 1))
-        x_lr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_LRs[s+1].d) * 255.0, cr, cb))
-        x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_SRs[s].d) * 255.0, cr, cb))
+        cr = upsample(cr, 2 ** (s + 1))
+        x_lr = to_BCHW(ycbcr_to_rgb(to_BHWC(x_LRs[s+1].d) * 255.0, cb, cr))
+        x_sr = to_BCHW(ycbcr_to_rgb(to_BHWC(x_SRs[s].d) * 255.0, cb, cr))
         monitor_image_lr_list[s].add(i, x_lr)
         monitor_image_sr_list[s].add(i, x_sr)
     nn.save_parameters("{}/param_{}.h5".format(args.monitor_path, i))

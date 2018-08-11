@@ -54,7 +54,6 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
             rw = np.random.choice(np.arange(w - iw), size=1)[0]
             img = img[rh:rh+ih, rw:rw+iw, :]
 
-
         # Flip horizontally
         if np.random.randint(2):
             img = img[:, ::-1, :]
@@ -65,8 +64,7 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
 
     def load_func_test(i):
         assert batch_size == 1
-        img = cv2.imread(imgs[i])
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2YCR_CB)
+        img = Image.open(imgs[i]).convert("YCbCr")
         # img(YCrCb): [1, H, W, C]
         return img, None
 
