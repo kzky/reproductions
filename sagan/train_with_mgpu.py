@@ -30,7 +30,8 @@ def train(args):
     # Model (not use test mode when training either generator and discrimiantor)
     np.random.seed(412)  # workaround to start with the same weights in the distributed system.
     # generator loss
-    z = F.randn(0, 1.0, [args.batch_size, args.latent])
+    #z = F.rand(0, 1.0, [args.batch_size, args.latent])
+    z = nn.Variable([args.batch_size, args.latent])
     y_fake = nn.Variable([args.batch_size], need_grad=False)
     x_fake = generator(z, y_fake, maps=args.maps, sn=args.not_sn).apply(persistent=True)
     d_fake = discriminator(x_fake, y_fake, maps=args.maps // 16, sn=args.not_sn)
@@ -79,8 +80,9 @@ def train(args):
         for _ in range(args.accum_grad):
             x_data, y_data = di_train.next()
             x_real.d, y_real.d = normalize_method(x_data), y_data.flatten()
+            z_data = np.random.randn(args.batch_size, args.latent)
             y_data = generate_random_class(args.n_classes, args.batch_size)
-            y_fake.d = y_data
+            z.d, y_fake.d = z_data, y_data
             loss_dis.forward(clear_no_need_grad=True)
             loss_dis.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
         with nn.parameter_scope("discriminator"):
@@ -92,8 +94,9 @@ def train(args):
             x_fake.need_grad = True  # need for generator backward
             solver_gen.zero_grad()
             for _ in range(args.accum_grad):
+                z_data = np.random.randn(args.batch_size, args.latent)
                 y_data = generate_random_class(args.n_classes, args.batch_size)
-                y_fake.d = y_data
+                z.d, y_fake.d = z_data, y_data
                 loss_gen.forward(clear_no_need_grad=True)
                 loss_gen.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
             with nn.parameter_scope("generator"):
