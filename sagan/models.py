@@ -209,9 +209,11 @@ def embed(inp, n_inputs, n_features, itr=1, fix_parameters=False, sn=True, test=
         ~nnabla.Variable: Output with shape :math:`(I_0, ..., I_N, W_1, ..., W_M)`
     """
 
-    l, u = calc_uniform_lim_glorot(n_inputs, n_features)
+    # l, u = calc_uniform_lim_glorot(n_inputs, n_features)
+    # w = get_parameter_or_create("W", [n_inputs, n_features],
+    #                             UniformInitializer((l, u)), not fix_parameters)
     w = get_parameter_or_create("W", [n_inputs, n_features],
-                                UniformInitializer((l, u)), not fix_parameters)
+                                ConstantInitializer(1.0), not fix_parameters)
     w_sn = spectral_normalization_for_affine(w, itr=itr, test=test) if sn else w
     return F.embed(inp, w_sn)
     
@@ -219,6 +221,7 @@ def embed(inp, n_inputs, n_features, itr=1, fix_parameters=False, sn=True, test=
 def BN(h, test=False):
     """Batch Normalization"""
     return PF.batch_normalization(h, batch_stat=not test)
+
 
 @parametric_function_api("ccbn")
 def CCBN(h, y, n_classes, test=False, fix_parameters=False, sn=True):
@@ -231,7 +234,7 @@ def CCBN(h, y, n_classes, test=False, fix_parameters=False, sn=True):
     mean = get_parameter_or_create(
         "mean", shape_stat, ConstantInitializer(0), False)
     var = get_parameter_or_create(
-        "var", shape_stat, ConstantInitializer(0), False)
+        "var", shape_stat, ConstantInitializer(1), False)
     h = F.batch_normalization(h, beta_tmp, gamma_tmp, mean, var, batch_stat=not test)
 
     # Condition the gamma and beta with the class label
