@@ -94,5 +94,8 @@ screen -Sdm "adam-50" bash -c "python train.py -d 2 -b 32 --solver Adam --lr 1e-
 
 
 # From here PIL is used
-screen -Sdm "adam-51" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-3 --monitor-path result/example_51 --decay-rate 0 --share-type across-pyramid --S 2"
-screen -Sdm "adam-52" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-3 --monitor-path result/example_52 --decay-rate 0 --share-type within-pyramid --S 2"
+screen -Sdm "adam-51" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_51 --decay-rate 0 --share-type across-pyramid --S 2"
+screen -Sdm "adam-52" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_52 --decay-rate 0 --share-type within-pyramid --S 2"
+
+screen -Sdm "adam-53" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_53 --decay-rate 0 --share-type across-pyramid --S 3"
+screen -Sdm "adam-54" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_54 --decay-rate 0 --share-type within-pyramid --S 3"
