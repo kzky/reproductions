@@ -234,7 +234,7 @@ def CCBN(h, y, n_classes, test=False, fix_parameters=False, sn=True):
     mean = get_parameter_or_create(
         "mean", shape_stat, ConstantInitializer(0), False)
     var = get_parameter_or_create(
-        "var", shape_stat, ConstantInitializer(1), False)
+        "var", shape_stat, ConstantInitializer(0), False)
     h = F.batch_normalization(h, beta_tmp, gamma_tmp, mean, var, batch_stat=not test)
 
     # Condition the gamma and beta with the class label
