@@ -99,3 +99,23 @@ screen -Sdm "adam-52" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-
 
 screen -Sdm "adam-53" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_53 --decay-rate 0 --share-type across-pyramid --S 3"
 screen -Sdm "adam-54" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_54 --decay-rate 0 --share-type within-pyramid --S 3"
+
+
+
+
+# Evaluate
+## 51
+python evaluate.py -d 1 -c cudnn --valid-data-path ~/nnabla_data/Set14 --monitor-path result/example_51 --model-load-path result/example_51/param_149999.h5 --share-type across-pyramid --S 2
+python evaluate.py -d 1 -c cudnn --valid-data-path ~/nnabla_data/Set5 --monitor-path result/example_51 --model-load-path result/example_51/param_149999.h5 --share-type across-pyramid --S 2
+
+## 52
+python evaluate.py -d 1 -c cudnn --valid-data-path ~/nnabla_data/Set14 --monitor-path result/example_52 --model-load-path result/example_52/param_149999.h5 --share-type within-pyramid --S 2
+python evaluate.py -d 1 -c cudnn --valid-data-path ~/nnabla_data/Set5 --monitor-path result/example_52 --model-load-path result/example_52/param_149999.h5 --share-type within-pyramid --S 2
+
+## 53
+python evaluate.py -d 1 -c cudnn --valid-data-path ~/nnabla_data/Set14 --monitor-path result/example_53 --model-load-path result/example_53/param_149999.h5 --share-type across-pyramid --S 3
+python evaluate.py -d 1 -c cudnn --valid-data-path ~/nnabla_data/Set5 --monitor-path result/example_53 --model-load-path result/example_53/param_149999.h5 --share-type across-pyramid --S 3
+
+## 54
+python evaluate.py -d 1 -c cudnn --valid-data-path ~/nnabla_data/Set14 --monitor-path result/example_54 --model-load-path result/example_54/param_149999.h5 --share-type within-pyramid --S 3
+python evaluate.py -d 1 -c cudnn --valid-data-path ~/nnabla_data/Set5 --monitor-path result/example_54 --model-load-path result/example_54/param_149999.h5 --share-type within-pyramid --S 3
