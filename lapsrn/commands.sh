@@ -100,6 +100,12 @@ screen -Sdm "adam-52" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-
 screen -Sdm "adam-53" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_53 --decay-rate 0 --share-type across-pyramid --S 3"
 screen -Sdm "adam-54" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_54 --decay-rate 0 --share-type within-pyramid --S 3"
 
+# Decay at every 10 epoch
+screen -Sdm "adam-55" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_55 --decay-rate 0 --share-type across-pyramid --S 2"
+screen -Sdm "adam-56" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_56 --decay-rate 0 --share-type within-pyramid --S 2"
+
+screen -Sdm "adam-57" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_57 --decay-rate 0 --share-type across-pyramid --S 3"
+screen -Sdm "adam-58" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_58 --decay-rate 0 --share-type within-pyramid --S 3"
 
 
 
