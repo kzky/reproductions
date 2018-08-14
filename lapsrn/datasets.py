@@ -35,7 +35,7 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
 
         # Resize in [0.5 1.0]
         h, w = img.size
-        if h < ih or w < iw:
+        if h < ih or w < iw:  # ensure that size >= (ih, iw)
             img = img.resize((ih, iw),  Image.BICUBIC)
         a = np.random.uniform(0.5, 1.0)
         h, w = int(h*a), int(w*a)
