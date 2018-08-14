@@ -44,7 +44,7 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
         
         # Rotate in [0, 90, 180, 270]
         k = np.random.choice([0, 90, 180, 270], size=1)
-        img = img.rotate(k) if k != 0 else img
+        img = img.rotate(k, expand=True) if k != 0 else img
 
         # Crop
         img = np.asarray(img)
