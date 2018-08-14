@@ -116,9 +116,9 @@ def denormalize(x, de=255.0):
     return x * de
 
 
-def ycbcr_to_rgb(y, cr, cb):
+def ycbcr_to_rgb(y, cb, cr):
     imgs = []
-    imgs_ = np.concatenate([y, cr, cb], axis=3)
+    imgs_ = np.concatenate([y, cb, cr], axis=3)
     for img in imgs_.astype(np.uint8):
         img = Image.fromarray(img, "YCbCr").convert("RGB")
         img = np.asarray(img)
