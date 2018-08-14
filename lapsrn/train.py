@@ -9,6 +9,7 @@ import nnabla.communicators as C
 from nnabla.monitor import Monitor, MonitorSeries, MonitorTimeElapsed, MonitorImageTile
 from nnabla.ext_utils import get_extension_context
 import nnabla.utils.save as save
+from functools import reduce
 
 from datasets import data_iterator_lapsrn
 from args import get_args, save_args
@@ -63,9 +64,11 @@ def train(args):
         monitor_image_sr_list.append(monitor_image_sr)
 
     # DataIterator
-    img_paths = ["/home/kzky/nnabla_data/BSDS200", 
-                 "/home/kzky/nnabla_data/General100", 
-                 "/home/kzky/nnabla_data/T91"]
+    from os.path import expanduser
+    home = expanduser("~")
+    img_paths = ["{}/nnabla_data/BSDS200".format(home), 
+                 "{}/nnabla_data/General100".format(home), 
+                 "{}/nnabla_data/T91".format(home)]
     di = data_iterator_lapsrn(img_paths, batch_size=args.batch_size, shuffle=True)
     
     # Train loop
