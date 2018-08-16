@@ -46,8 +46,10 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
         k = np.random.choice([0, 90, 180, 270], size=1)
         img = img.rotate(k, expand=True) if k != 0 else img
 
-        # Crop
+        # To numpy
         img = np.asarray(img)
+
+        # Crop
         h, w, _ = img.shape
         if h > ih and w > iw:
             rh = np.random.choice(np.arange(h - ih), size=1)[0]
@@ -58,14 +60,15 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
         if np.random.randint(2):
             img = img[:, ::-1, :]
 
-        # img(YCrCb): [1, H, W, C]
+        # img(YCrCb): [H, W, C]
         return img, None
 
 
     def load_func_test(i):
         assert batch_size == 1
         img = Image.open(imgs[i]).convert("YCbCr")
-        # img(YCrCb): [1, H, W, C]
+        img = np.asarray(img)
+        # img(YCrCb): [H, W, C]
         return img, None
 
 
