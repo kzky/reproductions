@@ -45,6 +45,8 @@ class MonitorImageTileWithName(MonitorImageTile):
 
 
 def psnr(x, y, max_=255):
+    x = x.astype(np.float64)
+    y = y.astype(np.float64)
     mse = np.mean((x - y) ** 2)
     return 10 * np.log10(max_ ** 2 / mse)
 
