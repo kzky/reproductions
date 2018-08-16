@@ -69,13 +69,14 @@ def evaluate(args):
         x_data = di.next()[0]
         x_hr = x_data
         b, h, w, c = x_data.shape
+
         if h % (2 ** args.S) != 0 or w % (2 ** args.S) != 0:
             # align the original image size to N-times downsample and upsample results
             h_ = h + 2 ** args.S - h % (2 ** args.S)
             w_ = w + 2 ** args.S - w % (2 ** args.S)
-            x_data = resize(x_data, h_, w_)
+            x_data = resize(x_data, w_, h_)
             b, h, w, c = x_data.shape
-            nn.logger.warn("Input shape is coerced to (h, w, c)=({})".format(h, w, c))
+            nn.logger.warn("Input shape is coerced to (h, w, c)=({}, {}, {})".format(h, w, c))
 
         # Create model
         x_HR = nn.Variable([1, 1, h, w])
