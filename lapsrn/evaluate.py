@@ -14,7 +14,7 @@ import nnabla.utils.save as save
 from helpers import (get_solver, resize, upsample, downsample,
                      split, to_BCHW, to_BHWC, normalize, ycbcr_to_rgb, 
                      normalize_method, denormalize,
-                     psnr)
+                     psnr, center_crop)
 from args import get_args, save_args
 from models import lapsrn
 from datasets import data_iterator_lapsrn
@@ -65,16 +65,9 @@ def evaluate(args):
     for i in range(di.size):
         # Read data
         x_data = di.next()[0]
+        x_data = center_crop(x_data, 2 ** args.S)
         x_hr = x_data
         b, h, w, c = x_data.shape
-
-        if h % (2 ** args.S) != 0 or w % (2 ** args.S) != 0:
-            # align the original image size to N-times downsample and upsample results
-            h_ = h + 2 ** args.S - h % (2 ** args.S)
-            w_ = w + 2 ** args.S - w % (2 ** args.S)
-            x_data = resize(x_data, w_, h_)
-            b, h, w, c = x_data.shape
-            nn.logger.warn("Input shape is coerced to (h, w, c)=({}, {}, {})".format(h, w, c))
 
         # Create model
         x_HR = nn.Variable([1, 1, h, w])
