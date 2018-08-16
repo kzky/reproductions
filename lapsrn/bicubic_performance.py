@@ -2,6 +2,7 @@ import numpy as np
 from PIL import Image
 import cv2
 import os
+from matlab_imresize import imresize
 
 
 def psnr(x, y, max_=255):
@@ -34,7 +35,14 @@ def main():
     print("PSNR (CV2) = {}".format(psnr(img, img_r)))
 
     # Matlab (python-impl)
-    #TODO: 
+    img = Image.open(img_path)
+    w, h = img.size
+    sw, sh = w // 4, h // 4
+    img_array = np.asarray(img)
+    img_array_r = imresize(img_array, output_shape=(sh, sw))
+    img_array_r = imresize(img_array_r, output_shape=(h, w))
+    print("PSNR (Matlab) = {}".format(psnr(img_array, img_array_r)))
+
 
 if __name__ == '__main__':
     main()
