@@ -61,12 +61,13 @@ def normalize_method(x):
     return x
 
 
-def resize(x_data, sh, sw):
+def resize(x_data, sw, sh):
     b, h, w, c = x_data.shape
     x_data_ = []
-    for x in x_data.astype(np.uint8):
+    x_data = np.round(x_data).astype(np.uint8)
+    for x in x_data:
         x = x.reshape((h, w)) if c == 1 else x.reshape((h, w, c))
-        x = Image.fromarray(x).resize((sh, sw), Image.BICUBIC)
+        x = Image.fromarray(x).resize((sw, sh), Image.BICUBIC)
         x = np.asarray(x)
         x = x.reshape((sh, sw, c))
         x_data_.append(x)
@@ -80,14 +81,14 @@ def upsample(x_data, s):
     b, h, w, c = x_data.shape
     sh = h * s
     sw = w * s
-    return resize(x_data, sh, sw)
+    return resize(x_data, sw, sh)
 
 
 def downsample(x_data, s):
     b, h, w, c = x_data.shape
     sh = h // s
     sw = w // s
-    return resize(x_data, sh, sw)
+    return resize(x_data, sw, sh)
 
 
 def split(x):
@@ -119,7 +120,8 @@ def denormalize(x, de=255.0):
 def ycbcr_to_rgb(y, cb, cr):
     imgs = []
     imgs_ = np.concatenate([y, cb, cr], axis=3)
-    for img in imgs_.astype(np.uint8):
+    imgs_ = np.round(imgs_).astype(np.uint8)
+    for img in imgs_:
         img = Image.fromarray(img, "YCbCr").convert("RGB")
         img = np.asarray(img)
         imgs.append(img)
