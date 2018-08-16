@@ -132,9 +132,6 @@ def evaluate(args):
         monitor_psnr_lr.add(i, psnr(x_hr, x_lr, 2 ** args.S))
         monitor_psnr_sr.add(i, psnr(x_hr, x_sr, 2 ** args.S))
 
-        print("Bicubic: {}".format(psnr(x_hr, x_lr, 2 ** args.S)))
-        print("SuperRes: {}".format(psnr(x_hr, x_sr, 2 ** args.S)))
-
         # Clear memory since the input is varaible size.
         import nnabla_ext.cuda
         nnabla_ext.cuda.clear_memory_cache()
