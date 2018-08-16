@@ -107,7 +107,12 @@ screen -Sdm "adam-56" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-
 screen -Sdm "adam-57" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_57 --decay-rate 0 --share-type across-pyramid --S 3"
 screen -Sdm "adam-58" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_58 --decay-rate 0 --share-type within-pyramid --S 3"
 
+# Decay at every 50 epoch
+screen -Sdm "adam-59" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_59 --share-type across-pyramid --S 2"
+screen -Sdm "adam-60" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_60 --share-type within-pyramid --S 2"
 
+screen -Sdm "adam-61" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_61 --share-type across-pyramid --S 2 --R 1 --D 10"
+screen -Sdm "adam-62" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_62 --share-type within-pyramid --S 2 --R 1 --D 10"
 
 # Evaluate
 ## 51
