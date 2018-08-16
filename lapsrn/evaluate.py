@@ -11,8 +11,6 @@ from nnabla.monitor import Monitor, MonitorSeries, MonitorTimeElapsed, MonitorIm
 from nnabla.ext_utils import get_extension_context
 import nnabla.utils.save as save
 
-import cv2
-
 from helpers import (get_solver, resize, upsample, downsample,
                      split, to_BCHW, to_BHWC, normalize, ycbcr_to_rgb, 
                      normalize_method, denormalize,
