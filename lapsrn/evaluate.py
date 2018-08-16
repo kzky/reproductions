@@ -129,11 +129,11 @@ def evaluate(args):
             cr = upsample(cr, 2 ** (s + 1))
             x_sr = to_BCHW(ycbcr_to_rgb(denormalize(to_BHWC(np.clip(x_SR.d, 0.0, 1.0))), cb, cr))
             monitor_image_sr_list[s].add(i, x_sr)
-        monitor_psnr_lr.add(i, psnr(x_hr, x_lr))
-        monitor_psnr_sr.add(i, psnr(x_hr, x_sr))
+        monitor_psnr_lr.add(i, psnr(x_hr, x_lr, 2 ** args.S))
+        monitor_psnr_sr.add(i, psnr(x_hr, x_sr, 2 ** args.S))
 
-        print("Bicubic: {}".format(psnr(x_hr, x_lr)))
-        print("SuperRes: {}".format(psnr(x_hr, x_sr)))
+        print("Bicubic: {}".format(psnr(x_hr, x_lr, 2 ** args.S)))
+        print("SuperRes: {}".format(psnr(x_hr, x_sr, 2 ** args.S)))
 
         # Clear memory since the input is varaible size.
         import nnabla_ext.cuda

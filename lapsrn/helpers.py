@@ -44,9 +44,10 @@ class MonitorImageTileWithName(MonitorImageTile):
         imsave(path, tile)
 
 
-def psnr(x, y, max_=255):
-    x = x.astype(np.float64)
-    y = y.astype(np.float64)
+def psnr(x, y, border=4, max_=255):
+    _, _, h, w = x.shape
+    x = x[:, :, border:h-border, border:w-border].astype(np.float64)
+    y = y[:, :, border:h-border, border:w-border].astype(np.float64)
     mse = np.mean((x - y) ** 2)
     return 10 * np.log10(max_ ** 2 / mse)
 
