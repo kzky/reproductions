@@ -83,9 +83,9 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
 
 if __name__ == '__main__':
     # LapSRN
-    img_paths = ["/home/kzky/nnabla_data/BSD200", 
+    img_paths = ["/home/kzky/nnabla_data/BSDS200", 
                  "/home/kzky/nnabla_data/General100", 
-                 "/home/kzky/nnabla_data/T90"]
+                 "/home/kzky/nnabla_data/T91"]
     batch_size = 4
     train = True
     test_data = "Set5"
