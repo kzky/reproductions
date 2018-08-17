@@ -254,7 +254,7 @@ def convblock(h, scopename, maps, kernel, pad=(1, 1), stride=(1, 1), upsample=Tr
     with nn.parameter_scope(scopename):
         if upsample:
             h = F.unpooling(h, kernel=(2, 2))
-        h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=False, test=test)
+        h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=True, test=test)
         h = PF.batch_normalization(h, batch_stat=not test)
     return h
 
@@ -290,7 +290,7 @@ def resblock_g(h, y, scopename,
                upsample=True, test=False, sn=True):
     """Residual block for generator"""
     s = h
-
+    _, c, _, _ = h.shape
     with nn.parameter_scope(scopename):
         # BN -> Relu -> Upsample -> Conv
         with nn.parameter_scope("conv1"):
@@ -299,54 +299,88 @@ def resblock_g(h, y, scopename,
             if upsample:
                 h = F.unpooling(h, kernel=(2, 2))
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
-                            with_bias=False, sn=sn, test=test)
+                            with_bias=True, sn=sn, test=test)
         
         # BN -> Relu -> Conv
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, sn=sn)
             h = F.relu(h, inplace=True)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
-                            with_bias=False, sn=sn, test=test)
+                            with_bias=True, sn=sn, test=test)
             
         # Shortcut: Upsample -> Conv
-        with nn.parameter_scope("shortcut"):
-            if upsample:
-                s = F.unpooling(s, kernel=(2, 2))
-            s = convolution(s, maps, kernel=kernel, pad=pad, stride=stride, 
-                            with_bias=False, sn=sn, test=test)
+        if upsample:
+            s = F.unpooling(s, kernel=(2, 2))
+        if c != maps or upsample:
+            with nn.parameter_scope("shortcut"):
+                s = convolution(s, maps, kernel=(1, 1), pad=(0, 0), stride=(1, 1), 
+                                with_bias=True, sn=sn, test=test)
     #return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
     return F.add2(h, s)
 
 
 def resblock_d(h, y, scopename,
-               n_classes, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
+               n_classes, maps1, maps2=None, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
                downsample=True, bn=False, test=False, sn=True):
     """Residual block for discriminator"""
     s = h
-
+    _, c, _, _ = h.shape
+    maps2 = maps1 if maps2 is None else maps2
     with nn.parameter_scope(scopename):
         # BN -> LeakyRelu -> Conv
         with nn.parameter_scope("conv1"):
             h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
             h = F.leaky_relu(h, 0.2)
-            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
-                            with_bias=False, sn=sn, test=test)
+            h = convolution(h, maps1, kernel=kernel, pad=pad, stride=stride, 
+                            with_bias=True, sn=sn, test=test)
         
         # BN -> LeakyRelu -> Conv -> Downsample
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
             h = F.leaky_relu(h, 0.2)
-            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
-                            with_bias=False, sn=sn, test=test)
+            h = convolution(h, maps2, kernel=kernel, pad=pad, stride=stride, 
+                            with_bias=True, sn=sn, test=test)
+            if downsample:
+                h = F.average_pooling(h, kernel=(2, 2))
+            
+        # Shortcut: Conv -> Downsample
+        if c != maps2 or downsample:
+            with nn.parameter_scope("shortcut"):
+                s = convolution(s, maps2, kernel=(1, 1), pad=(0, 0), stride=(1, 1), 
+                                with_bias=True, sn=sn, test=test)
+        if downsample:
+            s = F.average_pooling(s, kernel=(2, 2))
+    #return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
+    return F.add2(h, s)
+
+def optblock_d(h, y, scopename,
+               n_classes, maps1, maps2=None, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
+               downsample=True, bn=False, test=False, sn=True):
+    """Optimized block for discriminator"""
+    s = h
+    _, c, _, _ = h.shape
+    maps2 = maps1 if maps2 is None else maps2
+    with nn.parameter_scope(scopename):
+        # Conv -> LeakyRelu
+        with nn.parameter_scope("conv1"):
+            h = convolution(h, maps1, kernel=kernel, pad=pad, stride=stride, 
+                            with_bias=True, sn=sn, test=test)
+        
+        # BN -> Conv
+        with nn.parameter_scope("conv2"):
+            h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
+            h = F.leaky_relu(h, 0.2)
+            h = convolution(h, maps2, kernel=kernel, pad=pad, stride=stride, 
+                            with_bias=True, sn=sn, test=test)
             if downsample:
                 h = F.average_pooling(h, kernel=(2, 2))
             
         # Shortcut: Conv -> Downsample
         with nn.parameter_scope("shortcut"):
-            s = convolution(s, maps, kernel=kernel, pad=pad, stride=stride, 
-                            with_bias=False, sn=sn, test=test)
             if downsample:
                 s = F.average_pooling(s, kernel=(2, 2))
+            s = convolution(s, maps2, kernel=(1, 1), pad=(0, 0), stride=(1, 1), 
+                            with_bias=True, sn=sn, test=test)
     #return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
     return F.add2(h, s)
 
@@ -356,7 +390,7 @@ def generator(z, y, scopename="generator",
     sn = False
     with nn.parameter_scope(scopename):
         # Affine
-        h = affine(z, maps * s * s, with_bias=False, sn=sn, test=test)
+        h = affine(z, maps * s * s, with_bias=True, sn=sn, test=test)
         h = F.reshape(h, [h.shape[0]] + [maps, s, s])
         # Resblocks
         h = resblock_g(h, y, "block-1", n_classes, maps, test=test, sn=sn)
@@ -366,8 +400,8 @@ def generator(z, y, scopename="generator",
         h = resblock_g(h, y, "block-4", n_classes, maps // 8, test=test, sn=sn)
         h = resblock_g(h, y, "block-5", n_classes, maps // 16, test=test, sn=sn)
         # Last convoltion
-        h = CCBN(h, y, n_classes, test=test, sn=sn)
-        h = F.relu(h, inplace=True)
+        h = BN(h, test=test)
+        h = F.relu(h)
         h = convolution(h, 3, kernel=(3, 3), pad=(1, 1), stride=(1, 1), sn=sn, test=test)
         x = F.tanh(h)
     return x
@@ -377,13 +411,13 @@ def discriminator(x, y, scopename="discriminator",
                   maps=64, n_classes=1000, s=4, bn=False, test=False, sn=True):
     with nn.parameter_scope(scopename):
         # Resblocks
-        h = resblock_d(x, y, "block-1", n_classes, maps, downsample=False, test=test, sn=sn)
-        h = resblock_d(h, y, "block-2", n_classes, maps * 2, test=test, sn=sn)
-        h = resblock_d(h, y, "block-3", n_classes, maps * 4, test=test, sn=sn)
+        h = optblock_d(x, y, "block-1", n_classes, maps, downsample=False, test=test, sn=sn)
+        h = resblock_d(h, y, "block-2", n_classes, maps * 1, maps * 2, test=test, sn=sn)
+        h = resblock_d(h, y, "block-3", n_classes, maps * 2, maps * 4, test=test, sn=sn)
         #h = attnblock(h, sn=sn, test=test)  # not use attention for discriminator
-        h = resblock_d(h, y, "block-4", n_classes, maps * 8, test=test, sn=sn)
-        h = resblock_d(h, y, "block-5", n_classes, maps * 16, test=test, sn=sn)
-        h = resblock_d(h, y, "block-6", n_classes, maps * 16, test=test, sn=sn)
+        h = resblock_d(h, y, "block-4", n_classes, maps * 4, maps * 8, test=test, sn=sn)
+        h = resblock_d(h, y, "block-5", n_classes, maps * 8, maps * 16, test=test, sn=sn)
+        h = resblock_d(h, y, "block-6", n_classes, maps * 16, downsample=False, test=test, sn=sn)
         # Last affine
         h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
         h = F.leaky_relu(h, 0.2)
@@ -407,17 +441,30 @@ def gan_loss(d_x_fake, d_x_real=None):
 if __name__ == '__main__':
     b, c, h, w = 4, 3, 128, 128
     latent = 128
-
+    print("===== Generator =====")
     print("Generator shape")
     z = F.randn(shape=[b, latent])
     y = nn.Variable([b])
     y.d = np.random.choice(np.arange(100), b)
     x = generator(z, y)
     print("x.shape = {}".format(x.shape))
+    n_params = 0
+    with nn.parameter_scope("generator"):
+      for n, p in nn.get_parameters().items():
+        print(n, p)
+        n_params += np.prod(p.shape)
+    print("Total params (Gen) = {}".format(n_params))
 
+    print("===== Discriminator =====")
     print("Discriminator shape")
     d = discriminator(x, y)
     print("d.shape = {}".format(d.shape))
+    n_params = 0
+    with nn.parameter_scope("discriminator"):
+      for n, p in nn.get_parameters().items():
+        print(n, p)
+        n_params += np.prod(p.shape)
+    print("Total params (Dis) = {}".format(n_params))
 
     # print("Parameters")
     # for n, v in nn.get_parameters(grad_only=False).items():
