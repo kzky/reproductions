@@ -36,8 +36,11 @@ def train(args):
                    args.use_bn, share_type=args.share_type)
     for s in range(args.S):
         x_SRs[s].persistent = True
+    # loss = reduce(lambda x, y: x + y, 
+    #               [F.mean(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs[1:], x_SRs)])
+
     loss = reduce(lambda x, y: x + y, 
-                  [F.mean(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs[1:], x_SRs)])
+                  [F.sum(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs[1:], x_SRs)])
 
     # Solver
     solver = get_solver(args.solver)(args.lr)

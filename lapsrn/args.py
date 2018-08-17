@@ -73,10 +73,11 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000,
                         help="Learning rate for generator")
     
     parser.add_argument("--decay-at", "-D", type=int, nargs='+', 
-                        # default=[10000, 20000, 30000, 40000, 50000, 
-                        #          60000, 70000, 80000, 90000, 100000],
-                        default=[50000, 
-                                 100000],
+                        default=[10000, 20000, 30000, 40000, 50000, 
+                                 60000, 70000, 80000, 90000, 100000,
+                                 110000, 120000, 130000, 140000],
+                        # default=[50000, 
+                        #          100000],
                         help="Decay-at `iteration` for learning rate.")
     parser.add_argument("--decay-rate", type=float, default=1e-4, 
                         help="Decay rate")

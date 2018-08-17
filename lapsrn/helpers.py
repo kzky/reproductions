@@ -134,9 +134,9 @@ def center_crop(x, s):
     _, h, w, _ = x.shape
     ch = h - h % s
     cw = w - w % s
-    top = (h - ch) / 2
-    bottom = (h + ch) / 2
-    left = (w - cw) / 2
-    right = (w + cw) / 2
+    top = (h - ch) // 2
+    bottom = (h + ch) // 2
+    left = (w - cw) // 2
+    right = (w + cw) // 2
     x_crop = x[:, top:bottom, left:right, :]
     return x_crop

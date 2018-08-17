@@ -33,7 +33,7 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
         # To YCbCr
         img = img.convert("YCbCr")
 
-        # Resize in [0.5 1.0]
+        # Resize
         w, h = img.size
         if h < ih or w < iw:  # ensure that size >= (ih, iw)
             img = img.resize((iw, ih),  Image.BICUBIC)
@@ -56,9 +56,11 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
             rw = np.random.choice(np.arange(w - iw), size=1)[0]
             img = img[rh:rh+ih, rw:rw+iw, :]
 
-        # Flip horizontally
+        # Flip horizontally and/or virtially
         if np.random.randint(2):
             img = img[:, ::-1, :]
+        if np.random.randint(2):
+            img = img[::-1, :, :]
 
         # img(YCrCb): [H, W, C]
         return img, None

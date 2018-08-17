@@ -114,6 +114,19 @@ screen -Sdm "adam-60" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-
 screen -Sdm "adam-61" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_61 --share-type across-pyramid --S 2 --R 1 --D 10"
 screen -Sdm "adam-62" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_62 --share-type within-pyramid --S 2 --R 1 --D 10"
 
+# Decay at every 50 epoch, not use General, and use random resize from [0.5, 0.75, 1.0]
+screen -Sdm "adam-63" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_63 --share-type across-pyramid --S 2"
+screen -Sdm "adam-64" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_64 --share-type within-pyramid --S 2"
+screen -Sdm "adam-65" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_65 --share-type across-pyramid --S 3"
+screen -Sdm "adam-66" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_66 --share-type within-pyramid --S 3"
+
+# Decay at every 10 epoch and use sum instead of mean
+screen -Sdm "adam-67" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_67 --share-type across-pyramid --S 2"
+screen -Sdm "adam-68" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_68 --share-type within-pyramid --S 2"
+screen -Sdm "adam-69" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_69 --share-type across-pyramid --S 3"
+screen -Sdm "adam-70" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_70 --share-type within-pyramid --S 3"
+
+
 # Evaluate
 ## 51
 python evaluate.py -d 1 -c cudnn --valid-data-path ~/nnabla_data/Set14 --monitor-path result/example_51 --model-load-path result/example_51/param_149999.h5 --share-type across-pyramid --S 2
