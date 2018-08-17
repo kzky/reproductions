@@ -192,7 +192,8 @@ def affine(inp, n_outmaps,
     
 
 @parametric_function_api("embed")
-def embed(inp, n_inputs, n_features, itr=1, fix_parameters=False, sn=True, test=False):
+def embed(inp, n_inputs, n_features, initializer=None,
+          itr=1, fix_parameters=False, sn=True, test=False):
     """Embed.
 
     Embed slices a matrix/tensor with indexing array/tensor
@@ -209,11 +210,8 @@ def embed(inp, n_inputs, n_features, itr=1, fix_parameters=False, sn=True, test=
         ~nnabla.Variable: Output with shape :math:`(I_0, ..., I_N, W_1, ..., W_M)`
     """
 
-    # l, u = calc_uniform_lim_glorot(n_inputs, n_features)
-    # w = get_parameter_or_create("W", [n_inputs, n_features],
-    #                             UniformInitializer((l, u)), not fix_parameters)
     w = get_parameter_or_create("W", [n_inputs, n_features],
-                                ConstantInitializer(1.0), not fix_parameters)
+                                initializer, not fix_parameters)
     w_sn = spectral_normalization_for_affine(w, itr=itr, test=test) if sn else w
     return F.embed(inp, w_sn)
     
@@ -226,6 +224,8 @@ def BN(h, test=False):
 @parametric_function_api("ccbn")
 def CCBN(h, y, n_classes, test=False, fix_parameters=False, sn=True):
     """Categorical Conditional Batch Normaliazation"""
+    sn = False
+    
     # Call the batch normalization once
     shape_stat = [1 for _ in h.shape]
     shape_stat[1] = h.shape[1]
@@ -237,14 +237,15 @@ def CCBN(h, y, n_classes, test=False, fix_parameters=False, sn=True):
         "var", shape_stat, ConstantInitializer(0), False)
     h = F.batch_normalization(h, beta_tmp, gamma_tmp, mean, var, batch_stat=not test)
 
+    #TODO: should use SNEmbed?
     # Condition the gamma and beta with the class label
     b, c = h.shape[0:2]
     with nn.parameter_scope("gamma"):
-        gamma = embed(y, n_classes, c, sn=sn, test=test)
+        gamma = embed(y, n_classes, c, initializer=ConstantInitializer(1.0), sn=sn, test=test)
         gamma = F.reshape(gamma, [b, c] + [1 for _ in range(len(h.shape[2:]))])
         gamma = F.broadcast(gamma, h.shape)
     with nn.parameter_scope("beta"):
-        beta = embed(y, n_classes, c, sn=sn, test=test)
+        beta = embed(y, n_classes, c, initializer=ConstantInitializer(0.0), sn=sn, test=test)
         beta = F.reshape(beta, [b, c] + [1 for _ in range(len(h.shape[2:]))])
         beta = F.broadcast(beta, h.shape)
     return gamma * h + beta
@@ -424,7 +425,9 @@ def discriminator(x, y, scopename="discriminator",
         h = F.average_pooling(h, h.shape[2:])
         o0 = affine(h, 1, sn=sn, test=test)
         # Project discriminator
-        e = embed(y, n_classes, h.shape[1], name="projection", sn=sn, test=test)
+        l, u = calc_uniform_lim_glorot(n_classes, h.shape[1])
+        e = embed(y, n_classes, h.shape[1], initializer=UniformInitializer((l, u)), 
+                  name="projection", sn=sn, test=test)
         h = F.reshape(h, h.shape[0:2], inplace=False)
         o1 = F.sum(h * e, axis=1, keepdims=True)
     return o0 + o1
