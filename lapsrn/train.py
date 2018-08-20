@@ -36,11 +36,11 @@ def train(args):
                    args.use_bn, share_type=args.share_type)
     for s in range(args.S):
         x_SRs[s].persistent = True
-    # loss = reduce(lambda x, y: x + y, 
-    #               [F.mean(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs[1:], x_SRs)])
-
     loss = reduce(lambda x, y: x + y, 
-                  [F.sum(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs[1:], x_SRs)])
+                  [F.mean(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs[1:], x_SRs)])
+
+    # loss = reduce(lambda x, y: x + y, 
+    #               [F.sum(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs[1:], x_SRs)])
 
     # Solver
     solver = get_solver(args.solver)(args.lr)
@@ -69,11 +69,21 @@ def train(args):
     # DataIterator
     from os.path import expanduser
     home = expanduser("~")
-    img_paths = ["{}/nnabla_data/BSDS200".format(home), 
-                 "{}/nnabla_data/General100".format(home), 
-                 "{}/nnabla_data/T91".format(home)]
-    di = data_iterator_lapsrn(img_paths, batch_size=args.batch_size, shuffle=True)
-    
+    # img_paths = ["{}/nnabla_data/BSDS200".format(home), 
+    #              "{}/nnabla_data/General100".format(home), 
+    #              "{}/nnabla_data/T91".format(home)]
+    # Very strange why paper and pytorch-impl achieved very high validation metric, e.g., PSNR,
+    # since there are not always images in train dataset like ones in test dataset.
+    # Also, there are issues about the reproducibility in both author's and pytorch' repository.
+    # img_paths = ["{}/nnabla_data/BSDS200".format(home), 
+    #              "{}/nnabla_data/General100".format(home), 
+    #              "{}/nnabla_data/T91".format(home), 
+    #              "{}/nnabla_data/Set5".format(home), 
+    #              "{}/nnabla_data/Set14".format(home), 
+    #              "{}/nnabla_data/Manga109".format(home), 
+    #              "{}/nnabla_data/Urban100".format(home)]
+    di = data_iterator_lapsrn(args.img_paths, batch_size=args.batch_size, shuffle=True)
+        
     # Train loop
     for i in range(args.max_iter):
         # Feed data

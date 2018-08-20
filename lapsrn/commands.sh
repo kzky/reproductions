@@ -126,6 +126,27 @@ screen -Sdm "adam-68" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-
 screen -Sdm "adam-69" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_69 --share-type across-pyramid --S 3"
 screen -Sdm "adam-70" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_70 --share-type within-pyramid --S 3"
 
+# Decay at every 10 epoch and use sum instead of mean, BUI // -> /
+screen -Sdm "adam-71" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_71 --share-type within-pyramid --S 2 --R 1 --D 10"
+screen -Sdm "adam-72" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_72 --share-type within-pyramid --S 3 --R 1 --D 10"
+
+# Decay at every 50 epoch, BUI // -> /, using all datasets
+screen -Sdm "adam-73" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_73 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/General100 /home/kzky/nnabla_data/T91 /home/kzky/nnabla_data/Set5 /home/kzky/nnabla_data/Set14 /home/kzky/nnabla_data/Manga109 /home/kzky/nnabla_data/Urban100"
+screen -Sdm "adam-74" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_74 --share-type within-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/General100 /home/kzky/nnabla_data/T91 /home/kzky/nnabla_data/Set5 /home/kzky/nnabla_data/Set14 /home/kzky/nnabla_data/Manga109 /home/kzky/nnabla_data/Urban100"
+
+# Decay at every 50 epoch, BUI // -> /, using L2-loss
+screen -Sdm "adam-75" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_75 --share-type across-pyramid --S 2 --loss l2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/General100 /home/kzky/nnabla_data/T91"
+screen -Sdm "adam-76" bash -c "python train.py -d 0 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_76 --share-type within-pyramid --S 2 --loss l2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/General100 /home/kzky/nnabla_data/T91"
+
+# Decay at every 50 epoch, BUI // -> /, using L1-loss
+screen -Sdm "adam-77" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_77 --share-type across-pyramid --S 2 --loss l1 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/General100 /home/kzky/nnabla_data/T91"
+screen -Sdm "adam-78" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_78 --share-type within-pyramid --S 2 --loss l1 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/General100 /home/kzky/nnabla_data/T91"
+
+
+# Decay at every 50 epoch, BUI // -> /, using lr=1e-3, using L2-loss
+screen -Sdm "adam-79" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-3 --monitor-path result/example_79 --share-type across-pyramid --S 2 --loss l2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/General100 /home/kzky/nnabla_data/T91"
+screen -Sdm "adam-80" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-3 --monitor-path result/example_80 --share-type within-pyramid --S 2 --loss l2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/General100 /home/kzky/nnabla_data/T91"
+
 
 # Evaluate
 ## 51

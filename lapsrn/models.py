@@ -25,7 +25,7 @@ class BilinearUpsampleInitiazlier(I.BaseInitializer):
         else:
             c = f - 0.5
         og = np.ogrid[:k, :k]
-        k = (1 - abs(og[0] - c) // f) * (1 - abs(og[1] - c) // f)
+        k = (1 - abs(og[0] - c) / f) * (1 - abs(og[1] - c) / f)
         
         self.w_init = np.zeros((omap, imap) + kernel).astype(np.float32)
         self.w_init[:omap, :imap, :, :] = k

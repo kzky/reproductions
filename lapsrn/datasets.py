@@ -25,6 +25,9 @@ def data_iterator_lapsrn(img_paths, batch_size=64, ih=128, iw=128,
     imgs = []
     for img_path in img_paths:
         imgs += glob.glob("{}/*.png".format(img_path))
+        imgs += glob.glob("{}/*.PNG".format(img_path))
+        imgs += glob.glob("{}/*.jpeg".format(img_path))
+        imgs += glob.glob("{}/*.JPEG".format(img_path))
 
 
     def load_func_train(i):
