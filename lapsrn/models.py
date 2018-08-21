@@ -13,7 +13,7 @@ from nnabla.parametric_functions import parametric_function_api
 
 import nnabla.initializer as I
 
-class BilinearUpsampleInitiazlier(I.BaseInitializer):
+class BilinearUpsampleInitializer(I.BaseInitializer):
 
     def __init__(self, imap=64, omap=1, kernel=(4, 4)):
         assert kernel[0] == kernel[1]
@@ -25,7 +25,7 @@ class BilinearUpsampleInitiazlier(I.BaseInitializer):
         else:
             c = f - 0.5
         og = np.ogrid[:k, :k]
-        k = (1 - abs(og[0] - c) / f) * (1 - abs(og[1] - c) / f)
+        k = (1 - abs(og[0] - c) // f) * (1 - abs(og[1] - c) // f)
         
         self.w_init = np.zeros((omap, imap) + kernel).astype(np.float32)
         self.w_init[:omap, :imap, :, :] = k
@@ -34,13 +34,17 @@ class BilinearUpsampleInitiazlier(I.BaseInitializer):
     def __call__(self, ):
         return self.w_init
 
-BUI = BilinearUpsampleInitiazlier
+BUI = BilinearUpsampleInitializer
 
 def convolution(x, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name=None):
-    #todo: he_backward is good?
-    std = I.calc_normal_std_he_forward(x.shape[1], maps, kernel)
+    std = I.calc_normal_std_he_backward(x.shape[1], maps, kernel)
     initizlier = I.NormalInitializer(std)
-    return PF.convolution(x, maps, kernel, pad, stride, name=name, with_bias=False)
+    return PF.convolution(x, maps, kernel, pad, stride, name=name, with_bias=True)
+
+def first_conv(x, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1)):
+    init_sigma = 1e-3  # magic number
+    initizlier = I.NormalInitializer(init_sigma)
+    return PF.convolution(x, maps, kernel, pad, stride, name="first-conv", with_bias=True)
 
 
 def block(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
@@ -61,12 +65,12 @@ def block(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
 
 
 def upsample(x, maps=64, kernel=(4, 4), pad=(1, 1), stride=(2, 2), 
-             initializer=None, name=None):
+             initializer=None, with_bias=True, name=None):
     if not initializer:
         std = I.calc_normal_std_he_forward(x.shape[1], maps, kernel)
         initizlier = I.NormalInitializer(std)
     with nn.parameter_scope("upsample-{}".format(name)):
-        return PF.deconvolution(x, maps, kernel, pad, stride, with_bias=False)
+        return PF.deconvolution(x, maps, kernel, pad, stride, with_bias=with_bias)
 
 
 def residue(x, maps=3, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name=None):
@@ -99,13 +103,13 @@ def lapsrn(x, maps=64, S=3, R=8, D=5, skip_type="ss",
            bn=False, test=False, share_type="across-pyramid"):
     u_irbs = []
     u_irb = x
-    u_feb = convolution(x, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name="first-conv")
+    u_feb = first_conv(x, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1))
     for s in range(S):
         name = share_type if share_type == "across-pyramid" else str(s)
         u_feb, r = feature_extractor(u_feb, maps, R=R, D=D, 
                                      skip_type=skip_type, bn=bn, test=test, 
                                      name=name)
-        u_irb = upsample(u_irb, 1, initializer=BUI(u_feb.shape[1], 1), name=name) + r
+        u_irb = upsample(u_irb, 1, initializer=BUI(u_feb.shape[1], 1), with_bias=False, name=name) + r
         u_irbs.append(u_irb)
     return u_irbs
 

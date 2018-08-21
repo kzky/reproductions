@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000, 
+def get_args(batch_size=16, ih=128, iw=128, max_iter=1000 * 1000, save_interval=1000, 
              S=3, R=8, D=5, maps=64):
     """
     Get command line arguments.
@@ -69,7 +69,9 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000,
                         help="Model load path to a h5 file used in generation and validation.")
     parser.add_argument("--solver", type=str, default="Momentum", 
                         help="Solver")
-    parser.add_argument("--lr", type=float, default=1e-5,
+    parser.add_argument("--lr", type=float, default=5e-6,
+                        help="Learning rate for generator")
+    parser.add_argument("--min-lr", type=float, default=1e-6,
                         help="Learning rate for generator")
     parser.add_argument("--img-paths", type=str, nargs='+', 
                         default=["BSDS200", 
@@ -77,14 +79,13 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=150000, save_interval=1000,
                                  "T91"],
                         help="List of path to dataset")
     parser.add_argument("--decay-at", "-D", type=int, nargs='+', 
-                        # default=[10000, 20000, 30000, 40000, 50000, 
-                        #          60000, 70000, 80000, 90000, 100000,
-                        #          110000, 120000, 130000, 140000],
-                        default=[50000, 
-                                 100000],
+                        default=[100000, 200000, 300000, 400000, 500000, 
+                                 600000, 700000, 800000, 900000],
                         help="Decay-at `iteration` for learning rate.")
-    parser.add_argument("--decay-rate", type=float, default=1e-4, 
-                        help="Decay rate")
+    parser.add_argument("--lr-decay-rate", type=float, default=0.5,  
+                        help="Learning rate decay rate")
+    parser.add_argument("--weight-decay-rate", type=float, default=1e-4, 
+                        help="Weight decay rate")
     parser.add_argument("--train-data-path", "-T", type=str, default="",
                         help='Path to training data')
     parser.add_argument("--valid-data-path", "-V", type=str, default="",

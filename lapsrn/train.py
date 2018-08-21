@@ -16,7 +16,7 @@ from args import get_args, save_args
 from models import get_loss, lapsrn
 from helpers import (get_solver, upsample, downsample, 
                      split, to_BCHW, to_BHWC, normalize, ycbcr_to_rgb, 
-                     normalize_method)
+                     normalize_method, check_grads)
 
 def train(args):
     # Context
@@ -37,14 +37,16 @@ def train(args):
     for s in range(args.S):
         x_SRs[s].persistent = True
     loss = reduce(lambda x, y: x + y, 
-                  [F.mean(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs[1:], x_SRs)])
-
-    # loss = reduce(lambda x, y: x + y, 
-    #               [F.sum(get_loss(args.loss)(x, y)) for x, y in zip(x_LRs[1:], x_SRs)])
+                  [F.mean(get_loss(args.loss)(x, y)) for x, y in zip(x_SRs, x_LRs[1:])])
 
     # Solver
-    solver = get_solver(args.solver)(args.lr)
-    solver.set_parameters(nn.get_parameters())
+    solver_w = get_solver(args.solver)(args.lr)
+    params_w = dict([(n, v) for n, v in nn.get_parameters().items() if not n.endswith("/b")])
+    solver_w.set_parameters(params_w)
+    params_b = dict([(n, v) for n, v in nn.get_parameters().items() if n.endswith("/b")])
+    solver_b = get_solver(args.solver)(args.lr * 0.1)
+    solver_b.set_parameters(params_b)
+    solvers = [solver_w, solver_b]
     
     # Monitor
     monitor = Monitor(args.monitor_path)
@@ -68,20 +70,6 @@ def train(args):
 
     # DataIterator
     from os.path import expanduser
-    home = expanduser("~")
-    # img_paths = ["{}/nnabla_data/BSDS200".format(home), 
-    #              "{}/nnabla_data/General100".format(home), 
-    #              "{}/nnabla_data/T91".format(home)]
-    # Very strange why paper and pytorch-impl achieved very high validation metric, e.g., PSNR,
-    # since there are not always images in train dataset like ones in test dataset.
-    # Also, there are issues about the reproducibility in both author's and pytorch' repository.
-    # img_paths = ["{}/nnabla_data/BSDS200".format(home), 
-    #              "{}/nnabla_data/General100".format(home), 
-    #              "{}/nnabla_data/T91".format(home), 
-    #              "{}/nnabla_data/Set5".format(home), 
-    #              "{}/nnabla_data/Set14".format(home), 
-    #              "{}/nnabla_data/Manga109".format(home), 
-    #              "{}/nnabla_data/Urban100".format(home)]
     di = data_iterator_lapsrn(args.img_paths, batch_size=args.batch_size, shuffle=True)
         
     # Train loop
@@ -100,15 +88,25 @@ def train(args):
         ycbcr = ycbcrs[-1]
 
         # Zerograd, forward, backward, weight-decay, update
-        solver.zero_grad()
+        for solver in solvers: solver.zero_grad()
         loss.forward(clear_no_need_grad=True)
         loss.backward(clear_buffer=True)
-        solver.weight_decay(args.decay_rate)
-        solver.update()
+        if not check_grads(solvers):
+            continue
+        for solver in solvers: solver.weight_decay(args.weight_decay_rate)
+        for solver in solvers: solver.update()
+        
 
         # LR decay
         if i in args.decay_at:
-            solver.set_learning_rate(solver.learning_rate() * 0.1)
+            # W
+            lr = solver_w.learning_rate() * args.lr_decay_rate
+            lr = lr if lr > args.min_lr else args.min_lr
+            solver_w.set_learning_rate(lr)
+            # b
+            lr = solver_b.learning_rate() * args.lr_decay_rate
+            lr = lr if lr > args.min_lr else args.min_lr
+            solver_b.set_learning_rate(lr)
         
         # Monitor and save
         monitor_loss.add(i, loss.d)

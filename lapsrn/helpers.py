@@ -59,6 +59,9 @@ def get_solver(solver):
     if solver == "Momentum":
         return S.Momentum
 
+    if solver == "Nesterov":
+        return S.Nesterov
+
 
 def normalize_method(x):
     return x
@@ -130,6 +133,7 @@ def ycbcr_to_rgb(y, cb, cr):
         imgs.append(img)
     return np.asarray(imgs)
 
+
 def center_crop(x, s):
     _, h, w, _ = x.shape
     ch = h - h % s
@@ -140,3 +144,11 @@ def center_crop(x, s):
     right = (w + cw) // 2
     x_crop = x[:, top:bottom, left:right, :]
     return x_crop
+
+
+def check_grads(solvers):
+    if np.prod([s.check_inf_or_nan_grad() for s in solvers]):
+        return False
+    else:
+        return True
+            
