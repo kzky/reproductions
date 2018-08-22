@@ -2,19 +2,20 @@ import numpy as np
 from PIL import Image
 import cv2
 import os
-from matlab_imresize import imresize
-
+from matlab_imresize import imresize, convertDouble2Byte
+from skimage.io import imsave, imread
+from skimage import img_as_float
 
 def psnr(x, y, max_=255):
-    x = x.astype(np.float64)
-    y = y.astype(np.float64)
+    x = np.clip(x, 0.0, 255.0).astype(np.float64)
+    y = np.clip(y, 0.0, 255.0).astype(np.float64)
     mse = np.mean((x - y) ** 2)
     return 10 * np.log10(max_ ** 2 / mse)
 
 
 def main():
     home = os.path.expanduser("~")
-    img_path = "{}/nnabla_data/Set14/monarch.png".format(home)
+    img_path = "{}/nnabla_data/Set14/ppt3.png".format(home)
 
     # PIL
     img = Image.open(img_path)
@@ -39,8 +40,11 @@ def main():
     w, h = img.size
     sw, sh = w // 4, h // 4
     img_array = np.asarray(img)
-    img_array_r = imresize(img_array, output_shape=(sh, sw))
+    img_array_r = imresize(img_as_float(img_array), output_shape=(sh, sw))
+    img_array_r = convertDouble2Byte(img_array_r)
+    imsave('test_lr_double.png', img_array_r)
     img_array_r = imresize(img_array_r, output_shape=(h, w))
+    imsave('test_lhr_double.png', img_array_r)
     print("PSNR (Matlab) = {}".format(psnr(img_array, img_array_r)))
 
 
