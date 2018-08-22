@@ -61,7 +61,7 @@ def block(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
             h = convolution(h, maps, kernel, pad, stride)
             h = h if not bn \
                 else PF.batch_normalization(h, batch_stat=not test, name="bn-{}".format(r))
-    return h + x
+    return h
 
 
 def upsample(x, maps=64, kernel=(4, 4), pad=(1, 1), stride=(2, 2), 
