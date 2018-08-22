@@ -106,7 +106,7 @@ def split(x):
 
 
 def to_uint8(x):
-    return np.round(x)
+    return np.round(x).astype(np.uint8)
 
 
 def to_BCHW(x):
