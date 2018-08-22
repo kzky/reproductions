@@ -157,6 +157,11 @@ screen -Sdm "adam-83" bash -c "python train.py -d 2 -b 64 --solver Momentum --lr
 screen -Sdm "adam-84" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_84 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91"
 
 
+# Use sum
+screen -Sdm "adam-85" bash -c "python train.py -d 0 -b 64 --solver Momentum --lr 5e-6 --monitor-path result/example_85 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91"
+screen -Sdm "adam-86" bash -c "python train.py -d 1 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_86 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91"
+
+
 # Evaluate
 ## 51
 python evaluate.py -d 1 -c cudnn --valid-data-path ~/nnabla_data/Set14 --monitor-path result/example_51 --model-load-path result/example_51/param_149999.h5 --share-type across-pyramid --S 2
