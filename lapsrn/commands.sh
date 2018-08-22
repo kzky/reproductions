@@ -152,6 +152,10 @@ screen -Sdm "adam-80" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-
 screen -Sdm "adam-81" bash -c "python train.py -d 2 -b 64 --solver Momentum --lr 5e-6 --monitor-path result/example_81 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91"
 screen -Sdm "adam-82" bash -c "python train.py -d 3 -b 64 --solver Momentum --lr 5e-6 --monitor-path result/example_82 --share-type within-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91"
 
+# Fix block shortcut
+screen -Sdm "adam-83" bash -c "python train.py -d 2 -b 64 --solver Momentum --lr 5e-6 --monitor-path result/example_83 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91"
+screen -Sdm "adam-84" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_84 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91"
+
 
 # Evaluate
 ## 51
