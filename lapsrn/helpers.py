@@ -70,7 +70,7 @@ def normalize_method(x):
 def resize(x_data, sw, sh):
     b, h, w, c = x_data.shape
     x_data_ = []
-    x_data = np.round(x_data).astype(np.uint8)
+    x_data = to_uint8(x_data)
     for x in x_data:
         x = x.reshape((h, w)) if c == 1 else x.reshape((h, w, c))
         x = Image.fromarray(x).resize((sw, sh), Image.BICUBIC)
@@ -105,6 +105,10 @@ def split(x):
     return y
 
 
+def to_uint8(x):
+    return np.round(x)
+
+
 def to_BCHW(x):
     # B, H, W, C -> B, C, H, W
     return x.transpose(0, 3, 1, 2)
@@ -126,7 +130,7 @@ def denormalize(x, de=255.0):
 def ycbcr_to_rgb(y, cb, cr):
     imgs = []
     imgs_ = np.concatenate([y, cb, cr], axis=3)
-    imgs_ = np.round(imgs_).astype(np.uint8)
+    imgs_ = to_uint8(imgs_)
     for img in imgs_:
         img = Image.fromarray(img, "YCbCr").convert("RGB")
         img = np.asarray(img)
