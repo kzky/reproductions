@@ -130,3 +130,24 @@ def convertDouble2Byte(I):
     return np.around(B).astype(np.uint8)
 
 
+def main():
+    import os
+    import cv2
+    # Data
+    home = os.path.expanduser("~")
+    img_path = "{}/nnabla_data/Set14/monarch.png".format(home)
+
+    # Resize
+    img = cv2.imread(img_path)
+    h, w, _ = img.shape
+    sh, sw = h // 4, w // 4
+    print((h, w), "->", (sh, sw))
+    img = img / 255.0
+    imresize(img, output_shape=(sw, sh))
+    h, w, _ = img.shape
+    print((sh, sw), "->", (h, w))
+    print(np.min(img), np.max(img))
+    
+
+if __name__ == '__main__':
+    main()
