@@ -224,17 +224,15 @@ def BN(h, test=False):
 @parametric_function_api("ccbn")
 def CCBN(h, y, n_classes, test=False, fix_parameters=False, sn=True):
     """Categorical Conditional Batch Normaliazation"""
-    sn = False
-    
     # Call the batch normalization once
     shape_stat = [1 for _ in h.shape]
     shape_stat[1] = h.shape[1]
     gamma_tmp = nn.Variable.from_numpy_array(np.ones(shape_stat))
     beta_tmp = nn.Variable.from_numpy_array(np.zeros(shape_stat))
     mean = get_parameter_or_create(
-        "mean", shape_stat, ConstantInitializer(0), False)
+        "mean", shape_stat, ConstantInitializer(0.0), False)
     var = get_parameter_or_create(
-        "var", shape_stat, ConstantInitializer(0), False)
+        "var", shape_stat, ConstantInitializer(1.0), False)
     h = F.batch_normalization(h, beta_tmp, gamma_tmp, mean, var, batch_stat=not test)
 
     #TODO: should use SNEmbed?
@@ -249,15 +247,6 @@ def CCBN(h, y, n_classes, test=False, fix_parameters=False, sn=True):
         beta = F.reshape(beta, [b, c] + [1 for _ in range(len(h.shape[2:]))])
         beta = F.broadcast(beta, h.shape)
     return gamma * h + beta
-
-
-def convblock(h, scopename, maps, kernel, pad=(1, 1), stride=(1, 1), upsample=True, test=False):
-    with nn.parameter_scope(scopename):
-        if upsample:
-            h = F.unpooling(h, kernel=(2, 2))
-        h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, with_bias=True, test=test)
-        h = PF.batch_normalization(h, batch_stat=not test)
-    return h
 
 
 @parametric_function_api("attn")
@@ -321,24 +310,26 @@ def resblock_g(h, y, scopename,
 
 
 def resblock_d(h, y, scopename,
-               n_classes, maps1, maps2=None, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
+               n_classes, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
                downsample=True, bn=False, test=False, sn=True):
     """Residual block for discriminator"""
     s = h
     _, c, _, _ = h.shape
-    maps2 = maps1 if maps2 is None else maps2
+    assert maps // 2 == c or maps == c
+    maps1 = c if maps // 2 == c else maps
+    maps2 = maps
     with nn.parameter_scope(scopename):
         # BN -> LeakyRelu -> Conv
         with nn.parameter_scope("conv1"):
             h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
-            h = F.leaky_relu(h, 0.2)
+            h = F.relu(h, False)  #F.leaky_relu(h, 0.2)
             h = convolution(h, maps1, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=True, sn=sn, test=test)
         
         # BN -> LeakyRelu -> Conv -> Downsample
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
-            h = F.leaky_relu(h, 0.2)
+            h = F.relu(h, True)  #F.leaky_relu(h, 0.2)
             h = convolution(h, maps2, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=True, sn=sn, test=test)
             if downsample:
@@ -354,24 +345,24 @@ def resblock_d(h, y, scopename,
     #return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
     return F.add2(h, s)
 
+
 def optblock_d(h, y, scopename,
-               n_classes, maps1, maps2=None, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
+               n_classes, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
                downsample=True, bn=False, test=False, sn=True):
     """Optimized block for discriminator"""
     s = h
     _, c, _, _ = h.shape
-    maps2 = maps1 if maps2 is None else maps2
     with nn.parameter_scope(scopename):
-        # Conv -> LeakyRelu
+        # Conv
         with nn.parameter_scope("conv1"):
-            h = convolution(h, maps1, kernel=kernel, pad=pad, stride=stride, 
+            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=True, sn=sn, test=test)
         
         # BN -> Conv
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
-            h = F.leaky_relu(h, 0.2)
-            h = convolution(h, maps2, kernel=kernel, pad=pad, stride=stride, 
+            h = F.relu(h, True)  #F.leaky_relu(h, 0.2)
+            h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=True, sn=sn, test=test)
             if downsample:
                 h = F.average_pooling(h, kernel=(2, 2))
@@ -380,7 +371,7 @@ def optblock_d(h, y, scopename,
         with nn.parameter_scope("shortcut"):
             if downsample:
                 s = F.average_pooling(s, kernel=(2, 2))
-            s = convolution(s, maps2, kernel=(1, 1), pad=(0, 0), stride=(1, 1), 
+            s = convolution(s, maps, kernel=(1, 1), pad=(0, 0), stride=(1, 1), 
                             with_bias=True, sn=sn, test=test)
     #return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
     return F.add2(h, s)
@@ -410,18 +401,19 @@ def generator(z, y, scopename="generator",
 
 def discriminator(x, y, scopename="discriminator", 
                   maps=64, n_classes=1000, s=4, bn=False, test=False, sn=True):
+    #sn = False
     with nn.parameter_scope(scopename):
         # Resblocks
         h = optblock_d(x, y, "block-1", n_classes, maps, downsample=False, test=test, sn=sn)
-        h = resblock_d(h, y, "block-2", n_classes, maps * 1, maps * 2, test=test, sn=sn)
-        h = resblock_d(h, y, "block-3", n_classes, maps * 2, maps * 4, test=test, sn=sn)
-        #h = attnblock(h, sn=sn, test=test)  # not use attention for discriminator
-        h = resblock_d(h, y, "block-4", n_classes, maps * 4, maps * 8, test=test, sn=sn)
-        h = resblock_d(h, y, "block-5", n_classes, maps * 8, maps * 16, test=test, sn=sn)
+        h = resblock_d(h, y, "block-2", n_classes, maps * 2, test=test, sn=sn)
+        h = resblock_d(h, y, "block-3", n_classes, maps * 4, test=test, sn=sn)
+        #h = attnblock(h, sn=sn, test=test)
+        h = resblock_d(h, y, "block-4", n_classes, maps * 8, test=test, sn=sn)
+        h = resblock_d(h, y, "block-5", n_classes, maps * 16, test=test, sn=sn)
         h = resblock_d(h, y, "block-6", n_classes, maps * 16, downsample=False, test=test, sn=sn)
         # Last affine
         h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
-        h = F.leaky_relu(h, 0.2)
+        h = F.relu(h, True)  #F.leaky_relu(h, 0.2)
         h = F.average_pooling(h, h.shape[2:])
         o0 = affine(h, 1, sn=sn, test=test)
         # Project discriminator

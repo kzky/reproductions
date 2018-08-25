@@ -65,10 +65,14 @@ def get_args(batch_size=16, accum_grad=4, image_size=128, n_classes=1000, max_it
                         help="Beta1 of Adam solver.")
     parser.add_argument("--beta2", type=float, default=0.9,
                         help="Beta2 of Adam solver.")
-    parser.add_argument("--train-cachefile-dir", "-T", type=str, default="",
-                        help='Training cache file dir. Create to use create_cache_file.py')
-    parser.add_argument("--val-cachefile-dir", "-V", type=str, default="",
-                        help='Validation cache file dir. Create to use create_cache_file.py')
+    # parser.add_argument("--train-cachefile-dir", "-T", type=str, default="",
+    #                     help='Training cache file dir. Create to use create_cache_file.py')
+    # parser.add_argument("--val-cachefile-dir", "-V", type=str, default="",
+    #                     help='Validation cache file dir. Create to use create_cache_file.py')
+    parser.add_argument("--train-dir", "-T", type=str, default="",
+                        help='Training directory')
+    parser.add_argument("--dirname-to-label-path", "-L", type=str, default="",
+                        help='Dirname-to-label path')
     parser.add_argument("--hyper-sphere", action='store_true',
                         help="Latent vector lie in the hyper sphere.")
     parser.add_argument("--validation-metric", type=str, default="FID",

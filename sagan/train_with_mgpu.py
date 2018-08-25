@@ -34,13 +34,14 @@ def train(args):
     z = nn.Variable([args.batch_size, args.latent])
     y_fake = nn.Variable([args.batch_size], need_grad=False)
     x_fake = generator(z, y_fake, maps=args.maps, sn=args.not_sn).apply(persistent=True)
-    d_fake = discriminator(x_fake, y_fake, maps=args.maps // 16, sn=args.not_sn)
+    x_fake_noise = x_fake + F.rand(0.0, 1.0 / 128, x_fake.shape)
+    d_fake = discriminator(x_fake_noise, y_fake, maps=args.maps // 16, sn=args.not_sn)
+    #d_fake = discriminator(x_fake, y_fake, maps=args.maps // 16, sn=args.not_sn)
     loss_gen = gan_loss(d_fake)
     # discriminator loss
     y_real = nn.Variable([args.batch_size], need_grad=False)
     x_real = nn.Variable([args.batch_size, 3, args.image_size, args.image_size], need_grad=False)
-    x_augm = F.flip(x_real, (2, ))
-    d_real = discriminator(x_augm, y_real, maps=args.maps // 16, sn=args.not_sn)
+    d_real = discriminator(x_real, y_real, maps=args.maps // 16, sn=args.not_sn)
     loss_dis = gan_loss(d_fake, d_real)
     # generator with fixed value for test
     z_test = nn.Variable.from_numpy_array(np.random.randn(args.batch_size, args.latent))
@@ -55,7 +56,7 @@ def train(args):
     with nn.parameter_scope("discriminator"):
         solver_dis.set_parameters(nn.get_parameters())
 
-        # Monitor
+    # Monitor
     if comm.rank == 0:
         monitor = Monitor(args.monitor_path)
         monitor_loss_gen = MonitorSeries("Generator Loss", monitor, interval=10)
@@ -69,22 +70,32 @@ def train(args):
                                                             normalize_method=lambda x: (x + 1.) / 2.)
     # DataIterator
     rng = np.random.RandomState(410)
-    di_train = data_iterator_imagenet(args.batch_size, args.train_cachefile_dir, rng=rng)
+    di_train = data_iterator_imagenet(args.train_dir, args.dirname_to_label_path,
+                                      args.batch_size,
+                                      rng=rng)
 
     # Train loop
-    normalize_method = lambda x: (x - 127.5) / 127.5
+    #normalize_method = lambda x: (x - 127.5) / 127.5
     for i in range(args.max_iter):
+        flag = True
+        
         # Train discriminator
         x_fake.need_grad = False  # no need for discriminator backward
         solver_dis.zero_grad()
         for _ in range(args.accum_grad):
             x_data, y_data = di_train.next()
-            x_real.d, y_real.d = normalize_method(x_data), y_data.flatten()
+            if x_data.shape == (16, ):
+                flag = False
+                break
+            #x_real.d, y_real.d = normalize_method(x_data), y_data.flatten()
+            x_real.d, y_real.d = x_data, y_data.flatten()
             z_data = np.random.randn(args.batch_size, args.latent)
             y_data = generate_random_class(args.n_classes, args.batch_size)
             z.d, y_fake.d = z_data, y_data
             loss_dis.forward(clear_no_need_grad=True)
             loss_dis.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
+        if flag == False:
+            continue
         with nn.parameter_scope("discriminator"):
             comm.all_reduce([v.grad for v in nn.get_parameters().values()])
         solver_dis.update()
@@ -104,9 +115,9 @@ def train(args):
             solver_gen.update()
 
         # Synchronize by averaging the weights over devices using allreduce
-        # if i % args.sync_weight_every_itr == 0:
-        #     weights = [x.data for x in nn.get_parameters().values()]
-        #     comm.all_reduce(weights, division=True, inplace=True)
+        if i % args.sync_weight_every_itr == 0:
+            weights = [x.data for x in nn.get_parameters().values()]
+            comm.all_reduce(weights, division=True, inplace=True)
 
         # Save model and image
         if i % args.save_interval == 0 and comm.rank == 0:
