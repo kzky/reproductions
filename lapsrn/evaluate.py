@@ -12,7 +12,7 @@ from nnabla.ext_utils import get_extension_context
 import nnabla.utils.save as save
 
 from helpers import (get_solver, resize, upsample, downsample,
-                     split, to_BCHW, to_BHWC, normalize, ycbcr_to_rgb, 
+                     split, to_BCHW, to_BHWC, normalize, ycrcb_to_rgb, 
                      normalize_method, denormalize,
                      psnr, center_crop)
 from args import get_args, save_args
@@ -86,41 +86,40 @@ def evaluate(args):
         x_SR = x_SRs[-1]
 
         # Feed data
-        ycbcrs = []
+        ycrcbs = []
         x_LR_d = x_data  # B, H, W, C
         for s, x_LR in enumerate(x_LRs[::-1]):  # [x_HR, ..., x_LR1, x_LR0]
-            x_LR_y, x_LR_cb, x_LR_cr = split(x_LR_d)            
-            ycbcrs.append([x_LR_y, x_LR_cb, x_LR_cr])
+            x_LR_y, x_LR_cr, x_LR_cb = split(x_LR_d)            
+            ycrcbs.append([x_LR_y, x_LR_cr, x_LR_cb])
             x_LR_y = to_BCHW(x_LR_y)
-            x_LR_y = normalize(x_LR_y)
             x_LR.d = x_LR_y
-            x_LR_d = downsample(x_data, 2 ** (s + 1))
-        ycbcr = ycbcrs[-1]
+            x_LR_d = downsample(x_data, 2 ** (s + 1), mode=args.imresize_mode)
+        ycrcb = ycrcbs[-1]
 
         # Forward
         x_SR.forward(clear_buffer=True)
 
         # High Resolution
-        x_hr = denormalize(to_BHWC(x_HR.d))
-        y, cb, cr = ycbcrs[0]
-        x_hr = to_BCHW(ycbcr_to_rgb(y, cb, cr))
+        x_hr = to_BHWC(x_HR.d)
+        y, cr, cb = ycrcbs[0]
+        x_hr = to_BCHW(ycrcb_to_rgb(y, cr, cb))
         monitor_image_hr.add(i, x_hr)
 
         # Low to High Resolution by Bicubic
-        _, cb, cr = ycbcr
-        cb = upsample(cb, 2 ** args.S)
-        cr = upsample(cr, 2 ** args.S)        
-        x_lr = denormalize(to_BHWC(x_LR.d))
-        x_lr = upsample(x_lr, 2 ** args.S)
-        x_lr = to_BCHW(ycbcr_to_rgb(x_lr, cb, cr))
+        _, cr, cb = ycrcb
+        cr = upsample(cr, 2 ** args.S, mode=args.imresize_mode)
+        cb = upsample(cb, 2 ** args.S, mode=args.imresize_mode)
+        x_lr = to_BHWC(x_LR.d)
+        x_lr = upsample(x_lr, 2 ** args.S, mode=args.imresize_mode)
+        x_lr = to_BCHW(ycrcb_to_rgb(x_lr, cr, cb))
         monitor_image_lr.add(i, x_lr)
 
         # Low to High Resolution by NN
         for s, x_SR in enumerate(x_SRs):
-            _, cb, cr = ycbcr
-            cb = upsample(cb, 2 ** (s + 1))
-            cr = upsample(cr, 2 ** (s + 1))
-            x_sr = to_BCHW(ycbcr_to_rgb(denormalize(to_BHWC(np.clip(x_SR.d, 0.0, 1.0))), cb, cr))
+            _, cb, cr = ycrcb
+            cr = upsample(cr, 2 ** (s + 1), mode=args.imresize_mode)
+            cb = upsample(cb, 2 ** (s + 1), mode=args.imresize_mode)
+            x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_SR.d), cb, cr))
             monitor_image_sr_list[s].add(i, x_sr)
         monitor_psnr_lr.add(i, psnr(x_hr, x_lr, 2 ** args.S))
         monitor_psnr_sr.add(i, psnr(x_hr, x_sr, 2 ** args.S))

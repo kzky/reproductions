@@ -3,7 +3,7 @@ from nnabla.contrib.context import extension_context
 from nnabla.monitor import Monitor, MonitorImage, MonitorImageTile, MonitorSeries, tile_images
 from nnabla.utils.data_iterator import data_iterator
 import os
-from PIL import Image
+import cv2
 
 import nnabla as nn
 import nnabla.functions as F
@@ -12,6 +12,7 @@ import nnabla.parametric_functions as PF
 import nnabla.solvers as S
 import numpy as np
 
+from matlab_imresize import imresize as imresize_
 
 class MonitorImageTileWithName(MonitorImageTile):
 
@@ -67,34 +68,40 @@ def normalize_method(x):
     return x
 
 
-def resize(x_data, sw, sh):
+def imresize(x, w, h, mode="opencv"):
+    if mode == "opencv":
+        _, _, c0 = x.shape
+        x = cv2.resize(x, (w, h), interpolation=cv2.INTER_CUBIC)
+        x = x.reshape((h, w, c0))
+        return x
+    if mode == "matlab":
+        return imresize_(x, output_shape=(h, w))  # height, width
+    return ValueError("Mode ({}) is not supported.".format(mode))
+
+
+def resize(x_data, sw, sh, mode="opencv"):
     b, h, w, c = x_data.shape
     x_data_ = []
-    x_data = to_uint8(x_data)
     for x in x_data:
-        x = x.reshape((h, w)) if c == 1 else x.reshape((h, w, c))
-        x = Image.fromarray(x).resize((sw, sh), Image.BICUBIC)
-        x = np.asarray(x)
-        x = x.reshape((sh, sw, c))
+        x = imresize(x, sw, sh, mode)
         x_data_.append(x)
     x_data_ = np.asarray(x_data_)
-    if len(x_data_.shape) == 3:
-        return x_data_[..., np.newaxis]
     return x_data_
 
 
-def upsample(x_data, s):
+def upsample(x_data, s, mode="opencv"):
     b, h, w, c = x_data.shape
     sh = h * s
     sw = w * s
-    return resize(x_data, sw, sh)
+    return resize(x_data, sw, sh, mode)
 
 
-def downsample(x_data, s):
+def downsample(x_data, s, mode="opencv"):
+    
     b, h, w, c = x_data.shape
     sh = h // s
     sw = w // s
-    return resize(x_data, sw, sh)
+    return resize(x_data, sw, sh, mode)
 
 
 def split(x):
@@ -103,10 +110,6 @@ def split(x):
     for i in range(c):
         y.append(x[:, :, :, i].reshape(b, h, w, 1))
     return y
-
-
-def to_uint8(x):
-    return np.round(x).astype(np.uint8)
 
 
 def to_BCHW(x):
@@ -127,13 +130,32 @@ def denormalize(x, de=255.0):
     return x * de
 
 
-def ycbcr_to_rgb(y, cb, cr):
+def to_uint8(x):
+    """
+    Args:
+      x (float or double): input image
+    """
+    x = np.clip(x, 0.0, 1.0)
+    x = denormalize(x)
+    x = np.round(x)
+    x = x.astype(np.uint8)
+    return x
+
+
+def ycrcb_to_rgb(y, cr, cb):
+    """
+    Args:
+      y (float or double): Y of input image.
+      cr (float or double): Cr of input image.
+      cb (float or double): Cb of input image.
+    """
+
+    # (B, H, W, C)
     imgs = []
-    imgs_ = np.concatenate([y, cb, cr], axis=3)
+    imgs_ = np.concatenate([y, cr, cb], axis=3)
     imgs_ = to_uint8(imgs_)
     for img in imgs_:
-        img = Image.fromarray(img, "YCbCr").convert("RGB")
-        img = np.asarray(img)
+        img = cv2.cvtColor(img, cv2.COLOR_YCrCb2RGB)
         imgs.append(img)
     return np.asarray(imgs)
 

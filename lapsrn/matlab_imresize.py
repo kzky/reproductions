@@ -133,6 +133,7 @@ def convertDouble2Byte(I):
 def main():
     import os
     import cv2
+    
     # Data
     home = os.path.expanduser("~")
     img_path = "{}/nnabla_data/Set14/monarch.png".format(home)
@@ -141,13 +142,21 @@ def main():
     img = cv2.imread(img_path)
     h, w, _ = img.shape
     sh, sw = h // 4, w // 4
+    
     print((h, w), "->", (sh, sw))
     img = img / 255.0
-    imresize(img, output_shape=(sw, sh))
-    h, w, _ = img.shape
+    img = imresize(img, output_shape=(sh, sw))
+    sh, sw, _ = img.shape
+    print("X_L", (sh, sw))
+    print(np.min(img), np.max(img))
+
     print((sh, sw), "->", (h, w))
+    img = imresize(img, output_shape=(h, w))
+    h, w, _ = img.shape
+    print("X_H^", (h, w))
     print(np.min(img), np.max(img))
     
-
+    img = imresize(img, output_shape=(sh, sw))
+    
 if __name__ == '__main__':
     main()

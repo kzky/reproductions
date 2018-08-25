@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def get_args(batch_size=16, ih=128, iw=128, max_iter=1000 * 1000, save_interval=1000, 
+def get_args(batch_size=16, ih=128, iw=128, max_iter=100 * 1000, save_interval=10 * 1000, 
              S=3, R=8, D=5, maps=64):
     """
     Get command line arguments.
@@ -61,7 +61,7 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=1000 * 1000, save_interval=
     parser.add_argument("--share-type", default="across-pyramid", 
                         choices=["across-pyramid", "within-pyramid"], 
                         help='Share type')
-    parser.add_argument("--save-interval", type=int, default=10000,
+    parser.add_argument("--save-interval", type=int, default=save_interval,
                         help="Interval for saving models.")
     parser.add_argument("--monitor-path", type=str, default="./result/example_0",
                         help="Monitor path.")
@@ -78,9 +78,9 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=1000 * 1000, save_interval=
                                  "General100", 
                                  "T91"],
                         help="List of path to dataset")
-    parser.add_argument("--decay-at", "-D", type=int, nargs='+', 
-                        default=[100000, 200000, 300000, 400000, 500000, 
-                                 600000, 700000, 800000, 900000],
+    parser.add_argument("--decay-at", "-D", type=int, nargs='+',
+                        default=[10000, 20000, 30000, 40000, 50000, 
+                                 60000, 70000, 80000, 90000, 100000],
                         help="Decay-at `iteration` for learning rate.")
     parser.add_argument("--lr-decay-rate", type=float, default=0.5,  
                         help="Learning rate decay rate")
@@ -90,6 +90,8 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=1000 * 1000, save_interval=
                         help='Path to training data')
     parser.add_argument("--valid-data-path", "-V", type=str, default="",
                         help='Validation data to be used')
+    parser.add_argument("--imresize-mode", type=str, default="opencv",
+                        help='Image resize mode. Default is `opnecv`.')
     #TODO: add SSIM, IFC
     parser.add_argument("--valid-metric", type=str, default="psnr",
                         choices=["psnr"],
