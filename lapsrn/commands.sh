@@ -170,6 +170,10 @@ screen -Sdm "adam-88" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-
 screen -Sdm "adam-89" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_89 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab"
 screen -Sdm "adam-90" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_90 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode opencv"
 
+# Follow 88 but decay at every 50 epoch w/ 0.1 decay rate
+screen -Sdm "adam-91" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_91 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab"
+screen -Sdm "adam-92" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_92 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode opencv"
+
 
 # Evaluate
 ## 51

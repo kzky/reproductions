@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def get_args(batch_size=16, ih=128, iw=128, max_iter=100 * 1000, save_interval=10 * 1000, 
+def get_args(batch_size=16, ih=128, iw=128, max_iter=150 * 1000, save_interval=10 * 1000, 
              S=3, R=8, D=5, maps=64):
     """
     Get command line arguments.
@@ -79,10 +79,9 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=100 * 1000, save_interval=1
                                  "T91"],
                         help="List of path to dataset")
     parser.add_argument("--decay-at", "-D", type=int, nargs='+',
-                        default=[10000, 20000, 30000, 40000, 50000, 
-                                 60000, 70000, 80000, 90000, 100000],
+                        default=[50000, 100000, 150000],
                         help="Decay-at `iteration` for learning rate.")
-    parser.add_argument("--lr-decay-rate", type=float, default=0.5,  
+    parser.add_argument("--lr-decay-rate", type=float, default=0.1,  
                         help="Learning rate decay rate")
     parser.add_argument("--weight-decay-rate", type=float, default=1e-4, 
                         help="Weight decay rate")
