@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def get_args(batch_size=16, ih=128, iw=128, max_iter=150 * 1000, save_interval=10 * 1000, 
+def get_args(batch_size=16, ih=128, iw=128, max_iter=100 * 1000, save_interval=10 * 1000, 
              S=3, R=8, D=5, maps=64):
     """
     Get command line arguments.
@@ -65,8 +65,9 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=150 * 1000, save_interval=1
                         help="Interval for saving models.")
     parser.add_argument("--monitor-path", type=str, default="./result/example_0",
                         help="Monitor path.")
-    parser.add_argument("--model-load-path", type=str,
-                        help="Model load path to a h5 file used in generation and validation.")
+    parser.add_argument("--model-load-dir", type=str,
+                        help="Model load directory to a h5 files used in generation and validation."
+                        "Parameter file must end with `.h5`.")
     parser.add_argument("--solver", type=str, default="Momentum", 
                         help="Solver")
     parser.add_argument("--lr", type=float, default=5e-6,
@@ -79,7 +80,7 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=150 * 1000, save_interval=1
                                  "T91"],
                         help="List of path to dataset")
     parser.add_argument("--decay-at", "-D", type=int, nargs='+',
-                        default=[50000, 100000, 150000],
+                        default=[30000, 90000],
                         help="Decay-at `iteration` for learning rate.")
     parser.add_argument("--lr-decay-rate", type=float, default=0.1,  
                         help="Learning rate decay rate")
@@ -90,6 +91,7 @@ def get_args(batch_size=16, ih=128, iw=128, max_iter=150 * 1000, save_interval=1
     parser.add_argument("--valid-data-path", "-V", type=str, default="",
                         help='Validation data to be used')
     parser.add_argument("--imresize-mode", type=str, default="opencv",
+                        choices=["opencv", "matlab"],
                         help='Image resize mode. Default is `opnecv`.')
     #TODO: add SSIM, IFC
     parser.add_argument("--valid-metric", type=str, default="psnr",

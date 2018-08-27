@@ -14,120 +14,142 @@ import nnabla.utils.save as save
 from helpers import (get_solver, resize, upsample, downsample,
                      split, to_BCHW, to_BHWC, normalize, ycrcb_to_rgb, 
                      normalize_method, denormalize,
-                     psnr, center_crop)
+                     psnr, center_crop, to_uint8)
 from args import get_args, save_args
 from models import lapsrn
 from datasets import data_iterator_lapsrn
-
+import glob
 
 def evaluate(args):
-    # Context
-    ctx = get_extension_context(args.context, device_id=args.device_id)
-    nn.set_default_context(ctx)
+    # Model files
+    model_paths = glob.glob(os.path.join(args.model_load_dir, "*.h5"))
+    model_paths.sort()
 
-    # Model
-    nn.load_parameters(args.model_load_path)
-
-    # Data iterator
-    img_paths = args.valid_data_path
-    di = data_iterator_lapsrn(img_paths, batch_size=1, train=False, shuffle=False)
-
-    # Monitor
-    monitor = Monitor(args.monitor_path)
-    valid_data_name = args.valid_data_path.rstrip("/").split("/")[-1]
-    monitor_psnr_sr_list = []
-    monitor_psnr_lr = MonitorSeries("Evaluation Metric PSNR Bicubic-{} {}".format(2 ** args.S, valid_data_name), 
-                                    monitor, interval=1)
-    for s in range(args.S):
-        monitor_psnr_sr = MonitorSeries("Evaluation Metric PSNR SR-{} {}".format(2 ** (s + 1), valid_data_name), 
-                                        monitor, interval=1)
-        monitor_psnr_sr_list.append(monitor_psnr_sr)
-    monitor_image_lr = MonitorImage("Image Test LR {}".format(valid_data_name),
-                                    monitor,
-                                    num_images=1, 
-                                    normalize_method=normalize_method, 
-                                    interval=1)
-    monitor_image_hr = MonitorImage("Image Test HR {}".format(valid_data_name),
-                                    monitor,
-                                    num_images=1, 
-                                    normalize_method=normalize_method, 
-                                    interval=1)
-    monitor_image_sr_list = []
-    for s in range(args.S):
-        monitor_image_sr = MonitorImage("Image Test SR x{} {}".format(2 **(s + 1), valid_data_name),
+    for path in model_paths[0:]:
+        # Model
+        nn.load_parameters(path)
+        m_fname = path.rstrip(".h5").split("/")[-1]
+    
+        # Context
+        ctx = get_extension_context(args.context, device_id=args.device_id)
+        nn.set_default_context(ctx)
+    
+        # Data iterator
+        img_paths = args.valid_data_path
+        di = data_iterator_lapsrn(img_paths, batch_size=1, train=False, shuffle=False)
+    
+        # Monitor
+        monitor = Monitor(args.monitor_path)
+        valid_data_name = args.valid_data_path.rstrip("/").split("/")[-1]
+        monitor_psnr_lr = MonitorSeries(
+            "Evaluation Metric PSNR Bicubic-{}-{}".format(2 ** args.S, valid_data_name), 
+            monitor, interval=1)
+        monitor_psnr_sr = MonitorSeries(
+            "Evaluation Metric PSNR SR-{}-{}-{}".format(2 ** args.S, valid_data_name, m_fname), 
+                                            monitor, interval=1)
+        monitor_image_lr = MonitorImage("Image Test LR-{}-{}".format(2 ** args.S, valid_data_name),
                                         monitor,
                                         num_images=1, 
                                         normalize_method=normalize_method, 
                                         interval=1)
-        monitor_image_sr_list.append(monitor_image_sr)
-
-    # Evaluate
-    for i in range(di.size):
-        # Read data
-        x_data = di.next()[0]
-        x_data = center_crop(x_data, 2 ** args.S)
-        x_hr = x_data
-        b, h, w, c = x_data.shape
-
-        # Create model
-        x_HR = nn.Variable([1, 1, h, w])
-        x_LRs = [x_HR]
+        monitor_image_hr = MonitorImage("Image Test HR-{}".format(valid_data_name),
+                                        monitor,
+                                        num_images=1, 
+                                        normalize_method=normalize_method, 
+                                        interval=1)
+        monitor_image_lr_list = []
+        monitor_image_sr_list = []
         for s in range(args.S):
-            sh = h // (2 ** (s+1))
-            sw = w // (2 ** (s+1))
-            x_LR = nn.Variable([1, 1, sh, sw])
-            x_LR.persistent = True
-            x_LRs.append(x_LR)
-        x_LRs = x_LRs[::-1]  # [x_LR0, x_LR1, ..., x_HR]
-        x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D, args.skip_type, 
-                       args.use_bn, test=True, share_type=args.share_type)
-        for s in range(args.S):
-            x_SRs[s].persistent = True
-        x_SR = x_SRs[-1]
+            monitor_image_sr = MonitorImage(
+                "Image Test SR-x{}-{}-{}".format(2 **(s + 1), valid_data_name, m_fname),
+                monitor,
+                num_images=1, 
+                normalize_method=normalize_method, 
+                interval=1)
+            monitor_image_sr_list.append(monitor_image_sr)
+    
+        # Evaluate
+        psnr_lr_list = []
+        psnr_sr_list = []
+        for i in range(di.size):
+            # Read data
+            x_data = di.next()[0]
+            x_data = center_crop(x_data, 2 ** args.S)
+            x_hr = x_data
+            b, h, w, c = x_data.shape
+    
+            # Create model
+            x_HR = nn.Variable([1, 1, h, w])
+            x_LRs = [x_HR]
+            for s in range(args.S):
+                sh = h // (2 ** (s+1))
+                sw = w // (2 ** (s+1))
+                x_LR = nn.Variable([1, 1, sh, sw])
+                x_LR.persistent = True
+                x_LRs.append(x_LR)
+            x_LRs = x_LRs[::-1]  # [x_LR0, x_LR1, ..., x_HR]
+            x_SRs = lapsrn(x_LR, args.maps, args.S, args.R, args.D, args.skip_type, 
+                           args.use_bn, test=True, share_type=args.share_type)
+            for s in range(args.S):
+                x_SRs[s].persistent = True
+            x_SR = x_SRs[-1]
+    
+            # Feed data
+            ycrcbs = []
+            x_LR_d = x_data  # B, H, W, C
+            for s, x_LR in enumerate(x_LRs[::-1]):  # [x_HR, ..., x_LR1, x_LR0]
+                x_LR_y, x_LR_cr, x_LR_cb = split(x_LR_d)            
+                ycrcbs.append([x_LR_y, x_LR_cr, x_LR_cb])
+                x_LR_y = to_BCHW(x_LR_y)
+                x_LR.d = x_LR_y
+                x_LR_d = downsample(x_data, 2 ** (s + 1), mode=args.imresize_mode)
+            ycrcb = ycrcbs[-1]
+    
+            # Forward
+            x_SR.forward(clear_buffer=True)
+    
+            # High Resolution
+            x_hr = to_BHWC(x_HR.d)
+            y, cr, cb = ycrcbs[0]
+            x_hr_y = y
+            x_hr = to_BCHW(ycrcb_to_rgb(y, cr, cb))
+            monitor_image_hr.add(i, x_hr)
+    
+            # Low to High Resolution by Bicubic
+            _, cr, cb = ycrcb
+            cr = upsample(cr, 2 ** args.S, mode=args.imresize_mode)
+            cb = upsample(cb, 2 ** args.S, mode=args.imresize_mode)
+            x_lr = to_BHWC(x_LR.d)
+            x_lr = upsample(x_lr, 2 ** args.S, mode=args.imresize_mode)
+            x_lr_y = x_lr
+            x_lr = to_BCHW(ycrcb_to_rgb(x_lr, cr, cb))
+            monitor_image_lr.add(i, x_lr)
+    
+            # Low to High Resolution by NN
+            for s, x_SR in enumerate(x_SRs):
+                _, cb, cr = ycrcb
+                cr = upsample(cr, 2 ** (s + 1), mode=args.imresize_mode)
+                cb = upsample(cb, 2 ** (s + 1), mode=args.imresize_mode)
+                x_sr_y = to_BHWC(x_SR.d)
+                x_sr = to_BCHW(ycrcb_to_rgb(x_sr_y, cb, cr))
+                monitor_image_sr_list[s].add(i, x_sr)
+            # psnr_lr = psnr(x_hr, x_lr, 2 ** args.S)
+            # psnr_sr = psnr(x_hr, x_sr, 2 ** args.S)
+            psnr_lr = psnr(to_uint8(x_hr_y), to_uint8(x_lr_y), 2 ** args.S)
+            psnr_sr = psnr(to_uint8(x_hr_y), to_uint8(x_sr_y), 2 ** args.S)
 
-        # Feed data
-        ycrcbs = []
-        x_LR_d = x_data  # B, H, W, C
-        for s, x_LR in enumerate(x_LRs[::-1]):  # [x_HR, ..., x_LR1, x_LR0]
-            x_LR_y, x_LR_cr, x_LR_cb = split(x_LR_d)            
-            ycrcbs.append([x_LR_y, x_LR_cr, x_LR_cb])
-            x_LR_y = to_BCHW(x_LR_y)
-            x_LR.d = x_LR_y
-            x_LR_d = downsample(x_data, 2 ** (s + 1), mode=args.imresize_mode)
-        ycrcb = ycrcbs[-1]
-
-        # Forward
-        x_SR.forward(clear_buffer=True)
-
-        # High Resolution
-        x_hr = to_BHWC(x_HR.d)
-        y, cr, cb = ycrcbs[0]
-        x_hr = to_BCHW(ycrcb_to_rgb(y, cr, cb))
-        monitor_image_hr.add(i, x_hr)
-
-        # Low to High Resolution by Bicubic
-        _, cr, cb = ycrcb
-        cr = upsample(cr, 2 ** args.S, mode=args.imresize_mode)
-        cb = upsample(cb, 2 ** args.S, mode=args.imresize_mode)
-        x_lr = to_BHWC(x_LR.d)
-        x_lr = upsample(x_lr, 2 ** args.S, mode=args.imresize_mode)
-        x_lr = to_BCHW(ycrcb_to_rgb(x_lr, cr, cb))
-        monitor_image_lr.add(i, x_lr)
-
-        # Low to High Resolution by NN
-        for s, x_SR in enumerate(x_SRs):
-            _, cb, cr = ycrcb
-            cr = upsample(cr, 2 ** (s + 1), mode=args.imresize_mode)
-            cb = upsample(cb, 2 ** (s + 1), mode=args.imresize_mode)
-            x_sr = to_BCHW(ycrcb_to_rgb(to_BHWC(x_SR.d), cb, cr))
-            monitor_image_sr_list[s].add(i, x_sr)
-        monitor_psnr_lr.add(i, psnr(x_hr, x_lr, 2 ** args.S))
-        monitor_psnr_sr.add(i, psnr(x_hr, x_sr, 2 ** args.S))
-
-        # Clear memory since the input is varaible size.
-        import nnabla_ext.cuda
-        nnabla_ext.cuda.clear_memory_cache()
-
+            monitor_psnr_lr.add(i, psnr_lr)
+            monitor_psnr_sr.add(i, psnr_sr)
+            psnr_lr_list.append(psnr_lr)
+            psnr_sr_list.append(psnr_sr)
+    
+            # Clear memory since the input is varaible size.
+            import nnabla_ext.cuda
+            nnabla_ext.cuda.clear_memory_cache()
+        monitor_psnr_lr.add(i + 1, np.mean(psnr_lr_list))
+        monitor_psnr_lr.add(i + 2, np.std(psnr_lr_list))
+        monitor_psnr_sr.add(i + 1, np.mean(psnr_sr_list))
+        monitor_psnr_sr.add(i + 2, np.std(psnr_sr_list))
 
 def main():
     args = get_args()

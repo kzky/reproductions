@@ -174,6 +174,15 @@ screen -Sdm "adam-90" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-
 screen -Sdm "adam-91" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_91 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab"
 screen -Sdm "adam-92" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_92 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode opencv"
 
+# Follow 88 but decay at every 30 epoch w/ 0.1 decay rate
+screen -Sdm "adam-93" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_93 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab"
+screen -Sdm "adam-94" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_94 --share-type within-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab"
+
+screen -Sdm "adam-95" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_95 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab --use-bn"
+screen -Sdm "adam-96" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_96 --share-type within-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab --use-bn"
+
+
+
 
 # Evaluate
 ## 51
