@@ -181,7 +181,33 @@ screen -Sdm "adam-94" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-
 screen -Sdm "adam-95" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_95 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab --use-bn"
 screen -Sdm "adam-96" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_96 --share-type within-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab --use-bn"
 
+# Follow 88 but decay at every 30 epoch w/ 0.1 decay rate and w/ 2e-4 lr
+screen -Sdm "adam-97" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 2e-4 --monitor-path result/example_97 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab"
+screen -Sdm "adam-98" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 2e-4 --monitor-path result/example_98 --share-type within-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab"
 
+
+# Follow 88 but decay at every 10 epoch w/ 0.1 decay rate and w/ 1e-4 lr
+screen -Sdm "adam-99" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_99 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab --max-iter 30000 --save-interval 1000"
+screen -Sdm "adam-100" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_100 --share-type within-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab --max-iter 30000 --save-interval 1000"
+
+# Follow 88 but decay at every 10 epoch w/ 0.1 decay rate and w/ 1e-4 lr
+screen -Sdm "adam-99" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_99 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab --max-iter 30000 --save-interval 1000"
+screen -Sdm "adam-100" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_100 --share-type within-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab --max-iter 30000 --save-interval 1000"
+
+
+# Follow 88 w/ 1e-4 lr and w/ bias lr 1.0
+screen -Sdm "adam-101" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_101 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab --max-iter 30000 --save-interval 1000"
+screen -Sdm "adam-102" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_102 --share-type within-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab --max-iter 30000 --save-interval 1000"
+
+
+# Follow 88 w/ 1e-4 lr and w/ bias lr 1.0 and batch size 32
+screen -Sdm "adam-103" bash -c "python train.py -d 2 -b 32 --solver Adam --lr 1e-4 --monitor-path result/example_103 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab --max-iter 30000 --save-interval 1000 --use-bn"
+screen -Sdm "adam-104" bash -c "python train.py -d 3 -b 32 --solver Adam --lr 1e-4 --monitor-path result/example_104 --share-type within-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab --max-iter 30000 --save-interval 1000 --use-bn"
+
+
+# Follow 88 w/ 1e-4 lr and w/ bias lr 1.0
+screen -Sdm "adam-105" bash -c "python train.py -d 2 -b 32 --solver Adam --lr 1e-4 --monitor-path result/example_105 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab --max-iter 60000 --save-interval 1000"
+screen -Sdm "adam-106" bash -c "python train.py -d 3 -b 32 --solver Adam --lr 1e-4 --monitor-path result/example_106 --share-type within-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab --max-iter 60000 --save-interval 1000"
 
 
 # Evaluate
