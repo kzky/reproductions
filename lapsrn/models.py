@@ -36,10 +36,10 @@ class BilinearUpsampleInitializer(I.BaseInitializer):
 
 BUI = BilinearUpsampleInitializer
 
-def convolution(x, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name=None):
+def convolution(x, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), with_bias=True, name=None):
     std = I.calc_normal_std_he_backward(x.shape[1], maps, kernel)
     initizlier = I.NormalInitializer(std)
-    return PF.convolution(x, maps, kernel, pad, stride, name=name, with_bias=True)
+    return PF.convolution(x, maps, kernel, pad, stride, name=name, with_bias=with_bias)
 
 def first_conv(x, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1)):
     init_sigma = 1e-3  # magic number
@@ -57,7 +57,8 @@ def block(x, maps=64, kernel=(3, 3), pad=(1, 1), stride=(1, 1),
             scopename = "block-{}".format(d)
         with nn.parameter_scope(scopename):
             # LeakyRelu -> Conv -> (BN)
-            h = F.leaky_relu(h, 0.2)
+            with_bias = False if bn else True
+            h = F.leaky_relu(h, 0.2, inplace=False)
             h = convolution(h, maps, kernel, pad, stride)
             h = h if not bn \
                 else PF.batch_normalization(h, batch_stat=not test, name="bn-{}".format(r))
