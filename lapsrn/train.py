@@ -40,13 +40,8 @@ def train(args):
                   [F.mean(get_loss(args.loss)(x, y)) for x, y in zip(x_SRs, x_LRs[1:])])
 
     # Solver
-    solver_w = get_solver(args.solver)(args.lr)
-    params_w = dict([(n, v) for n, v in nn.get_parameters().items() if not n.endswith("/b")])
-    solver_w.set_parameters(params_w)
-    params_b = dict([(n, v) for n, v in nn.get_parameters().items() if n.endswith("/b")])
-    solver_b = get_solver(args.solver)(args.lr * 0.1)
-    solver_b.set_parameters(params_b)
-    solvers = [solver_w, solver_b]
+    solver = get_solver(args.solver)(args.lr)
+    solver.set_parameters(nn.get_parameters())
     
     # Monitor
     monitor = Monitor(args.monitor_path)
@@ -88,23 +83,20 @@ def train(args):
         ycrcb = ycrcbs[-1]
 
         # Zerograd, forward, backward, weight-decay, update
-        for solver in solvers: solver.zero_grad()
+        solver.zero_grad()
         loss.forward(clear_no_need_grad=True)
         loss.backward(clear_buffer=True)
-        for solver in solvers: solver.weight_decay(args.weight_decay_rate)
-        for solver in solvers: solver.update()
+        solver.weight_decay(args.weight_decay_rate)
+        solver.update()
         
 
         # LR decay
         if i in args.decay_at:
             # W
-            lr = solver_w.learning_rate() * args.lr_decay_rate
+            lr = solver.learning_rate() * args.lr_decay_rate
             lr = lr if lr > args.min_lr else args.min_lr
-            solver_w.set_learning_rate(lr)
-            # b
-            lr = solver_b.learning_rate() * args.lr_decay_rate
-            lr = lr if lr > args.min_lr else args.min_lr
-            solver_b.set_learning_rate(lr)
+            solver.set_learning_rate(lr)
+
         
         # Monitor and save
         monitor_loss.add(i, loss.d)
