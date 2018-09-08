@@ -210,6 +210,11 @@ screen -Sdm "adam-105" bash -c "python train.py -d 2 -b 32 --solver Adam --lr 1e
 screen -Sdm "adam-106" bash -c "python train.py -d 3 -b 32 --solver Adam --lr 1e-4 --monitor-path result/example_106 --share-type within-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode matlab --max-iter 60000 --save-interval 1000"
 
 
+# Follow 88 w/ 1e-4 lr and w/ bias lr 1.0 and w/ opencv
+screen -Sdm "adam-107" bash -c "python train.py -d 2 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_107 --share-type across-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode opencv --max-iter 30000 --save-interval 1000"
+screen -Sdm "adam-108" bash -c "python train.py -d 3 -b 64 --solver Adam --lr 1e-4 --monitor-path result/example_108 --share-type within-pyramid --S 2 --img-paths /home/kzky/nnabla_data/BSDS200 /home/kzky/nnabla_data/T91 --imresize-mode opencv --max-iter 30000 --save-interval 1000"
+
+
 # Evaluate
 ## 51
 python evaluate.py -d 1 -c cudnn --valid-data-path ~/nnabla_data/Set14 --monitor-path result/example_51 --model-load-path result/example_51/param_149999.h5 --share-type across-pyramid --S 2
