@@ -410,35 +410,25 @@ def discriminator(x, y, scopename="discriminator",
         #h = attnblock(h, sn=sn, test=test)
         h = resblock_d(h, y, "block-4", n_classes, maps * 8, test=test, sn=sn)
         h = resblock_d(h, y, "block-5", n_classes, maps * 16, test=test, sn=sn)
-        h = resblock_d(h, y, "block-6", n_classes, maps * 16, downsample=False, test=test, sn=sn)
-        # Last affine
-        #h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
-        h = F.relu(h, True)  #F.leaky_relu(h, 0.2)
-        #h = F.average_pooling(h, h.shape[2:])
-        h = F.sum(h, axis=(2, 3))
-        o0 = affine(h, 1, sn=sn, test=test)
-        # Project discriminator
-        l, u = calc_uniform_lim_glorot(n_classes, h.shape[1])
-        e = embed(y, n_classes, h.shape[1], initializer=UniformInitializer((l, u)), 
-                  name="projection", sn=sn, test=test)
-        #h = F.reshape(h, h.shape[0:2], inplace=False)
-        o1 = F.sum(h * e, axis=1, keepdims=True)
-    return o0 + o1
-
-
-def gan_loss(d_x_fake, d_x_real=None):
-    """Hinge loss"""
-    if d_x_real is None:
-        return -F.mean(d_x_fake)
-    #return F.maximum_scalar(1 - d_x_real, 0.0) + F.maximum_scalar(1 + d_x_fake, 0.0)
-    return F.mean(F.relu(1 - d_x_real)) + F.mean(F.relu(1 + d_x_fake))
+        #h = resblock_d(h, y, "block-6", n_classes, maps * 16, downsample=False, test=test, sn=sn)
+        h = convolution(h, 1, kernel=(3, 3), pad=(1, 1), stride=(1, 1), name="last-conv")
+        
+    return h
 
 
 # def gan_loss(d_x_fake, d_x_real=None):
-# """Least Square Loss"""
+#     """Hinge loss"""
 #     if d_x_real is None:
-#         return F.mean(F.pow_scalar((d_x_fake - 1), 2.))
-#     return F.mean(F.pow_scalar((d_x_real - 1), 2.) + F.pow_scalar(d_x_fake, 2.))
+#         return -F.mean(d_x_fake)
+#     #return F.maximum_scalar(1 - d_x_real, 0.0) + F.maximum_scalar(1 + d_x_fake, 0.0)
+#     return F.mean(F.relu(1 - d_x_real)) + F.mean(F.relu(1 + d_x_fake))
+
+
+def gan_loss(d_x_fake, d_x_real=None):
+    """Least Square Loss"""
+    if d_x_real is None:
+        return F.mean(F.pow_scalar((d_x_fake - 1), 2.))
+    return F.mean(F.pow_scalar((d_x_real - 1), 2.) + F.pow_scalar(d_x_fake, 2.))
     
     
 if __name__ == '__main__':
@@ -475,6 +465,8 @@ if __name__ == '__main__':
         print(n, p)
         n_params += np.prod(p.shape)
     print("Total params (Dis) = {}".format(n_params))
+
+    print(d.shape)
 
     # print("Parameters")
     # for n, v in nn.get_parameters(grad_only=False).items():
