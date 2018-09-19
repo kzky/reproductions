@@ -9,10 +9,19 @@ import numpy as np
 
 
 def data_iterator_imagenet(img_path, dirname_to_label_path,
-                           batch_size=16, ih=128, iw=128,
+                           batch_size=16, ih=128, iw=128, n_classes=1000, 
                            train=True, shuffle=True, rng=None):
+
+    # Classes
+    dir_paths = glob.glob("{}/*".format(img_path))
+    dir_paths.sort()
+    dir_paths = dir_paths[0:n_classes]
+    
     # Images
-    imgs = glob.glob("{}/*/*.JPEG".format(img_path))
+    imgs = []
+    for dir_path in dir_paths:
+        imgs += glob.glob("{}/*.JPEG".format(dir_path))
+    np.random.shuffle(imgs)
 
     # Dirname to Label map
     dirname_to_label = {}

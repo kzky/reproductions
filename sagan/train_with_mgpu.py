@@ -33,20 +33,24 @@ def train(args):
     #z = F.rand(0, 1.0, [args.batch_size, args.latent])
     z = nn.Variable([args.batch_size, args.latent])
     y_fake = nn.Variable([args.batch_size], need_grad=False)
-    x_fake = generator(z, y_fake, maps=args.maps, sn=args.not_sn).apply(persistent=True)
-    x_fake_noise = x_fake + F.rand(0.0, 1.0 / 128, x_fake.shape)
-    d_fake = discriminator(x_fake_noise, y_fake, maps=args.maps // 16, sn=args.not_sn)
-    #d_fake = discriminator(x_fake, y_fake, maps=args.maps // 16, sn=args.not_sn)
+    x_fake = generator(z, y_fake, maps=args.maps,
+                       n_classes=args.n_classes, sn=args.not_sn).apply(persistent=True)
+    d_fake = discriminator(x_fake, y_fake, maps=args.maps // 16,
+                           n_classes=args.n_classes, sn=args.not_sn)
+    #d_fake = discriminator(x_fake, y_fake,
+    #                       maps=args.maps // 16, n_classes=args.n_classes, sn=args.not_sn)
     loss_gen = gan_loss(d_fake)
     # discriminator loss
     y_real = nn.Variable([args.batch_size], need_grad=False)
     x_real = nn.Variable([args.batch_size, 3, args.image_size, args.image_size], need_grad=False)
-    d_real = discriminator(x_real, y_real, maps=args.maps // 16, sn=args.not_sn)
+    d_real = discriminator(x_real, y_real, maps=args.maps // 16,
+                           n_classes=args.n_classes, sn=args.not_sn)
     loss_dis = gan_loss(d_fake, d_real)
     # generator with fixed value for test
     z_test = nn.Variable.from_numpy_array(np.random.randn(args.batch_size, args.latent))
     y_test = nn.Variable.from_numpy_array(generate_random_class(args.n_classes, args.batch_size))
-    x_test = generator(z_test, y_test, maps=args.maps, test=True, sn=args.not_sn)
+    x_test = generator(z_test, y_test, maps=args.maps, n_classes=args.n_classes,
+                       test=True, sn=args.not_sn)
     
     # Solver
     solver_gen = S.Adam(args.lrg, args.beta1, args.beta2)
@@ -71,7 +75,7 @@ def train(args):
     # DataIterator
     rng = np.random.RandomState(410)
     di_train = data_iterator_imagenet(args.train_dir, args.dirname_to_label_path,
-                                      args.batch_size,
+                                      args.batch_size, n_classes=args.n_classes, 
                                       rng=rng)
 
     # Train loop

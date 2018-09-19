@@ -92,7 +92,7 @@ def convolution(inp, outmaps, kernel,
                 itr=1, 
                 w_init=None, b_init=None,
                 base_axis=1, fix_parameters=False, rng=None, with_bias=True,
-                sn=True, test=False):
+                sn=True, test=False, init_scale=1.0):
                 
     """
     N-D Convolution with a bias term.
@@ -124,8 +124,9 @@ def convolution(inp, outmaps, kernel,
 
     """
     if w_init is None:
-        w_init = UniformInitializer(
-            calc_uniform_lim_glorot(inp.shape[base_axis], outmaps, tuple(kernel)), rng=rng)
+        l, u = calc_uniform_lim_glorot(inp.shape[base_axis], outmaps, tuple(kernel))
+        l, u = init_scale * l, init_scale * u
+        w_init = UniformInitializer((l, u), rng=rng)
     if with_bias and b_init is None:
         b_init = ConstantInitializer()
     w = get_parameter_or_create(
@@ -176,8 +177,7 @@ def affine(inp, n_outmaps,
     n_outmap = int(np.prod(n_outmaps))
     if w_init is None:
         inmaps = np.prod(inp.shape[base_axis:])
-        w_init = UniformInitializer(
-            calc_uniform_lim_glorot(inmaps, n_outmap), rng=rng)
+        w_init = UniformInitializer(calc_uniform_lim_glorot(inmaps, n_outmap), rng=rng)
     if with_bias and b_init is None:
         b_init = ConstantInitializer()
     w = get_parameter_or_create(
@@ -289,14 +289,14 @@ def resblock_g(h, y, scopename,
             if upsample:
                 h = F.unpooling(h, kernel=(2, 2))
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
-                            with_bias=True, sn=sn, test=test)
+                            with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
         
         # BN -> Relu -> Conv
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, sn=sn)
             h = F.relu(h, inplace=True)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
-                            with_bias=True, sn=sn, test=test)
+                            with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
             
         # Shortcut: Upsample -> Conv
         if upsample:
@@ -324,14 +324,14 @@ def resblock_d(h, y, scopename,
             h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
             h = F.relu(h, False)  #F.leaky_relu(h, 0.2)
             h = convolution(h, maps1, kernel=kernel, pad=pad, stride=stride, 
-                            with_bias=True, sn=sn, test=test)
+                            with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
         
         # BN -> LeakyRelu -> Conv -> Downsample
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
             h = F.relu(h, True)  #F.leaky_relu(h, 0.2)
             h = convolution(h, maps2, kernel=kernel, pad=pad, stride=stride, 
-                            with_bias=True, sn=sn, test=test)
+                            with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
             if downsample:
                 h = F.average_pooling(h, kernel=(2, 2))
             
@@ -356,14 +356,14 @@ def optblock_d(h, y, scopename,
         # Conv
         with nn.parameter_scope("conv1"):
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
-                            with_bias=True, sn=sn, test=test)
+                            with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
         
         # BN -> Conv
         with nn.parameter_scope("conv2"):
             h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
             h = F.relu(h, True)  #F.leaky_relu(h, 0.2)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
-                            with_bias=True, sn=sn, test=test)
+                            with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
             if downsample:
                 h = F.average_pooling(h, kernel=(2, 2))
             
@@ -412,15 +412,16 @@ def discriminator(x, y, scopename="discriminator",
         h = resblock_d(h, y, "block-5", n_classes, maps * 16, test=test, sn=sn)
         h = resblock_d(h, y, "block-6", n_classes, maps * 16, downsample=False, test=test, sn=sn)
         # Last affine
-        h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
+        #h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
         h = F.relu(h, True)  #F.leaky_relu(h, 0.2)
-        h = F.average_pooling(h, h.shape[2:])
+        #h = F.average_pooling(h, h.shape[2:])
+        h = F.sum(h, axis=(2, 3))
         o0 = affine(h, 1, sn=sn, test=test)
         # Project discriminator
         l, u = calc_uniform_lim_glorot(n_classes, h.shape[1])
         e = embed(y, n_classes, h.shape[1], initializer=UniformInitializer((l, u)), 
                   name="projection", sn=sn, test=test)
-        h = F.reshape(h, h.shape[0:2], inplace=False)
+        #h = F.reshape(h, h.shape[0:2], inplace=False)
         o1 = F.sum(h * e, axis=1, keepdims=True)
     return o0 + o1
 
@@ -431,6 +432,13 @@ def gan_loss(d_x_fake, d_x_real=None):
         return -F.mean(d_x_fake)
     #return F.maximum_scalar(1 - d_x_real, 0.0) + F.maximum_scalar(1 + d_x_fake, 0.0)
     return F.mean(F.relu(1 - d_x_real)) + F.mean(F.relu(1 + d_x_fake))
+
+
+# def gan_loss(d_x_fake, d_x_real=None):
+# """Least Square Loss"""
+#     if d_x_real is None:
+#         return F.mean(F.pow_scalar((d_x_fake - 1), 2.))
+#     return F.mean(F.pow_scalar((d_x_real - 1), 2.) + F.pow_scalar(d_x_fake, 2.))
     
     
 if __name__ == '__main__':
