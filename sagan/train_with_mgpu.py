@@ -15,6 +15,7 @@ from helpers import MonitorImageTileWithName, generate_random_class
 from models import generator, discriminator, gan_loss
 from imagenet_data import data_iterator_imagenet
 
+
 def train(args):
     # Communicator and Context
     extension_module = "cudnn"

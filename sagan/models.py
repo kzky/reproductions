@@ -442,6 +442,8 @@ def gan_loss(d_x_fake, d_x_real=None):
     
     
 if __name__ == '__main__':
+    import viewer as V
+
     b, c, h, w = 4, 3, 128, 128
     latent = 128
     print("===== Generator =====")
@@ -449,7 +451,9 @@ if __name__ == '__main__':
     z = F.randn(shape=[b, latent])
     y = nn.Variable([b])
     y.d = np.random.choice(np.arange(100), b)
-    x = generator(z, y)
+    x = generator(z, y, sn=False)
+    graph = V.SimpleGraph(verbose=False)
+    graph.save(x, "generator")
     print("x.shape = {}".format(x.shape))
     n_params = 0
     with nn.parameter_scope("generator"):
@@ -460,7 +464,10 @@ if __name__ == '__main__':
 
     print("===== Discriminator =====")
     print("Discriminator shape")
-    d = discriminator(x, y)
+    x = x.get_unlinked_variable()
+    d = discriminator(x, y, sn=False)
+    graph = V.SimpleGraph(verbose=False)
+    graph.save(d, "discriminator")
     print("d.shape = {}".format(d.shape))
     n_params = 0
     with nn.parameter_scope("discriminator"):
