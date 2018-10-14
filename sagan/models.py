@@ -95,33 +95,6 @@ def convolution(inp, outmaps, kernel,
                 sn=True, test=False, init_scale=1.0):
                 
     """
-    N-D Convolution with a bias term.
-
-    For Dilated Convolution (a.k.a. Atrous Convolusion), refer to:
-
-    - Chen et al., DeepLab: Semantic Image Segmentation with Deep Convolutional Nets, Atrous Convolution, and Fully Connected CRFs. https://arxiv.org/abs/1606.00915
-
-    - Yu et al., Multi-Scale Context Aggregation by Dilated Convolutions. https://arxiv.org/abs/1511.07122
-
-    Args:
-        inp (~nnabla.Variable): N-D array.
-        outmaps (int): Number of convolution kernels (which is equal to the number of output channels). For example, to apply convolution on an input with 16 types of filters, specify 16.
-        kernel (:obj:`tuple` of :obj:`int`): Convolution kernel size. For example, to apply convolution on an image with a 3 (height) by 5 (width) two-dimensional kernel, specify (3,5).
-        pad (:obj:`tuple` of :obj:`int`): Padding sizes for dimensions.
-        stride (:obj:`tuple` of :obj:`int`): Stride sizes for dimensions.
-        dilation (:obj:`tuple` of :obj:`int`): Dilation sizes for dimensions.
-        group (int): Number of groups of channels. This makes connections across channels more sparse by grouping connections along map direction.
-        itr (int): Number of iteration of the power method.
-        w_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`): Initializer for weight.
-        b_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`): Initializer for bias.
-        base_axis (int): Dimensions up to `base_axis` are treated as the sample dimensions.
-        fix_parameters (bool): When set to `True`, the weights and biases will not be updated.
-        rng (numpy.random.RandomState): Random generator for Initializer.
-        with_bias (bool): Specify whether to include the bias term.
-
-    Returns:
-        :class:`~nnabla.Variable`: N-D array.
-
     """
     if w_init is None:
         l, u = calc_uniform_lim_glorot(inp.shape[base_axis], outmaps, tuple(kernel))
@@ -148,28 +121,6 @@ def affine(inp, n_outmaps,
            fix_parameters=False, rng=None, with_bias=True,
            sn=True, test=False):
     """
-    The affine layer, also known as the fully connected layer. Computes
-
-    .. math::
-        {\\mathbf y} = {\\mathbf A} {\\mathbf x} + {\\mathbf b}.
-
-    where :math:`{\\mathbf x}, {\\mathbf y}` are the inputs and outputs respectively,
-    and :math:`{\\mathbf A}, {\\mathbf b}` are constants.
-
-    Args:
-        inp (~nnabla.Variable): Input N-D array with shape (:math:`M_0 \\times \ldots \\times M_{B-1} \\times D_B \\times \ldots \\times D_N`). Dimensions before and after base_axis are flattened as if it is a matrix.
-        n_outmaps (:obj:`int` or :obj:`tuple` of :obj:`int`): Number of output neurons per data.
-        base_axis (int): Dimensions up to `base_axis` are treated as the sample dimensions.
-        w_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`): Initializer for weight.
-        b_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`): Initializer for bias.
-        itr (int): Number of iteration of the power method.
-        fix_parameters (bool): When set to `True`, the weights and biases will not be updated.
-        rng (numpy.random.RandomState): Random generator for Initializer.
-        with_bias (bool): Specify whether to include the bias term.
-
-    Returns:
-        :class:`~nnabla.Variable`: :math:`(B + 1)`-D array. (:math:`M_0 \\times \ldots \\times M_{B-1} \\times L`)f
-
     """
     if not hasattr(n_outmaps, '__iter__'):
         n_outmaps = [n_outmaps]
@@ -194,22 +145,8 @@ def affine(inp, n_outmaps,
 @parametric_function_api("embed")
 def embed(inp, n_inputs, n_features, initializer=None,
           itr=1, fix_parameters=False, sn=True, test=False):
-    """Embed.
-
-    Embed slices a matrix/tensor with indexing array/tensor
-
-    Args:
-        x(~nnabla.Variable): [Integer] Indices with shape :math:`(I_0, ..., I_N)`
-        n_inputs : number of possible inputs, words or vocabraries
-        n_features : number of embedding features
-        itr (int): Number of iteration of the power method.
-        fix_parameters (bool): When set to `True`, the embedding weight matrix
-            will not be updated.
-
-    Returns:
-        ~nnabla.Variable: Output with shape :math:`(I_0, ..., I_N, W_1, ..., W_M)`
     """
-
+    """
     w = get_parameter_or_create("W", [n_inputs, n_features],
                                 initializer, not fix_parameters)
     w_sn = spectral_normalization_for_affine(w, itr=itr, test=test) if sn else w
@@ -222,7 +159,7 @@ def BN(h, test=False):
 
 
 @parametric_function_api("ccbn")
-def CCBN(h, y, n_classes, test=False, fix_parameters=False, sn=True):
+def CCBN(h, y, n_classes, test=False, fix_parameters=False):
     """Categorical Conditional Batch Normaliazation"""
     # Call the batch normalization once
     shape_stat = [1 for _ in h.shape]
@@ -235,15 +172,14 @@ def CCBN(h, y, n_classes, test=False, fix_parameters=False, sn=True):
         "var", shape_stat, ConstantInitializer(1.0), False)
     h = F.batch_normalization(h, beta_tmp, gamma_tmp, mean, var, batch_stat=not test)
 
-    #TODO: should use SNEmbed?
     # Condition the gamma and beta with the class label
     b, c = h.shape[0:2]
     with nn.parameter_scope("gamma"):
-        gamma = embed(y, n_classes, c, initializer=ConstantInitializer(1.0), sn=sn, test=test)
+        gamma = embed(y, n_classes, c, initializer=ConstantInitializer(1.0), sn=False, test=test)
         gamma = F.reshape(gamma, [b, c] + [1 for _ in range(len(h.shape[2:]))])
         gamma = F.broadcast(gamma, h.shape)
     with nn.parameter_scope("beta"):
-        beta = embed(y, n_classes, c, initializer=ConstantInitializer(0.0), sn=sn, test=test)
+        beta = embed(y, n_classes, c, initializer=ConstantInitializer(0.0), sn=False, test=test)
         beta = F.reshape(beta, [b, c] + [1 for _ in range(len(h.shape[2:]))])
         beta = F.broadcast(beta, h.shape)
     return gamma * h + beta
@@ -258,9 +194,12 @@ def attnblock(h, r=8, fix_parameters=False, sn=True, test=False):
     b, c, s0, s1 = h.shape
     c_r = c // r
     assert c_r > 0
-    f_x = convolution(h, c_r, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="f", with_bias=False, sn=sn, test=test)
-    g_x = convolution(h, c_r, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="g", with_bias=False, sn=sn, test=test)
-    h_x = convolution(h, c, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="h", with_bias=False, sn=sn, test=test)
+    f_x = convolution(h, c_r, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="f",
+                      with_bias=False, sn=sn, test=test)
+    g_x = convolution(h, c_r, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="g",
+                      with_bias=False, sn=sn, test=test)
+    h_x = convolution(h, c, kernel=(1, 1), pad=(0, 0), stride=(1, 1), name="h",
+                      with_bias=False, sn=sn, test=test)
 
     # Attend 
     attn = F.batch_matmul(f_x.reshape([b, c_r, -1]), g_x.reshape([b, c_r, -1]), transpose_a=True)
@@ -270,7 +209,7 @@ def attnblock(h, r=8, fix_parameters=False, sn=True, test=False):
     o = F.reshape(o, [b, c, s0, s1])
 
     # Shortcut
-    gamma = get_parameter_or_create("gamma", [1, 1, 1, 1], ConstantInitializer(0), not fix_parameters)
+    gamma = get_parameter_or_create("gamma", [1, 1, 1, 1], ConstantInitializer(0.), not fix_parameters)
     y = gamma * o + x
     return y
 
@@ -284,7 +223,7 @@ def resblock_g(h, y, scopename,
     with nn.parameter_scope(scopename):
         # BN -> Relu -> Upsample -> Conv
         with nn.parameter_scope("conv1"):
-            h = CCBN(h, y, n_classes, test=test, sn=sn)
+            h = CCBN(h, y, n_classes, test=test)
             h = F.relu(h, inplace=True)
             if upsample:
                 h = F.unpooling(h, kernel=(2, 2))
@@ -293,7 +232,7 @@ def resblock_g(h, y, scopename,
         
         # BN -> Relu -> Conv
         with nn.parameter_scope("conv2"):
-            h = CCBN(h, y, n_classes, test=test, sn=sn)
+            h = CCBN(h, y, n_classes, test=test)
             h = F.relu(h, inplace=True)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
@@ -305,13 +244,12 @@ def resblock_g(h, y, scopename,
             with nn.parameter_scope("shortcut"):
                 s = convolution(s, maps, kernel=(1, 1), pad=(0, 0), stride=(1, 1), 
                                 with_bias=True, sn=sn, test=test)
-    #return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
-    return F.add2(h, s)
+    return F.add2(h, s, True)
 
 
 def resblock_d(h, y, scopename,
                n_classes, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
-               downsample=True, bn=False, test=False, sn=True):
+               downsample=True, test=False, sn=True):
     """Residual block for discriminator"""
     s = h
     _, c, _, _ = h.shape
@@ -319,17 +257,15 @@ def resblock_d(h, y, scopename,
     maps1 = c if maps // 2 == c else maps
     maps2 = maps
     with nn.parameter_scope(scopename):
-        # BN -> LeakyRelu -> Conv
+        # LeakyRelu -> Conv
         with nn.parameter_scope("conv1"):
-            h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
-            h = F.relu(h, False)  #F.leaky_relu(h, 0.2)
+            h = F.leaky_relu(h, 0.2, True)
             h = convolution(h, maps1, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
         
-        # BN -> LeakyRelu -> Conv -> Downsample
+        # LeakyRelu -> Conv -> Downsample
         with nn.parameter_scope("conv2"):
-            h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
-            h = F.relu(h, True)  #F.leaky_relu(h, 0.2)
+            h = F.leaky_relu(h, 0.2, True)
             h = convolution(h, maps2, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
             if downsample:
@@ -342,13 +278,12 @@ def resblock_d(h, y, scopename,
                                 with_bias=True, sn=sn, test=test)
         if downsample:
             s = F.average_pooling(s, kernel=(2, 2))
-    #return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
-    return F.add2(h, s)
+    return F.add2(h, s, True)
 
 
 def optblock_d(h, y, scopename,
                n_classes, maps, kernel=(3, 3), pad=(1, 1), stride=(1, 1), 
-               downsample=True, bn=False, test=False, sn=True):
+               downsample=True, test=False, sn=True):
     """Optimized block for discriminator"""
     s = h
     _, c, _, _ = h.shape
@@ -358,10 +293,9 @@ def optblock_d(h, y, scopename,
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
         
-        # BN -> Conv
+        # ReLU -> Conv
         with nn.parameter_scope("conv2"):
-            h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
-            h = F.relu(h, True)  #F.leaky_relu(h, 0.2)
+            h = F.leaky_relu(h, 0.2, True)
             h = convolution(h, maps, kernel=kernel, pad=pad, stride=stride, 
                             with_bias=True, sn=sn, test=test, init_scale=np.sqrt(2))
             if downsample:
@@ -373,22 +307,20 @@ def optblock_d(h, y, scopename,
                 s = F.average_pooling(s, kernel=(2, 2))
             s = convolution(s, maps, kernel=(1, 1), pad=(0, 0), stride=(1, 1), 
                             with_bias=True, sn=sn, test=test)
-    #return F.add2(h, s, inplace=True)  #TODO: inplace is permittable?
-    return F.add2(h, s)
+    return F.add2(h, s, True)
 
 
 def generator(z, y, scopename="generator", 
               maps=1024, n_classes=1000, s=4, test=False, sn=True):
-    sn = False
     with nn.parameter_scope(scopename):
         # Affine
         h = affine(z, maps * s * s, with_bias=True, sn=sn, test=test)
         h = F.reshape(h, [h.shape[0]] + [maps, s, s])
         # Resblocks
-        h = resblock_g(h, y, "block-1", n_classes, maps, test=test, sn=sn)
+        h = resblock_g(h, y, "block-1", n_classes, maps // 1, test=test, sn=sn)
         h = resblock_g(h, y, "block-2", n_classes, maps // 2, test=test, sn=sn)
         h = resblock_g(h, y, "block-3", n_classes, maps // 4, test=test, sn=sn)
-        #h = attnblock(h, sn=sn, test=test)
+        h = attnblock(h, sn=sn, test=test)
         h = resblock_g(h, y, "block-4", n_classes, maps // 8, test=test, sn=sn)
         h = resblock_g(h, y, "block-5", n_classes, maps // 16, test=test, sn=sn)
         # Last convoltion
@@ -400,122 +332,39 @@ def generator(z, y, scopename="generator",
 
 
 def discriminator(x, y, scopename="discriminator", 
-                  maps=64, n_classes=1000, s=4, bn=False, test=False, sn=True):
-    #sn = False
+                  maps=64, n_classes=1000, s=4, test=False, sn=True):
     with nn.parameter_scope(scopename):
         # Resblocks
-        h = optblock_d(x, y, "block-1", n_classes, maps, downsample=False, test=test, sn=sn)
+        h = optblock_d(x, y, "block-1", n_classes, maps * 1, test=test, sn=sn)
         h = resblock_d(h, y, "block-2", n_classes, maps * 2, test=test, sn=sn)
+        h = attnblock(h, sn=sn, test=test)
         h = resblock_d(h, y, "block-3", n_classes, maps * 4, test=test, sn=sn)
-        #h = attnblock(h, sn=sn, test=test)
         h = resblock_d(h, y, "block-4", n_classes, maps * 8, test=test, sn=sn)
         h = resblock_d(h, y, "block-5", n_classes, maps * 16, test=test, sn=sn)
         h = resblock_d(h, y, "block-6", n_classes, maps * 16, downsample=False, test=test, sn=sn)
         # Last affine
-        #h = CCBN(h, y, n_classes, test=test, sn=sn) if bn else h
-        h = F.relu(h, True)  #F.leaky_relu(h, 0.2)
-        #h = F.average_pooling(h, h.shape[2:])
+        h = F.leaky_relu(h, 0.2, True)
         h = F.sum(h, axis=(2, 3))
         o0 = affine(h, 1, sn=sn, test=test)
         # Project discriminator
-        l, u = calc_uniform_lim_glorot(n_classes, h.shape[1])
-        e = embed(y, n_classes, h.shape[1], initializer=UniformInitializer((l, u)), 
-                  name="projection", sn=sn, test=test)
-        #h = F.reshape(h, h.shape[0:2], inplace=False)
+        l, u = calc_uniform_lim_glorot(n_classes, maps * 16)
+        e = embed(y, n_classes, maps * 16,
+                  initializer=UniformInitializer((l, u)), name="projection",
+                  sn=sn, test=test)
         o1 = F.sum(h * e, axis=1, keepdims=True)
     return o0 + o1
 
 
-def gan_loss(d_x_fake, d_x_real=None):
+def gan_loss(p_fake, p_real=None):
     """Hinge loss"""
-    if d_x_real is None:
-        return -F.mean(d_x_fake)
-    #return F.maximum_scalar(1 - d_x_real, 0.0) + F.maximum_scalar(1 + d_x_fake, 0.0)
-    return F.mean(F.relu(1 - d_x_real)) + F.mean(F.relu(1 + d_x_fake))
+    if p_real is None:
+        return -F.mean(p_fake)
+    #return F.maximum_scalar(1.0 - p_real, 0.0) + F.maximum_scalar(1.0 + p_fake, 0.0)
+    return F.mean(F.relu(1.0 - p_real)) + F.mean(F.relu(1.0 + p_fake))
 
-
-# def gan_loss(d_x_fake, d_x_real=None):
-# """Least Square Loss"""
-#     if d_x_real is None:
-#         return F.mean(F.pow_scalar((d_x_fake - 1), 2.))
-#     return F.mean(F.pow_scalar((d_x_real - 1), 2.) + F.pow_scalar(d_x_fake, 2.))
-    
     
 if __name__ == '__main__':
-    import viewer as V
-
     b, c, h, w = 4, 3, 128, 128
     latent = 128
-    print("===== Generator =====")
-    print("Generator shape")
-    z = F.randn(shape=[b, latent])
-    y = nn.Variable([b])
-    y.d = np.random.choice(np.arange(100), b)
-    x = generator(z, y, sn=False)
-    graph = V.SimpleGraph(verbose=False)
-    graph.save(x, "generator")
-    print("x.shape = {}".format(x.shape))
-    n_params = 0
-    with nn.parameter_scope("generator"):
-      for n, p in nn.get_parameters().items():
-        print(n, p)
-        n_params += np.prod(p.shape)
-    print("Total params (Gen) = {}".format(n_params))
-
-    print("===== Discriminator =====")
-    print("Discriminator shape")
-    x = x.get_unlinked_variable()
-    d = discriminator(x, y, sn=False)
-    graph = V.SimpleGraph(verbose=False)
-    graph.save(d, "discriminator")
-    print("d.shape = {}".format(d.shape))
-    n_params = 0
-    with nn.parameter_scope("discriminator"):
-      for n, p in nn.get_parameters().items():
-        print(n, p)
-        n_params += np.prod(p.shape)
-    print("Total params (Dis) = {}".format(n_params))
-
-    # print("Parameters")
-    # for n, v in nn.get_parameters(grad_only=False).items():
-    #     print(n, v.shape)
-
-    # print("Attention block")
-    # b, c, h, w = 4, 32, 128, 128
-    # x = nn.Variable([b, c, h//2, w//2])
-    # h = attnblock(x)
-    # print("h.shape = {}".format(h.shape))
-    # nn.clear_parameters()
 
     
-    # print("Spectral Normalization for Conv")
-    # o, i, k0, k1 = 8, 8, 16, 16
-    # w = nn.Variable([o, i, k0, k1])
-    # w.d = np.random.randn(o, i, k0, k1).astype(np.float32)
-    # itr = 3
-    # np.random.seed(412)
-    # #nn.set_auto_forward(True)
-    # w_sn = spectral_normalization_for_conv(w, itr=itr)
-    # print("w_sn.shape = {}".format(w_sn))
-    # def compute_sigma(w):
-    #     np.random.seed(412)
-    #     u = np.random.randn(o)
-    #     w = np.reshape(w, (o, i*k0*k1))
-    #     for _ in range(itr):
-    #         v = np.dot(u, w)
-    #         v = v / np.sqrt(np.sum(v**2) + 1e-12)
-    #         u = np.dot(w, v)
-    #         u = u / np.sqrt(np.sum(u**2) + 1e-12)
-    #     wv = np.dot(w, v)
-    #     sigma = np.dot(u, wv)
-    #     return sigma
-    # w_sn.forward()
-    # print(np.allclose(w_sn.d, w.d / compute_sigma(w.d)))
-    # nn.clear_parameters()
-
-    # print("Spectral Normalization for Affine")
-    # o, i = 16, 8
-    # w = nn.Variable([o, i])
-    # sigma = spectral_normalization_for_affine(w, itr=2)
-    # print("w_sn.shape = {}".format(w_sn))
-    # nn.clear_parameters()

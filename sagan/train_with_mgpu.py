@@ -28,38 +28,41 @@ def train(args):
     ctx.device_id = str(device_id)
     nn.set_default_context(ctx)
 
-    # Model (not use test mode when training either generator and discrimiantor)
+    # Args
+    latent = args.latent
+    maps = args.maps
+    batch_size = args.batch_size
+    image_size = args.image_size
+    n_classes = args.n_classes
+    not_sn = args.not_sn
+    
+    # Model
     np.random.seed(412)  # workaround to start with the same weights in the distributed system.
     # generator loss
-    #z = F.rand(0, 1.0, [args.batch_size, args.latent])
-    z = nn.Variable([args.batch_size, args.latent])
-    y_fake = nn.Variable([args.batch_size], need_grad=False)
-    x_fake = generator(z, y_fake, maps=args.maps,
-                       n_classes=args.n_classes, sn=args.not_sn).apply(persistent=True)
-    d_fake = discriminator(x_fake, y_fake, maps=args.maps // 16,
-                           n_classes=args.n_classes, sn=args.not_sn)
-    #d_fake = discriminator(x_fake, y_fake,
-    #                       maps=args.maps // 16, n_classes=args.n_classes, sn=args.not_sn)
-    loss_gen = gan_loss(d_fake)
+    z = nn.Variable([batch_size, latent])
+    y_fake = nn.Variable([batch_size])
+    x_fake = generator(z, y_fake, maps=maps, n_classes=n_classes, sn=not_sn).apply(persistent=True)
+    p_fake = discriminator(x_fake, y_fake, maps=maps // 16, n_classes=n_classes, sn=not_sn)
+    loss_gen = gan_loss(p_fake)
     # discriminator loss
-    y_real = nn.Variable([args.batch_size], need_grad=False)
-    x_real = nn.Variable([args.batch_size, 3, args.image_size, args.image_size], need_grad=False)
-    d_real = discriminator(x_real, y_real, maps=args.maps // 16,
-                           n_classes=args.n_classes, sn=args.not_sn)
-    loss_dis = gan_loss(d_fake, d_real)
+    y_real = nn.Variable([batch_size])
+    x_real = nn.Variable([batch_size, 3, image_size, image_size])
+    p_real = discriminator(x_real, y_real, maps=maps // 16, n_classes=n_classes, sn=not_sn)
+    loss_dis = gan_loss(p_fake, p_real)
     # generator with fixed value for test
-    z_test = nn.Variable.from_numpy_array(np.random.randn(args.batch_size, args.latent))
-    y_test = nn.Variable.from_numpy_array(generate_random_class(args.n_classes, args.batch_size))
-    x_test = generator(z_test, y_test, maps=args.maps, n_classes=args.n_classes,
-                       test=True, sn=args.not_sn)
-    
+    z_test = nn.Variable.from_numpy_array(np.random.randn(batch_size, latent))
+    y_test = nn.Variable.from_numpy_array(generate_random_class(n_classes, batch_size))
+    x_test = generator(z_test, y_test, maps=maps, n_classes=n_classes, test=True, sn=not_sn)
+                       
     # Solver
     solver_gen = S.Adam(args.lrg, args.beta1, args.beta2)
     solver_dis = S.Adam(args.lrd, args.beta1, args.beta2)
     with nn.parameter_scope("generator"):
-        solver_gen.set_parameters(nn.get_parameters())
+        params_gen = nn.get_parameters()
+        solver_gen.set_parameters(params_gen)
     with nn.parameter_scope("discriminator"):
-        solver_dis.set_parameters(nn.get_parameters())
+        params_dis = nn.get_parameters()
+        solver_dis.set_parameters(params_dis)
 
     # Monitor
     if comm.rank == 0:
@@ -80,20 +83,19 @@ def train(args):
                                       rng=rng)
 
     # Train loop
-    #normalize_method = lambda x: (x - 127.5) / 127.5
     for i in range(args.max_iter):
-        flag = True
-        
         # Train discriminator
+        flag = True
         x_fake.need_grad = False  # no need for discriminator backward
         solver_dis.zero_grad()
         for _ in range(args.accum_grad):
+            # feed x_real and y_real
             x_data, y_data = di_train.next()
             if x_data.shape == (16, ):
                 flag = False
                 break
-            #x_real.d, y_real.d = normalize_method(x_data), y_data.flatten()
             x_real.d, y_real.d = x_data, y_data.flatten()
+            # feed z and y_fake
             z_data = np.random.randn(args.batch_size, args.latent)
             y_data = generate_random_class(args.n_classes, args.batch_size)
             z.d, y_fake.d = z_data, y_data
@@ -101,8 +103,7 @@ def train(args):
             loss_dis.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
         if flag == False:
             continue
-        with nn.parameter_scope("discriminator"):
-            comm.all_reduce([v.grad for v in nn.get_parameters().values()])
+        comm.all_reduce([v.grad for v in params_dis.values()])
         solver_dis.update()
 
         # Train genrator
@@ -115,13 +116,12 @@ def train(args):
                 z.d, y_fake.d = z_data, y_data
                 loss_gen.forward(clear_no_need_grad=True)
                 loss_gen.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
-            with nn.parameter_scope("generator"):
-                comm.all_reduce([v.grad for v in nn.get_parameters().values()])
+            comm.all_reduce([v.grad for v in params_gen.values()])
             solver_gen.update()
 
         # Synchronize by averaging the weights over devices using allreduce
         if i % args.sync_weight_every_itr == 0:
-            weights = [x.data for x in nn.get_parameters().values()]
+            weights = [v.data for v in nn.get_parameters().values()]
             comm.all_reduce(weights, division=True, inplace=True)
 
         # Save model and image

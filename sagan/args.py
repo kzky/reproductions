@@ -55,15 +55,15 @@ def get_args(batch_size=16, accum_grad=4, image_size=128, n_classes=1000, max_it
                         help="Model load path to a h5 file used in generation and validation.")
     parser.add_argument("--inception-model-load-path", type=str,
                         help="Inception model load path to a h5 file used in validation.")
-    parser.add_argument("--lrg", type=float, default=2e-4,
+    parser.add_argument("--lrg", type=float, default=1e-4, #4e-4
                         help="Learning rate for generator")
-    parser.add_argument("--lrd", type=float, default=2e-4,
+    parser.add_argument("--lrd", type=float, default=4e-4,
                         help="Learning rate for discriminator")
-    parser.add_argument("--n-critic", type=int, default=5,
+    parser.add_argument("--n-critic", type=int, default=1,
                         help="Learning rate for discriminator")
     parser.add_argument("--beta1", type=float, default=0.0,
                         help="Beta1 of Adam solver.")
-    parser.add_argument("--beta2", type=float, default=0.9,
+    parser.add_argument("--beta2", type=float, default=0.999,
                         help="Beta2 of Adam solver.")
     # parser.add_argument("--train-cachefile-dir", "-T", type=str, default="",
     #                     help='Training cache file dir. Create to use create_cache_file.py')
