@@ -77,7 +77,7 @@ def train(args):
                                                             num_images=args.batch_size,
                                                             normalize_method=lambda x: (x + 1.) / 2.)
     # DataIterator
-    rng = np.random.RandomState(410)
+    rng = np.random.RandomState(device_id)
     di_train = data_iterator_imagenet(args.train_dir, args.dirname_to_label_path,
                                       args.batch_size, n_classes=args.n_classes, 
                                       rng=rng)
@@ -85,15 +85,11 @@ def train(args):
     # Train loop
     for i in range(args.max_iter):
         # Train discriminator
-        flag = True
         x_fake.need_grad = False  # no need for discriminator backward
         solver_dis.zero_grad()
         for _ in range(args.accum_grad):
             # feed x_real and y_real
             x_data, y_data = di_train.next()
-            if x_data.shape == (16, ):
-                flag = False
-                break
             x_real.d, y_real.d = x_data, y_data.flatten()
             # feed z and y_fake
             z_data = np.random.randn(args.batch_size, args.latent)
@@ -101,8 +97,6 @@ def train(args):
             z.d, y_fake.d = z_data, y_data
             loss_dis.forward(clear_no_need_grad=True)
             loss_dis.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
-        if flag == False:
-            continue
         comm.all_reduce([v.grad for v in params_dis.values()])
         solver_dis.update()
 

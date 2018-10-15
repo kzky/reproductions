@@ -21,8 +21,8 @@ def data_iterator_imagenet(img_path, dirname_to_label_path,
     imgs = []
     for dir_path in dir_paths:
         imgs += glob.glob("{}/*.JPEG".format(dir_path))
-    np.random.shuffle(imgs)
-
+    #np.random.shuffle(imgs)
+    
     # Dirname to Label map
     dirname_to_label = {}
     label_to_dirname = {}
@@ -35,11 +35,8 @@ def data_iterator_imagenet(img_path, dirname_to_label_path,
 
     def load_func(i):
         # image
-        img = Image.open(imgs[i]).resize((iw, ih), Image.BILINEAR)
+        img = Image.open(imgs[i]).resize((iw, ih), Image.BILINEAR).convert("RGB")
         img = np.asarray(img)
-        if len(img.shape) != 3:
-            img = img.reshape((ih, iw, 1))
-            img = np.concatenate([img, img, img], axis=2)
         img = img.transpose((2, 0, 1))
         img = img / 128.0 - 1.0
         img += np.random.uniform(size=img.shape, low=0.0, high=1.0 / 128)
@@ -47,7 +44,6 @@ def data_iterator_imagenet(img_path, dirname_to_label_path,
         elms = imgs[i].rstrip().split("/")
         dname = elms[-2]
         label = dirname_to_label[dname]
-        lable = np.asarray(label)
         return img, label
         
 
@@ -65,6 +61,8 @@ def main():
         print(i, x.shape)
         print(i, y.shape)
         if x.shape != (16, 3, 128, 128):
+            for i, u in enumerate(x):
+                print(i, u.shape)
             break
 
 if __name__ == '__main__':
