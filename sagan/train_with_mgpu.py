@@ -101,17 +101,16 @@ def train(args):
         solver_dis.update()
 
         # Train genrator
-        if (i + 1) % args.n_critic == 0:
-            x_fake.need_grad = True  # need for generator backward
-            solver_gen.zero_grad()
-            for _ in range(args.accum_grad):
-                z_data = np.random.randn(args.batch_size, args.latent)
-                y_data = generate_random_class(args.n_classes, args.batch_size)
-                z.d, y_fake.d = z_data, y_data
-                loss_gen.forward(clear_no_need_grad=True)
-                loss_gen.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
-            comm.all_reduce([v.grad for v in params_gen.values()])
-            solver_gen.update()
+        x_fake.need_grad = True  # need for generator backward
+        solver_gen.zero_grad()
+        for _ in range(args.accum_grad):
+            z_data = np.random.randn(args.batch_size, args.latent)
+            y_data = generate_random_class(args.n_classes, args.batch_size)
+            z.d, y_fake.d = z_data, y_data
+            loss_gen.forward(clear_no_need_grad=True)
+            loss_gen.backward(1.0 / (args.accum_grad * n_devices), clear_buffer=True)
+        comm.all_reduce([v.grad for v in params_gen.values()])
+        solver_gen.update()
 
         # Synchronize by averaging the weights over devices using allreduce
         if i % args.sync_weight_every_itr == 0:
