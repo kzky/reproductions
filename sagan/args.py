@@ -87,13 +87,13 @@ def get_args(batch_size=16, accum_grad=4, image_size=128, n_classes=1000, max_it
     return args
 
 
-def save_args(args):
+def save_args(args, mode="train"):
     from nnabla import logger
     import os
     if not os.path.exists(args.monitor_path):
         os.makedirs(args.monitor_path)
 
-    path = "{}/Arguments.txt".format(args.monitor_path)
+    path = "{}/Arguments-{}.txt".format(args.monitor_path, mode)
     logger.info("Arguments are saved to {}.".format(path))
     with open(path, "w") as fp:
         for k, v in sorted(vars(args).items()):
